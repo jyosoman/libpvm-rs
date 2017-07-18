@@ -14,6 +14,7 @@ futures = "*"
 futures-cpupool = "*"
 tokio-io = "*"
 tokio-core = "*"
+neo4j = {git = "https://github.com/technige/rusty-bolt.git", rev = "7b537d1"}
 
 [[bin]]
 name = "opusctl"
