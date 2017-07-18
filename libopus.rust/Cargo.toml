@@ -4,4 +4,17 @@ version = "0.1.0"
 authors = ["Lucian Carata <lc525@cam.ac.uk>",
            "Thomas Bytheway <tb403@cam.ac.uk>"]
 
+[lib]
+name = "opus"
+path = "src/lib.rs"
+crate-type = ["rlib", "dylib"]
+
 [dependencies]
+futures = "*"
+futures-cpupool = "*"
+tokio-io = "*"
+tokio-core = "*"
+
+[[bin]]
+name = "opusctl"
+path = "src/bin.rs"
