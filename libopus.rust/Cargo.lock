@@ -4,6 +4,8 @@ version = "0.1.0"
 dependencies = [
  "futures 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neo4j 0.1.0 (git+https://github.com/technige/rusty-bolt.git?rev=7b537d1)",
+ "packstream 0.1.0 (git+https://github.com/technige/rusty-bolt.git?rev=7b537d1)",
  "rusty-cheddar 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-core 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-io 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -129,6 +131,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "neo4j"
+version = "0.1.0"
+source = "git+https://github.com/technige/rusty-bolt.git?rev=7b537d1#7b537d1b017a8e9f497b91a888f6d220da6d5375"
+dependencies = [
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "packstream 0.1.0 (git+https://github.com/technige/rusty-bolt.git?rev=7b537d1)",
+]
+
+[[package]]
 name = "net2"
 version = "0.2.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -147,6 +158,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.26 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "packstream"
+version = "0.1.0"
+source = "git+https://github.com/technige/rusty-bolt.git?rev=7b537d1#7b537d1b017a8e9f497b91a888f6d220da6d5375"
 
 [[package]]
 name = "rustc-serialize"
@@ -279,8 +295,10 @@ dependencies = [
 "checksum log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "880f77541efa6e5cc74e76910c9884d9859683118839d6a1dc3b11e63512565b"
 "checksum mio 0.6.9 (registry+https://github.com/rust-lang/crates.io-index)" = "9e965267d4d58496fc4f740e9861118367f13570cadf66316ed2c3f2f14d87c7"
 "checksum miow 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8c1f2f3b1cf331de6896aabf6e9d55dca90356cc9960cca7eaaf408a355ae919"
+"checksum neo4j 0.1.0 (git+https://github.com/technige/rusty-bolt.git?rev=7b537d1)" = "<none>"
 "checksum net2 0.2.30 (registry+https://github.com/rust-lang/crates.io-index)" = "94101fd932816f97eb9a5116f6c1a11511a1fed7db21c5ccd823b2dc11abf566"
 "checksum num_cpus 1.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "aec53c34f2d0247c5ca5d32cca1478762f301740468ee9ee6dcb7a0dd7a0c584"
+"checksum packstream 0.1.0 (git+https://github.com/technige/rusty-bolt.git?rev=7b537d1)" = "<none>"
 "checksum rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)" = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda"
 "checksum rusty-cheddar 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8dc010f306531b5df42e62017cc989aef798d6d5d0f1c68bfaa92b69809d2aac"
 "checksum scoped-tls 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f417c22df063e9450888a7561788e9bd46d3bb3c1466435b4eccb903807f147d"

@@ -1,3 +1,6 @@
+extern crate neo4j;
+extern crate packstream;
+
 use std::mem::transmute;
 
 #[repr(C)]
@@ -55,19 +58,22 @@ pub extern fn opus_cleanup(hdl: *mut OpusHdl) {
 }
 
 
-mod ingest {
+mod ingest {}
+
+pub struct Process {
+    db_id: u64,
+    uuid: String,
+    cmdline: String,
+    pid: i32,
+    thin: bool,
 }
 
-mod persist {
-
-}
-
+pub mod persist;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-    }
+    fn it_works() {}
 }

@@ -15,6 +15,7 @@ futures = "*"
 futures-cpupool = "*"
 tokio-io = "*"
 tokio-core = "*"
+packstream = {git = "https://github.com/technige/rusty-bolt.git", rev = "7b537d1"}
 neo4j = {git = "https://github.com/technige/rusty-bolt.git", rev = "7b537d1"}
 
 [build-dependencies]
