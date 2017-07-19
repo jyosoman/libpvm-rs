@@ -3,11 +3,12 @@ name = "libopus"
 version = "0.1.0"
 authors = ["Lucian Carata <lc525@cam.ac.uk>",
            "Thomas Bytheway <tb403@cam.ac.uk>"]
+build = "src/build.rs"
 
 [lib]
 name = "opus"
 path = "src/lib.rs"
-crate-type = ["rlib", "dylib"]
+crate-type = ["rlib", "cdylib"]
 
 [dependencies]
 futures = "*"
@@ -15,6 +16,9 @@ futures-cpupool = "*"
 tokio-io = "*"
 tokio-core = "*"
 neo4j = {git = "https://github.com/technige/rusty-bolt.git", rev = "7b537d1"}
+
+[build-dependencies]
+rusty-cheddar = "*"
 
 [[bin]]
 name = "opusctl"
