@@ -88,11 +88,12 @@ mod tests {
     #[test]
     fn test_cypher() {
         let p = data::Process {
-            db_id: 0,
+            db_id: data::NodeID(0),
             uuid: String::from("0000-0000-0000"),
             cmdline: String::from("./foo"),
             pid: 2,
             thin: false,
+            rel: Vec::new(),
         };
         let mut cypher = CypherStream::connect("localhost:7687", "neo4j", "opus").unwrap();
         persist::persist_node(&mut cypher, &p);

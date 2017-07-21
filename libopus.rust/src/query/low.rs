@@ -18,7 +18,7 @@ impl Recoverable<Process> for Process{
                     _ => { panic!() },
                 };
                 let db_id = match props["db_id"] {
-                    Value::Integer(i) => i as u64,
+                    Value::Integer(i) => ::data::NodeID(i as u64),
                     _ => { panic!() },
                 };
                 let cmdline = match props["cmdline"] {
@@ -43,6 +43,7 @@ impl Recoverable<Process> for Process{
                     uuid: uuid,
                     pid: pid,
                     thin: thin,
+                    rel: Vec::new(),
                 }
             },
             _ => { panic!() },

@@ -12,7 +12,7 @@ pub trait Persistable {
 impl Persistable for Process {
     fn get_props(&self) -> HashMap<&str, Value> {
         let mut props = HashMap::new();
-        props.insert("db_id", self.db_id.from());
+        props.insert("db_id", self.db_id.0.from());
         props.insert("uuid", self.uuid.from());
         props.insert("cmdline", self.cmdline.from());
         props.insert("pid", self.pid.from());
