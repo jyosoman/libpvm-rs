@@ -2,40 +2,40 @@ use std::collections::{HashMap, VecDeque};
 
 use packstream::values::{Data, Value, ValueCast};
 use neo4j::cypher::CypherStream;
-use ::data::Process;
+use data::Process;
 
 pub trait Recoverable<T> {
     fn from_node(rec: Value) -> T;
 }
 
-impl Recoverable<Process> for Process{
-    fn from_node(rec: Value) -> Process{
+impl Recoverable<Process> for Process {
+    fn from_node(rec: Value) -> Process {
         match rec {
-            Value::Structure{signature, fields} => {
+            Value::Structure { signature, fields } => {
                 assert!(signature == 0x4E);
                 let props = match fields[2] {
                     Value::Map(ref m) => m,
-                    _ => { panic!() },
+                    _ => panic!(),
                 };
                 let db_id = match props["db_id"] {
                     Value::Integer(i) => ::data::NodeID(i as u64),
-                    _ => { panic!() },
+                    _ => panic!(),
                 };
                 let cmdline = match props["cmdline"] {
                     Value::String(ref s) => s.clone(),
-                    _ => { panic!() },
+                    _ => panic!(),
                 };
                 let uuid = match props["uuid"] {
                     Value::String(ref s) => s.clone(),
-                    _ => { panic!() },
+                    _ => panic!(),
                 };
                 let pid = match props["pid"] {
                     Value::Integer(i) => i as i32,
-                    _ => { panic!() },
+                    _ => panic!(),
                 };
                 let thin = match props["thin"] {
                     Value::Boolean(b) => b,
-                    _ => { panic!() },
+                    _ => panic!(),
                 };
                 Process {
                     db_id: db_id,
@@ -45,8 +45,8 @@ impl Recoverable<Process> for Process{
                     thin: thin,
                     rel: Vec::new(),
                 }
-            },
-            _ => { panic!() },
+            }
+            _ => panic!(),
         }
     }
 }
@@ -64,7 +64,7 @@ pub fn nodes_by_uuid(cypher: &mut CypherStream, uuid: &str) -> Vec<Process> {
     let _ = cypher.fetch_summary(&result);
 
     let mut ret = Vec::with_capacity(records.len());
-    for rec in records.drain(..){
+    for rec in records.drain(..) {
         match rec {
             Data::Record(mut v) => ret.push(Process::from_node(v.remove(0))),
         }
