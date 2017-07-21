@@ -21,13 +21,6 @@ impl Persistable for Process {
     }
 }
 
-pub fn connect(addr: &str, user: &str, pass: &str) -> Result<CypherStream, &'static str> {
-    match CypherStream::connect(addr, user, pass) {
-        Ok(x) => Ok(x),
-        Err(_) => Err("Connection to database failed."),
-    }
-}
-
 pub fn persist_node<T: Persistable>(
     cypher: &mut CypherStream,
     node: &T,

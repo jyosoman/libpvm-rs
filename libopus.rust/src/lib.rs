@@ -72,6 +72,7 @@ pub extern "C" fn opus_cleanup(hdl: *mut OpusHdl) {
 
 mod ingest {}
 
+#[derive(Debug)]
 pub struct Process {
     db_id: u64,
     uuid: String,
@@ -81,11 +82,29 @@ pub struct Process {
 }
 
 pub mod persist;
+pub mod query;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::query::low;
+    use neo4j::cypher::CypherStream;
 
     #[test]
     fn it_works() {}
+
+    #[test]
+    fn test_cypher() {
+        let p = Process {
+            db_id: 0,
+            uuid: String::from("0000-0000-0000"),
+            cmdline: String::from("./foo"),
+            pid: 2,
+            thin: false,
+        };
+        let mut cypher = CypherStream::connect("localhost:7687", "neo4j", "opus").unwrap();
+        persist::persist_node(&mut cypher, &p);
+        let foo = low::nodes_by_uuid(&mut cypher, "0000-0000-0000");
+        println!("{:?}", foo);
+    }
 }
