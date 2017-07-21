@@ -2,7 +2,7 @@ use std::collections::{HashMap, VecDeque};
 
 use packstream::values::{Data, Value, ValueCast};
 use neo4j::cypher::CypherStream;
-use Process;
+use ::data::Process;
 
 pub trait Recoverable<T> {
     fn from_node(rec: Value) -> T;

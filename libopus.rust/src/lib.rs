@@ -72,15 +72,7 @@ pub extern "C" fn opus_cleanup(hdl: *mut OpusHdl) {
 
 mod ingest {}
 
-#[derive(Debug)]
-pub struct Process {
-    db_id: u64,
-    uuid: String,
-    cmdline: String,
-    pid: i32,
-    thin: bool,
-}
-
+pub mod data;
 pub mod persist;
 pub mod query;
 
@@ -95,7 +87,7 @@ mod tests {
 
     #[test]
     fn test_cypher() {
-        let p = Process {
+        let p = data::Process {
             db_id: 0,
             uuid: String::from("0000-0000-0000"),
             cmdline: String::from("./foo"),

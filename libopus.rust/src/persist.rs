@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use neo4j::cypher::CypherStream;
 use packstream::values::{Value, ValueCast};
 
-use Process;
+use ::data::Process;
 
 pub trait Persistable {
     fn get_props(&self) -> HashMap<&str, Value>;
