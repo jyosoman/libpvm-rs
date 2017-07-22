@@ -8,6 +8,7 @@ pub mod c_api;
 pub mod data;
 pub mod persist;
 pub mod query;
+pub mod value_as;
 
 #[cfg(test)]
 mod tests {
