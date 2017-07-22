@@ -18,14 +18,8 @@ impl Node {
             Value::Structure { signature, fields } => {
                 assert!(signature == 0x4E);
                 assert!(fields.len() == 3);
-                let id = match fields[0] {
-                    Value::Integer(ref i) => i,
-                    _ => panic!(),
-                };
-                let labs = match fields[1] {
-                    Value::List(ref l) => l,
-                    _ => panic!(),
-                };
+                let id = fields[0].as_i64().unwrap();
+                let labs = fields[1].as_vec_ref().unwrap();
                 assert!(labs.len() == 1);
                 let props = match fields[2] {
                     Value::Map(ref m) => m,
@@ -75,31 +69,21 @@ impl ProcessNode {
     }
 
     pub fn from_props(props: &HashMap<String, Value>) -> Result<ProcessNode, &'static str> {
-        let db_id = ::data::NodeID(props
-            .get("db_id")
-            .ok_or("Missing db_id property")?
-            .as_u64()
-            .ok_or("db_id property is not an Integer")?);
-        let cmdline = props
-            .get("cmdline")
-            .ok_or("Missing cmdline property")?
-            .as_string()
-            .ok_or("cmdline property is not a String")?;
-        let uuid = props
-            .get("uuid")
-            .ok_or("Missing uuid property")?
-            .as_string()
-            .ok_or("uuid property is not a String")?;
-        let pid = props
-            .get("pid")
-            .ok_or("Missing pid property")?
-            .as_i32()
-            .ok_or("pid property is not an Integer")?;
-        let thin = props
-            .get("thin")
-            .ok_or("Missing thin property")?
-            .as_bool()
-            .ok_or("thin property is not a bool")?;
+        let db_id = ::data::NodeID(props.get("db_id").and_then(Value::as_u64).ok_or(
+            "db_id property is missing or not an Integer",
+        )?);
+        let cmdline = props.get("cmdline").and_then(Value::as_string).ok_or(
+            "cmdline property is missing or not a String",
+        )?;
+        let uuid = props.get("uuid").and_then(Value::as_string).ok_or(
+            "uuid property is missing or not a String",
+        )?;
+        let pid = props.get("pid").and_then(Value::as_i32).ok_or(
+            "pid property is missing or not an Integer",
+        )?;
+        let thin = props.get("thin").and_then(Value::as_bool).ok_or(
+            "thin property is missing or not a bool",
+        )?;
         Ok(ProcessNode {
             db_id: db_id,
             cmdline: cmdline,
