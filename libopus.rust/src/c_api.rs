@@ -3,6 +3,7 @@ extern crate libc;
 use std::ffi::{CStr, CString};
 use std::str::Utf8Error;
 use std::ptr;
+use std::os::unix::io::RawFd;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -80,14 +81,10 @@ pub extern "C" fn print_cfg(hdl: *const OpusHdl) {
 }
 
 #[no_mangle]
-pub extern "C" fn process_event(hdl: *mut OpusHdl, event: *const libc::c_char) {
+pub extern "C" fn process_events(hdl: *mut OpusHdl, fd: libc::c_int ) {
     let ref mut hdl = unsafe { &mut *hdl }.0;
     let ref user = hdl.cfg.db_user;
-    let event = str_from_c_char(event);
-    match event {
-        Ok(slice) => println!("User {} Processing event: {}", user, slice),
-        Err(e) => println!("Error parsing string {}", e),
-    }
+    println!("{}", user);
 }
 
 #[no_mangle]
