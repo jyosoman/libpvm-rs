@@ -19,7 +19,8 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 all: rust copususer
 
 test: rust copususer
-	cargo test || (cd build && ./copususer)
+	cargo test
+	(cd build && ./copususer)
 
 rust:
 	@cargo build && cp $(LDIR)/libopus.so $(ODIR)
