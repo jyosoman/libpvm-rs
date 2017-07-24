@@ -33,7 +33,7 @@ copususer: $(OBJ)
 	gcc -L$(LDIR) -o $(ODIR)/$@ $^ $(CFLAGS) $(LIBS)
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
+	rm -f $(ODIR)/* *~ $(LDIR)/libopus.* $(LDIR)/opusctl*
 
 
 %:
