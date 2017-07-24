@@ -1,7 +1,6 @@
 extern crate libc;
 
-use std::ffi::{CStr, CString};
-use std::str::Utf8Error;
+use std::ffi::{CStr};
 use std::ptr;
 use std::os::unix::io::RawFd;
 
@@ -24,7 +23,7 @@ pub struct Config {
     cfg_mode: CfgMode,
     db_user: *mut libc::c_char,
     db_password: *mut libc::c_char,
-    cfg_detail: *mut AdvancedConfig,
+    cfg_detail: *const AdvancedConfig,
 }
 
 #[derive(Debug)]
@@ -43,25 +42,23 @@ pub struct LibOpus {
 #[repr(C)]
 pub struct OpusHdl(LibOpus);
 
-fn str_from_c_char<'a>(val: *const libc::c_char) -> Result<&'a str, Utf8Error> {
-    unsafe { CStr::from_ptr(val).to_str() }
-}
 
 #[no_mangle]
 pub extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
+    let user_b = unsafe { CStr::from_ptr(cfg.db_user).to_bytes() };
+    let password_b = unsafe { CStr::from_ptr(cfg.db_password).to_bytes() };
+    let mut user_ownd: Vec<u8> = vec![0; user_b.len()];
+    let mut passwd_ownd: Vec<u8> = vec![0; password_b.len()];
+    user_ownd.copy_from_slice(&user_b);
+    passwd_ownd.copy_from_slice(&password_b);
+
     let hdl = Box::new(OpusHdl(LibOpus {
         cfg: RConfig {
             cfg_mode: cfg.cfg_mode,
-            db_user: unsafe {
-                CString::from_raw(cfg.db_user)
-                    .into_string()
-                    .unwrap_or(String::from("neo4j"))
-            },
-            db_password: unsafe {
-                CString::from_raw(cfg.db_password)
-                    .into_string()
-                    .unwrap_or(String::from("opus"))
-            },
+            db_user: String::from_utf8(user_ownd)
+                .unwrap_or(String::from("neo4j")),
+            db_password: String::from_utf8(passwd_ownd)
+                .unwrap_or(String::from("opus")),
             cfg_detail: if cfg.cfg_detail.is_null() {
                 Option::None
             } else {
@@ -75,19 +72,20 @@ pub extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
 #[no_mangle]
 pub extern "C" fn print_cfg(hdl: *const OpusHdl) {
     let ref hdl = unsafe { &*hdl }.0;
-    println!("LibOpus Config {:?}", hdl.cfg);
+    println!("LibOpus {:?}", hdl.cfg);
 }
 
 #[no_mangle]
 pub extern "C" fn process_events(hdl: *mut OpusHdl, fd: libc::c_int ) {
     let ref mut hdl = unsafe { &mut *hdl }.0;
     let ref user = hdl.cfg.db_user;
-    println!("{}", user);
+    println!("DB user: {}", user);
 }
 
 #[no_mangle]
 pub extern "C" fn opus_cleanup(hdl: *mut OpusHdl) {
     unsafe {
         drop(Box::from_raw(hdl));
+        println!("Cleaning up..");
     }
 }
