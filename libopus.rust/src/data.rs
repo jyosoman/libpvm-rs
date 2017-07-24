@@ -13,30 +13,30 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn from_value(rec: Value) -> Node {
+    pub fn from_value(rec: Value) -> Result<Node, &'static str> {
         match rec {
             Value::Structure { signature, fields } => {
-                assert!(signature == 0x4E);
-                assert!(fields.len() == 3);
+                assert_eq!(signature, 0x4E);
+                assert_eq!(fields.len(), 3);
                 let id = fields[0].as_i64().unwrap();
                 let labs = fields[1].as_vec_ref().unwrap();
-                assert!(labs.len() == 1);
+                assert_eq!(labs.len(), 1);
+                let label = labs[0].as_string().unwrap();
                 let props = match fields[2] {
                     Value::Map(ref m) => m,
                     _ => panic!(),
                 };
-                match labs[0] {
-                    Value::String(ref s) => {
-                        if s == "Process" {
-                            Node::Process(ProcessNode::from_props(props).unwrap())
-                        } else {
-                            panic!()
+                match &label[..] {
+                    "Process" => {
+                        match ProcessNode::from_props(props) {
+                            Ok(p) => Ok(Node::Process(p)),
+                            Err(_) => Err("Failed to parse node from properties"),
                         }
                     }
-                    _ => panic!(),
+                    _ => Err("Unrecognised node label"),
                 }
             }
-            _ => panic!(),
+            _ => Err("Is not a node value."),
         }
     }
 

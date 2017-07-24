@@ -46,8 +46,8 @@ impl CastValue for Value {
     }
 
     fn as_vec_ref(&self) -> Option<&Vec<Value>> {
-        match self {
-            &Value::List(ref l) => Some(l),
+        match *self {
+            Value::List(ref l) => Some(l),
             _ => None,
         }
     }

@@ -21,7 +21,7 @@ pub fn nodes_by_uuid(cypher: &mut CypherStream, uuid: &str) -> Vec<Node> {
     let mut ret = Vec::with_capacity(records.len());
     for rec in records.drain(..) {
         match rec {
-            Data::Record(mut v) => ret.push(Node::from_value(v.remove(0))),
+            Data::Record(mut v) => ret.push(Node::from_value(v.remove(0)).unwrap()),
         }
     }
     ret
