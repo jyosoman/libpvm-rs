@@ -2,7 +2,7 @@ BUILD_DIR := build
 
 .PHONY: all test rust clean
 
-IDIR=target/include
+IDIR=src/include
 ODIR=build
 LDIR=target/debug
 LIBS=-lopus
