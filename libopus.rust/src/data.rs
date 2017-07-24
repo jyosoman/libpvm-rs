@@ -69,27 +69,27 @@ impl ProcessNode {
     }
 
     pub fn from_props(props: &HashMap<String, Value>) -> Result<ProcessNode, &'static str> {
-        let db_id = ::data::NodeID(props.get("db_id").and_then(Value::as_u64).ok_or(
-            "db_id property is missing or not an Integer",
-        )?);
-        let cmdline = props.get("cmdline").and_then(Value::as_string).ok_or(
-            "cmdline property is missing or not a String",
-        )?;
-        let uuid = props.get("uuid").and_then(Value::as_string).ok_or(
-            "uuid property is missing or not a String",
-        )?;
-        let pid = props.get("pid").and_then(Value::as_i32).ok_or(
-            "pid property is missing or not an Integer",
-        )?;
-        let thin = props.get("thin").and_then(Value::as_bool).ok_or(
-            "thin property is missing or not a bool",
-        )?;
         Ok(ProcessNode {
-            db_id: db_id,
-            cmdline: cmdline,
-            uuid: uuid,
-            pid: pid,
-            thin: thin,
+            db_id: ::data::NodeID(props
+                .get("db_id")
+                .and_then(Value::as_u64)
+                .ok_or("db_id property is missing or not an Integer")?),
+            cmdline: props
+                .get("cmdline")
+                .and_then(Value::as_string)
+                .ok_or("cmdline property is missing or not a String")?,
+            uuid: props
+                .get("uuid")
+                .and_then(Value::as_string)
+                .ok_or("uuid property is missing or not a String")?,
+            pid: props
+                .get("pid")
+                .and_then(Value::as_i32)
+                .ok_or("pid property is missing or not an Integer")?,
+            thin: props
+                .get("thin")
+                .and_then(Value::as_bool)
+                .ok_or("thin property is missing or not a bool")?,
             rel: Vec::new(),
         })
     }
