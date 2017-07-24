@@ -53,16 +53,14 @@ pub extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
         cfg: RConfig {
             cfg_mode: cfg.cfg_mode,
             db_user: unsafe {
-                CString::from_raw(cfg.db_user).into_string().unwrap_or(
-                    String::from(
-                        "neo4j",
-                    ),
-                )
+                CString::from_raw(cfg.db_user)
+                    .into_string()
+                    .unwrap_or(String::from("neo4j"))
             },
             db_password: unsafe {
-                CString::from_raw(cfg.db_password).into_string().unwrap_or(
-                    String::from("opus"),
-                )
+                CString::from_raw(cfg.db_password)
+                    .into_string()
+                    .unwrap_or(String::from("opus"))
             },
             cfg_detail: if cfg.cfg_detail.is_null() {
                 Option::None

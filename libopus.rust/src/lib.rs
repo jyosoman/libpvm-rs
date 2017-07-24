@@ -35,7 +35,7 @@ mod tests {
         let mut cypher = CypherStream::connect("localhost:7687", "neo4j", "opus").unwrap();
         let i = Instant::now();
         persist::persist_node(&mut cypher, &p);
-        println!("{:?}", (i.elapsed().subsec_nanos() as f64)/NANO);
+        println!("{:?}", (i.elapsed().subsec_nanos() as f64) / NANO);
         let foo = low::nodes_by_uuid(&mut cypher, "0000-0000-0000");
         println!("{:?}", foo);
     }
