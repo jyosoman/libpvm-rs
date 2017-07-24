@@ -19,7 +19,7 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 all: rust copususer
 
 test: rust copususer
-	cargo test
+	cargo test -- --nocapture
 	(cd build && ./copususer)
 
 rust:
