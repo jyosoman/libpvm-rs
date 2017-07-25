@@ -8,7 +8,11 @@ pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), &'stat
          SET p.uuid = {uuid}
          SET p.cmdline = {cmdline}
          SET p.pid = {pid}
-         SET p.thin = {thin}",
+         SET p.thin = {thin}
+         WITH p
+         FOREACH (ch IN {chs} |
+             MERGE (p)-[e:INF]->(q:Process {db_id: ch.id})
+             SET e.class = ch.class)",
         node.get_props(),
     );
     cypher.fetch_summary(&result);

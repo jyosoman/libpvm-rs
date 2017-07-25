@@ -7,42 +7,82 @@ use value_as::CastValue;
 #[derive(Debug)]
 pub struct NodeID(pub u64);
 
+impl ValueCast for NodeID {
+    fn from(&self) -> Value {
+        Value::Integer(self.0 as i64)
+    }
+}
+
 #[derive(Debug)]
 pub enum Node {
     Process(ProcessNode),
 }
 
 impl Node {
-    pub fn from_value(rec: Value) -> Result<Node, &'static str> {
-        match rec {
-            Value::Structure { signature, fields } => {
-                assert_eq!(signature, 0x4E);
-                assert_eq!(fields.len(), 3);
-                let id = fields[0].as_i64().unwrap();
-                let labs = fields[1].as_vec_ref().unwrap();
-                assert_eq!(labs.len(), 1);
-                let label = labs[0].as_string().unwrap();
-                let props = match fields[2] {
-                    Value::Map(ref m) => m,
-                    _ => panic!(),
-                };
-                match &label[..] {
-                    "Process" => {
-                        match ProcessNode::from_props(props) {
-                            Ok(p) => Ok(Node::Process(p)),
-                            Err(_) => Err("Failed to parse node from properties"),
-                        }
-                    }
-                    _ => Err("Unrecognised node label"),
+    pub fn from_value(node: Value, edges: Value) -> Result<Node, &'static str> {
+        let gen_n = GenNode::from_value(node).unwrap();
+        let edges = edges.as_vec().unwrap();
+        assert_eq!(gen_n.labs.len(), 1);
+        match &gen_n.labs[0][..] {
+            "Process" => {
+                match ProcessNode::from_props(gen_n.props, edges) {
+                    Ok(p) => Ok(Node::Process(p)),
+                    Err(_) => Err("Failed to parse node from properties"),
                 }
             }
-            _ => Err("Is not a node value."),
+            _ => Err("Unrecognised node label"),
         }
     }
 
     pub fn get_props(&self) -> HashMap<&str, Value> {
         match self {
             &Node::Process(ref p) => p.get_props(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct GenNode {
+    pub id: u64,
+    pub labs: Vec<String>,
+    pub props: HashMap<String, Value>,
+}
+
+impl GenNode {
+    pub fn from_value(val: Value) -> Result<GenNode, &'static str> {
+        match val {
+            Value::Structure {
+                signature,
+                mut fields,
+            } => {
+                if signature != 0x4E {
+                    return Err("Structure has incorrect signature");
+                }
+                if fields.len() != 3 {
+                    return Err("Node structure has incorrect number of fields");
+                }
+                let id = fields
+                    .remove(0)
+                    .as_int()
+                    .ok_or("id field is not an integer")?;
+                let labs = fields
+                    .remove(0)
+                    .as_vec()
+                    .ok_or("labels field is not a list")?
+                    .iter()
+                    .map(|i| i.as_string().unwrap())
+                    .collect();
+                let props = fields
+                    .remove(0)
+                    .as_map()
+                    .ok_or("properties field is not a map")?;
+                Ok(GenNode {
+                    id: id,
+                    labs: labs,
+                    props: props,
+                })
+            }
+            _ => Err("Is not a node value."),
         }
     }
 }
@@ -65,10 +105,22 @@ impl ProcessNode {
         props.insert("cmdline", self.cmdline.from());
         props.insert("pid", self.pid.from());
         props.insert("thin", self.thin.from());
+        let mut edges = Vec::new();
+        for r in self.rel.iter() {
+            edges.push(r.get_props());
+        }
+        props.insert("chs", Value::List(edges));
         props
     }
 
-    pub fn from_props(props: &HashMap<String, Value>) -> Result<ProcessNode, &'static str> {
+    pub fn from_props(
+        props: HashMap<String, Value>,
+        mut edges: Vec<Value>,
+    ) -> Result<ProcessNode, &'static str> {
+        let mut rel = Vec::new();
+        for r in edges.drain(..) {
+            rel.push(Edge::from_value(r).unwrap());
+        }
         Ok(ProcessNode {
             db_id: ::data::NodeID(props
                 .get("db_id")
@@ -90,7 +142,7 @@ impl ProcessNode {
                 .get("thin")
                 .and_then(Value::as_bool)
                 .ok_or("thin property is missing or not a bool")?,
-            rel: Vec::new(),
+            rel: rel,
         })
     }
 }
@@ -99,4 +151,47 @@ impl ProcessNode {
 pub enum Edge {
     Child(NodeID),
     Next(NodeID),
+}
+
+impl Edge {
+    pub fn get_props(&self) -> Value {
+        let mut prop = HashMap::new();
+        match self {
+            &Edge::Child(ref n) => {
+                prop.insert("id".to_string(), n.from());
+                prop.insert("class".to_string(), "child".from());
+            }
+            &Edge::Next(ref n) => {
+                prop.insert("id".to_string(), n.from());
+                prop.insert("class".to_string(), "next".from());
+            }
+        }
+        Value::Map(prop)
+    }
+
+    pub fn from_value(val: Value) -> Result<Edge, &'static str> {
+        match val {
+            Value::Structure {
+                signature,
+                mut fields,
+            } => {
+                assert_eq!(signature, 0x52);
+                let dest_id = NodeID(fields.remove(2).as_int().unwrap());
+                let class = fields
+                    .remove(3)
+                    .as_map()
+                    .unwrap()
+                    .get("class")
+                    .unwrap()
+                    .as_string()
+                    .unwrap();
+                match &class[..] {
+                    "child" => Ok(Edge::Child(dest_id)),
+                    "next" => Ok(Edge::Next(dest_id)),
+                    _ => Err("Invalid edge class"),
+                }
+            }
+            _ => Err("Value is not an edge"),
+        }
+    }
 }

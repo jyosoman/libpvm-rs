@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::collections::HashMap;
 
 use packstream::values::Value;
 
@@ -6,13 +7,14 @@ pub trait CastValue {
     fn as_string(&self) -> Option<String>;
     fn as_int<T: TryFrom<i64>>(&self) -> Option<T>;
     fn as_bool(&self) -> Option<bool>;
-    fn as_vec_ref(&self) -> Option<&Vec<Value>>;
+    fn as_vec(self) -> Option<Vec<Value>>;
+    fn as_map(self) -> Option<HashMap<String, Value>>;
 }
 
 impl CastValue for Value {
     fn as_string(&self) -> Option<String> {
-        match self {
-            &Value::String(ref s) => Some(s.clone()),
+        match *self {
+            Value::String(ref s) => Some(s.clone()),
             _ => None,
         }
     }
@@ -25,15 +27,22 @@ impl CastValue for Value {
     }
 
     fn as_bool(&self) -> Option<bool> {
-        match self {
-            &Value::Boolean(b) => Some(b),
+        match *self {
+            Value::Boolean(b) => Some(b),
             _ => None,
         }
     }
 
-    fn as_vec_ref(&self) -> Option<&Vec<Value>> {
-        match *self {
-            Value::List(ref l) => Some(l),
+    fn as_vec(self) -> Option<Vec<Value>> {
+        match self {
+            Value::List(l) => Some(l),
+            _ => None,
+        }
+    }
+
+    fn as_map(self) -> Option<HashMap<String, Value>> {
+        match self {
+            Value::Map(m) => Some(m),
             _ => None,
         }
     }
