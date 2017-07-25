@@ -35,8 +35,8 @@ impl Node {
     }
 
     pub fn get_props(&self) -> HashMap<&str, Value> {
-        match self {
-            &Node::Process(ref p) => p.get_props(),
+        match *self {
+            Node::Process(ref p) => p.get_props(),
         }
     }
 }
@@ -106,7 +106,7 @@ impl ProcessNode {
         props.insert("pid", self.pid.from());
         props.insert("thin", self.thin.from());
         let mut edges = Vec::new();
-        for r in self.rel.iter() {
+        for r in &self.rel {
             edges.push(r.get_props());
         }
         props.insert("chs", Value::List(edges));
@@ -156,12 +156,12 @@ pub enum Edge {
 impl Edge {
     pub fn get_props(&self) -> Value {
         let mut prop = HashMap::new();
-        match self {
-            &Edge::Child(ref n) => {
+        match *self {
+            Edge::Child(ref n) => {
                 prop.insert("id".to_string(), n.from());
                 prop.insert("class".to_string(), "child".from());
             }
-            &Edge::Next(ref n) => {
+            Edge::Next(ref n) => {
                 prop.insert("id".to_string(), n.from());
                 prop.insert("class".to_string(), "next".from());
             }
@@ -177,12 +177,7 @@ impl Edge {
             } => {
                 assert_eq!(signature, 0x52);
                 let dest_id = NodeID(fields.remove(2).as_int().unwrap());
-                let class = fields
-                    .remove(3)
-                    .as_map()
-                    .unwrap()
-                    .get("class")
-                    .unwrap()
+                let class = fields.remove(3).as_map().unwrap()["class"]
                     .as_string()
                     .unwrap();
                 match &class[..] {
