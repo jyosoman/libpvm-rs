@@ -11,7 +11,8 @@ pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), &'stat
          SET p.thin = {thin}
          WITH p
          FOREACH (ch IN {chs} |
-             MERGE (p)-[e:INF]->(q:Process {db_id: ch.id})
+             MERGE (q:Process {db_id: ch.id})
+             MERGE (p)-[e:INF]->(q)
              SET e.class = ch.class)",
         node.get_props(),
     );
