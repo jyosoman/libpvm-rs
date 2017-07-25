@@ -16,8 +16,8 @@ tokio-io = "*"
 tokio-core = "*"
 serde_json = "*"
 libc = "*"
-packstream = {git = "https://github.com/technige/rusty-bolt.git", rev = "7b537d1"}
-neo4j = {git = "https://github.com/technige/rusty-bolt.git", rev = "7b537d1"}
+packstream = {git = "https://github.com/HarkonenBade/rusty-bolt.git", branch = "master"}
+neo4j = {git = "https://github.com/HarkonenBade/rusty-bolt.git", branch = "master"}
 
 
 [[bin]]
