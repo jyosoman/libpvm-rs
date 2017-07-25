@@ -1,3 +1,5 @@
+#![feature(try_from)]
+
 extern crate neo4j;
 extern crate packstream;
 

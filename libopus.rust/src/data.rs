@@ -72,7 +72,7 @@ impl ProcessNode {
         Ok(ProcessNode {
             db_id: ::data::NodeID(props
                 .get("db_id")
-                .and_then(Value::as_u64)
+                .and_then(Value::as_int)
                 .ok_or("db_id property is missing or not an Integer")?),
             cmdline: props
                 .get("cmdline")
@@ -84,7 +84,7 @@ impl ProcessNode {
                 .ok_or("uuid property is missing or not a String")?,
             pid: props
                 .get("pid")
-                .and_then(Value::as_i32)
+                .and_then(Value::as_int)
                 .ok_or("pid property is missing or not an Integer")?,
             thin: props
                 .get("thin")
