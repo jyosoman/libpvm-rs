@@ -1,6 +1,6 @@
 extern crate libc;
 
-use std::ffi::{CStr};
+use std::ffi::CStr;
 use std::ptr;
 use std::os::unix::io::RawFd;
 
@@ -55,10 +55,8 @@ pub extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
     let hdl = Box::new(OpusHdl(LibOpus {
         cfg: RConfig {
             cfg_mode: cfg.cfg_mode,
-            db_user: String::from_utf8(user_ownd)
-                .unwrap_or(String::from("neo4j")),
-            db_password: String::from_utf8(passwd_ownd)
-                .unwrap_or(String::from("opus")),
+            db_user: String::from_utf8(user_ownd).unwrap_or(String::from("neo4j")),
+            db_password: String::from_utf8(passwd_ownd).unwrap_or(String::from("opus")),
             cfg_detail: if cfg.cfg_detail.is_null() {
                 Option::None
             } else {
@@ -76,7 +74,7 @@ pub extern "C" fn print_cfg(hdl: *const OpusHdl) {
 }
 
 #[no_mangle]
-pub extern "C" fn process_events(hdl: *mut OpusHdl, fd: libc::c_int ) {
+pub extern "C" fn process_events(hdl: *mut OpusHdl, fd: libc::c_int) {
     let ref mut hdl = unsafe { &mut *hdl }.0;
     let ref user = hdl.cfg.db_user;
     println!("DB user: {}", user);
