@@ -14,8 +14,8 @@ SET p.pid = {pid}
 SET p.thin = {thin}
 WITH p
 FOREACH (ch IN {chs} |
-    MERGE (p)-[e]->(q:Process {db_id: {ch.id}})
-    SET e.class = ch.class
+    MERGE (p)-[e]->(q:Process {db_id: ch.id})
+    SET e.class = ch.class)
 ```
 
 # Reading Queries
