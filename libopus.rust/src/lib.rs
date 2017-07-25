@@ -32,10 +32,19 @@ mod tests {
             cmdline: String::from("./foo"),
             pid: 2,
             thin: false,
+            rel: vec![data::Edge::Child(data::NodeID(1))],
+        });
+        let q = data::Node::Process(data::ProcessNode {
+            db_id: data::NodeID(1),
+            uuid: String::from("0000-0000-0000"),
+            cmdline: String::from("./bar"),
+            pid: 1,
+            thin: false,
             rel: Vec::new(),
         });
         let mut cypher = CypherStream::connect("localhost:7687", "neo4j", "opus").unwrap();
         let i = Instant::now();
+        persist::persist_node(&mut cypher, &q);
         persist::persist_node(&mut cypher, &p);
         println!("{:?}", (i.elapsed().subsec_nanos() as f64) / NANO);
         let foo = low::nodes_by_uuid(&mut cypher, "0000-0000-0000");
