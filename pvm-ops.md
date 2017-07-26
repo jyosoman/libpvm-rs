@@ -37,13 +37,19 @@ else:
 ```
 
 ```
-MATCH (p:Process {uuid: {uuid}, thin: true})
+MATCH (p:Process {uuid: {uuid},
+                  thin: true})
 WHERE NOT (p)-[:INF {class: 'next'}]->()
 SET p.cmdline = {cmdline}
 SET p.thin = false
 UNION
-MATCH (p:Process {uuid: {uuid}, thin: false})
-CREATE (q:Process {uuid: {uuid}, pid: {pid}, cmdline: {cmdline}, thin: false})
+MATCH (p:Process {uuid: {uuid},
+                  thin: false})
+WHERE NOT (p)-[:INF {class: 'next'}]->()
+CREATE (q:Process {uuid: {uuid},
+                   pid: {pid},
+                   cmdline: {cmdline},
+                   thin: false})
 CREATE (p)-[:INF {class: 'next'}]->(q)
 ```
 
@@ -61,6 +67,9 @@ par.children.add(child)
 ```
 MATCH (p:Process {uuid: {par_uuid}})
 WHERE NOT (p)-[:INF {class: 'next'}]->()
-CREATE (c:Process {uuid: {ch_uuid}, pid: {pid}, cmdline: p.cmdline, thin: true})
+CREATE (c:Process {uuid: {ch_uuid},
+                   pid: {pid},
+                   cmdline: p.cmdline,
+                   thin: true})
 CREATE (p)-[:INF {class: 'child'}]->(c)
 ```
