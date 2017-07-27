@@ -46,8 +46,8 @@ UNION
 MATCH (p:Process {uuid: {uuid},
                   thin: false})
 WHERE NOT (p)-[:INF {class: 'next'}]->()
-CREATE (q:Process {uuid: {uuid},
-                   pid: {pid},
+CREATE (q:Process {uuid: p.uuid,
+                   pid: p.pid,
                    cmdline: {cmdline},
                    thin: false})
 CREATE (p)-[:INF {class: 'next'}]->(q)
