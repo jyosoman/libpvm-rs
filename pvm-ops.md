@@ -68,7 +68,7 @@ par.children.add(child)
 MATCH (p:Process {uuid: {par_uuid}})
 WHERE NOT (p)-[:INF {class: 'next'}]->()
 CREATE (c:Process {uuid: {ch_uuid},
-                   pid: {pid},
+                   pid: {ch_pid},
                    cmdline: p.cmdline,
                    thin: true})
 CREATE (p)-[:INF {class: 'child'}]->(c)
