@@ -24,6 +24,7 @@ typedef struct AdvancedConfig {
 
 typedef struct Config {
 	CfgMode cfg_mode;
+	char* db_server;
 	char* db_user;
 	char* db_password;
 	AdvancedConfig* cfg_detail;
