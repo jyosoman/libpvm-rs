@@ -20,16 +20,13 @@ pub enum Node {
 
 impl Node {
     pub fn from_value(node: Value, edges: Value) -> Result<Node, &'static str> {
-        let gen_n = GenNode::from_value(node).unwrap();
-        let edges = edges.as_vec().unwrap();
-        assert_eq!(gen_n.labs.len(), 1);
+        let gen_n = GenNode::from_value(node)?;
+        let edges = edges.as_vec().ok_or("Edges list not a vector")?;
+        if gen_n.labs.len() != 1 {
+            return Err("Node has more than one label");
+        }
         match &gen_n.labs[0][..] {
-            "Process" => {
-                match ProcessNode::from_props(gen_n.props, edges) {
-                    Ok(p) => Ok(Node::Process(p)),
-                    Err(_) => Err("Failed to parse node from properties"),
-                }
-            }
+            "Process" => Ok(Node::Process(ProcessNode::from_props(gen_n.props, edges)?)),
             _ => Err("Unrecognised node label"),
         }
     }
@@ -117,7 +114,7 @@ impl ProcessNode {
     ) -> Result<ProcessNode, &'static str> {
         let mut rel = Vec::new();
         for r in edges.drain(..) {
-            rel.push(Edge::from_value(r).unwrap());
+            rel.push(Edge::from_value(r)?);
         }
         Ok(ProcessNode {
             db_id: ::data::NodeID(props.get("db_id").and_then(Value::as_int).ok_or(
@@ -169,10 +166,19 @@ impl Edge {
                 mut fields,
             } => {
                 assert_eq!(signature, 0x52);
-                let dest_id = NodeID(fields.remove(2).as_int().unwrap());
-                let class = fields.remove(3).as_map().unwrap()["class"]
-                    .as_string()
-                    .unwrap();
+                assert_eq!(fields.len(), 5);
+                let dest_id = NodeID(fields
+                    .remove(2)
+                    .as_int()
+                    .ok_or("DestID field is not an Integer")?);
+                let class = fields
+                    .remove(3)
+                    .as_map()
+                    .and_then(|mut i| i.remove("class"))
+                    .and_then(|i| (&i).as_string())
+                    .ok_or(
+                        "Edge class property missing, not a string or properties field not a map",
+                    )?;
                 match &class[..] {
                     "child" => Ok(Edge::Child(dest_id)),
                     "next" => Ok(Edge::Next(dest_id)),
