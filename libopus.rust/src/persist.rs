@@ -48,15 +48,20 @@ pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
     }
 }
 
-pub fn execute(cypher: &mut CypherStream, tr: Transact) -> Result<(), &'static str> {
-    match tr {
-        Transact::ProcCheck { uuid, pid, cmdline } => {
-            proc_check(cypher, &uuid[..], pid, &cmdline[..])
-        }
-        Transact::Exec { uuid, cmdline } => run_exec(cypher, &uuid[..], &cmdline[..]),
+pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), &'static str> {
+    match *tr {
+        Transact::ProcCheck {
+            ref uuid,
+            pid,
+            ref cmdline,
+        } => proc_check(cypher, &uuid[..], pid, &cmdline[..]),
+        Transact::Exec {
+            ref uuid,
+            ref cmdline,
+        } => run_exec(cypher, &uuid[..], &cmdline[..]),
         Transact::Fork {
-            par_uuid,
-            ch_uuid,
+            ref par_uuid,
+            ref ch_uuid,
             ch_pid,
         } => run_fork(cypher, &par_uuid[..], &ch_uuid[..], ch_pid),
     }
