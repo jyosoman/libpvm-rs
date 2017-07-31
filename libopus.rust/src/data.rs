@@ -167,10 +167,9 @@ impl Edge {
             } => {
                 assert_eq!(signature, 0x52);
                 assert_eq!(fields.len(), 5);
-                let dest_id = NodeID(fields
-                    .remove(2)
-                    .as_int()
-                    .ok_or("DestID field is not an Integer")?);
+                let dest_id = NodeID(fields.remove(2).as_int().ok_or(
+                    "DestID field is not an Integer",
+                )?);
                 let class = fields
                     .remove(3)
                     .as_map()

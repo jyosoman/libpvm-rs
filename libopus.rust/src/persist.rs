@@ -6,6 +6,8 @@ use std::collections::HashMap;
 
 use data::Node;
 
+use trace::TraceEvent;
+
 pub enum Transact {
     ProcCheck {
         uuid: String,
@@ -20,6 +22,31 @@ pub enum Transact {
     },
 }
 
+pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
+    match &tr.event[..] {
+        "audit:event:aur_execve" => {
+            Ok(Transact::Exec {
+                uuid: tr.subjprocuuid.clone(),
+                cmdline: tr.cmdline.ok_or("exec missing cmdline")?.clone(),
+            })
+        }
+        "audit:event:aur_fork" |
+        "audit:event:aur_vfork" => {
+            Ok(Transact::Fork {
+                par_uuid: tr.subjprocuuid.clone(),
+                ch_uuid: tr.ret_objuuid1.ok_or("fork missing ret_objuuid1")?.clone(),
+                ch_pid: tr.retval,
+            })
+        }
+        _ => {
+            Ok(Transact::ProcCheck {
+                uuid: tr.subjprocuuid.clone(),
+                pid: tr.pid,
+                cmdline: tr.exec.ok_or("other missing exec")?.clone(),
+            })
+        }
+    }
+}
 
 pub fn execute(cypher: &mut CypherStream, tr: Transact) -> Result<(), &'static str> {
     match tr {
