@@ -27,14 +27,14 @@ pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
         "audit:event:aur_execve" => {
             Ok(Transact::Exec {
                 uuid: tr.subjprocuuid.clone(),
-                cmdline: tr.cmdline.ok_or("exec missing cmdline")?.clone(),
+                cmdline: tr.cmdline.clone().ok_or("exec missing cmdline")?,
             })
         }
         "audit:event:aur_fork" |
         "audit:event:aur_vfork" => {
             Ok(Transact::Fork {
                 par_uuid: tr.subjprocuuid.clone(),
-                ch_uuid: tr.ret_objuuid1.ok_or("fork missing ret_objuuid1")?.clone(),
+                ch_uuid: tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?,
                 ch_pid: tr.retval,
             })
         }
@@ -42,7 +42,7 @@ pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
             Ok(Transact::ProcCheck {
                 uuid: tr.subjprocuuid.clone(),
                 pid: tr.pid,
-                cmdline: tr.exec.ok_or("other missing exec")?.clone(),
+                cmdline: tr.exec.clone().ok_or("other missing exec")?,
             })
         }
     }
