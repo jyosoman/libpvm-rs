@@ -22,7 +22,7 @@ pub enum Transact {
     },
 }
 
-pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
+pub fn parse_trace(tr: &TraceEvent, proc_cache: &mut HashMap<String, ()>) -> Result<Transact, &'static str> {
     match &tr.event[..] {
         "audit:event:aur_execve" => {
             Ok(Transact::Exec {
@@ -32,6 +32,7 @@ pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
         }
         "audit:event:aur_fork" |
         "audit:event:aur_vfork" => {
+            proc_cache.insert(tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?, ());
             Ok(Transact::Fork {
                 par_uuid: tr.subjprocuuid.clone(),
                 ch_uuid: tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?,
@@ -39,11 +40,16 @@ pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
             })
         }
         _ => {
-            Ok(Transact::ProcCheck {
-                uuid: tr.subjprocuuid.clone(),
-                pid: tr.pid,
-                cmdline: tr.exec.clone().ok_or("other missing exec")?,
-            })
+            if !proc_cache.contains_key(&tr.subjprocuuid) {
+                proc_cache.insert(tr.subjprocuuid.clone(), ());
+                Ok(Transact::ProcCheck {
+                    uuid: tr.subjprocuuid.clone(),
+                    pid: tr.pid,
+                    cmdline: tr.exec.clone().ok_or("other missing exec")?,
+                })
+            }else{
+                Err("Cache hit")
+            }
         }
     }
 }
