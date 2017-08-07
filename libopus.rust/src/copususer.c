@@ -16,6 +16,10 @@ int main(int argc, char** argv) {
   printf("Rust C API handle ptr: hdl(%p) \n", hdl);
 
   print_cfg(hdl);
+
+  // test to see whether rust has copied the underlying memory or still
+  // refers to C memory (the user should remain "neo4j" as far as rust
+  // is concerned)
   strcpy(user, "dummy_info");
 
   printf("File fd: %d\n", in);

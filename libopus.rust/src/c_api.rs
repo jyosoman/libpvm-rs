@@ -10,6 +10,7 @@ use std::ops::FnOnce;
 use std::os::unix::io::{RawFd, FromRawFd};
 use std::ptr;
 use std;
+use persist;
 use trace::TraceEvent;
 
 #[repr(C)]
@@ -94,11 +95,31 @@ pub unsafe extern "C" fn print_cfg(hdl: *const OpusHdl) {
 pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
     let hdl = &mut (&mut (*hdl).0);
     let stream = IOStream::from_raw_fd(fd);
-    hdl.db_conn = CypherStream::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password);
+    hdl.db_conn = CypherStream::connect(&hdl.cfg.db_server,
+                                        &hdl.cfg.db_user,
+                                        &hdl.cfg.db_password);
+    let db = match hdl.db_conn {
+        Ok(ref mut conn) =>  conn,
+        Err(ref s)  => {
+            println!("Database connection error: {}", s);
+            return;
+        }
+    };
     let evt_str = Deserializer::from_reader(stream).into_iter::<TraceEvent>();
+
     for res in evt_str {
         match res {
-            Ok(evt) => println!("{:?}", evt),
+            Ok(evt) => {
+                let tr = persist::parse_trace(&evt);
+                match tr {
+                    Ok(tr) => {
+                        persist::execute(db, &tr);
+                    },
+                    Err(perr) => {
+                        println!("PVM parsing error {}", perr);
+                    }
+                };
+            },
             Err(perr) => {
                 println!("Parsing error: {}", perr);
                 break;
