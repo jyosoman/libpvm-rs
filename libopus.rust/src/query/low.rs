@@ -13,7 +13,7 @@ pub fn nodes_by_uuid(cypher: &mut CypherStream, uuid: &str) -> Vec<Node> {
         "MATCH (n {uuid: {uuid}})
          RETURN n",
         props,
-    );
+    ).unwrap();
     let mut records: VecDeque<Data> = VecDeque::new();
     while cypher.fetch(&result, &mut records) > 0 {}
     let _ = cypher.fetch_summary(&result);

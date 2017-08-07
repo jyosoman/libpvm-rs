@@ -48,7 +48,7 @@ pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
     }
 }
 
-pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), &'static str> {
+pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
     match *tr {
         Transact::ProcCheck {
             ref uuid,
@@ -67,7 +67,7 @@ pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), &'static 
     }
 }
 
-pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), &'static str> {
+pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), String> {
     let result = cypher.run(
         "MERGE (p:Process {db_id: {db_id}})
          SET p.uuid = {uuid}
@@ -76,8 +76,13 @@ pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), &'stat
          SET p.thin = {thin}",
         node.get_props(),
     );
-    cypher.fetch_summary(&result);
-    Ok(())
+    match result {
+        Ok(res) => {
+            cypher.fetch_summary(&res);
+            Ok(())
+        },
+        Err(e) => Err(format!("{:?}", e)),
+    }
 }
 
 pub fn proc_check(
@@ -85,7 +90,7 @@ pub fn proc_check(
     uuid: &str,
     pid: i32,
     cmdline: &str,
-) -> Result<(), &'static str> {
+) -> Result<(), String> {
     let mut props = HashMap::new();
     props.insert("uuid", uuid.from());
     props.insert("pid", pid.from());
@@ -98,11 +103,16 @@ pub fn proc_check(
           ON CREATE SET p.thin = true",
         props,
     );
-    cypher.fetch_summary(&result);
-    Ok(())
+    match result {
+        Ok(res) => {
+            cypher.fetch_summary(&res);
+            Ok(())
+        },
+        Err(e) => Err(format!("{:?}", e)),
+    }
 }
 
-pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<(), &'static str> {
+pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<(), String> {
     let mut props = HashMap::new();
     props.insert("uuid", uuid.from());
     props.insert("cmdline", cmdline.from());
@@ -124,8 +134,13 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<
          CREATE (p)-[:INF {class: 'next'}]->(q)",
         props,
     );
-    cypher.fetch_summary(&result);
-    Ok(())
+    match result {
+        Ok(res) => {
+            cypher.fetch_summary(&res);
+            Ok(())
+        },
+        Err(e) => Err(format!("{:?}", e)),
+    }
 }
 
 pub fn run_fork(
@@ -133,7 +148,7 @@ pub fn run_fork(
     par_uuid: &str,
     ch_uuid: &str,
     ch_pid: i32,
-) -> Result<(), &'static str> {
+) -> Result<(), String> {
     let mut props = HashMap::new();
     props.insert("par_uuid", par_uuid.from());
     props.insert("ch_uuid", ch_uuid.from());
@@ -149,6 +164,11 @@ pub fn run_fork(
          CREATE (p)-[:INF {class: 'child'}]->(c)",
         props,
     );
-    cypher.fetch_summary(&result);
-    Ok(())
+    match result {
+        Ok(res) => {
+            cypher.fetch_summary(&res);
+            Ok(())
+        },
+        Err(e) => Err(format!("{:?}", e)),
+    }
 }
