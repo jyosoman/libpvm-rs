@@ -24,14 +24,14 @@ pub enum Transact {
 
 pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
     match &tr.event[..] {
-        "audit:event:aur_execve" => {
+        "audit:event:aue_execve" => {
             Ok(Transact::Exec {
                 uuid: tr.subjprocuuid.clone(),
                 cmdline: tr.cmdline.clone().ok_or("exec missing cmdline")?,
             })
         }
-        "audit:event:aur_fork" |
-        "audit:event:aur_vfork" => {
+        "audit:event:aue_fork" |
+        "audit:event:aue_vfork" => {
             Ok(Transact::Fork {
                 par_uuid: tr.subjprocuuid.clone(),
                 ch_uuid: tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?,
