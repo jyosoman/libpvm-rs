@@ -20,18 +20,19 @@ pub enum Transact {
         ch_uuid: String,
         ch_pid: i32,
     },
+    Noop,
 }
 
 pub fn parse_trace(tr: &TraceEvent, proc_cache: &mut HashMap<String, ()>) -> Result<Transact, &'static str> {
     match &tr.event[..] {
-        "audit:event:aue_execve" => {
+        "audit:event:aue_execve:" => {
             Ok(Transact::Exec {
                 uuid: tr.subjprocuuid.clone(),
                 cmdline: tr.cmdline.clone().ok_or("exec missing cmdline")?,
             })
         }
-        "audit:event:aue_fork" |
-        "audit:event:aue_vfork" => {
+        "audit:event:aue_fork:" |
+        "audit:event:aue_vfork:" => {
             proc_cache.insert(tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?, ());
             Ok(Transact::Fork {
                 par_uuid: tr.subjprocuuid.clone(),
@@ -48,7 +49,7 @@ pub fn parse_trace(tr: &TraceEvent, proc_cache: &mut HashMap<String, ()>) -> Res
                     cmdline: tr.exec.clone().ok_or("other missing exec")?,
                 })
             }else{
-                Err("Cache hit")
+                Ok(Transact::Noop)
             }
         }
     }
@@ -70,6 +71,7 @@ pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
             ref ch_uuid,
             ch_pid,
         } => run_fork(cypher, &par_uuid[..], &ch_uuid[..], ch_pid),
+        Transact::Noop => Ok(()),
     }
 }
 
