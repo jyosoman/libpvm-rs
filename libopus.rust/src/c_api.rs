@@ -3,7 +3,6 @@ use iostream::IOStream;
 use libc::c_char;
 use neo4j::cypher::CypherStream;
 use neo4j;
-use serde_json;
 use serde_json::Deserializer;
 use std::ffi::CStr;
 use std::ops::FnOnce;

@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![feature(i128_type)]
 
 extern crate futures_cpupool;
 extern crate libc;

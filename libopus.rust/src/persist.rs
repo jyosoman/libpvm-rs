@@ -6,19 +6,19 @@ use std::collections::HashMap;
 
 
 use data::Node;
-use trace::TraceEvent;
+use trace::{uuid5, TraceEvent};
 use invbloom::InvBloom;
 
 pub enum Transact {
     ProcCheck {
-        uuid: String,
+        uuid: uuid5,
         pid: i32,
         cmdline: String,
     },
-    Exec { uuid: String, cmdline: String },
+    Exec { uuid: uuid5, cmdline: String },
     Fork {
-        par_uuid: String,
-        ch_uuid: String,
+        par_uuid: uuid5,
+        ch_uuid: uuid5,
         ch_pid: i32,
     },
     Noop,
@@ -61,16 +61,16 @@ pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
             ref uuid,
             pid,
             ref cmdline,
-        } => proc_check(cypher, &uuid[..], pid, &cmdline[..]),
+        } => proc_check(cypher, &uuid, pid, &cmdline[..]),
         Transact::Exec {
             ref uuid,
             ref cmdline,
-        } => run_exec(cypher, &uuid[..], &cmdline[..]),
+        } => run_exec(cypher, &uuid, &cmdline[..]),
         Transact::Fork {
             ref par_uuid,
             ref ch_uuid,
             ch_pid,
-        } => run_fork(cypher, &par_uuid[..], &ch_uuid[..], ch_pid),
+        } => run_fork(cypher, &par_uuid, &ch_uuid, ch_pid),
         Transact::Noop => Ok(()),
     }
 }
@@ -95,7 +95,7 @@ pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), String
 
 pub fn proc_check(
     cypher: &mut CypherStream,
-    uuid: &str,
+    uuid: &uuid5,
     pid: i32,
     cmdline: &str,
 ) -> Result<(), String> {
@@ -120,7 +120,7 @@ pub fn proc_check(
     }
 }
 
-pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<(), String> {
+pub fn run_exec(cypher: &mut CypherStream, uuid: &uuid5, cmdline: &str) -> Result<(), String> {
     let mut props = HashMap::new();
     props.insert("uuid", uuid.from());
     props.insert("cmdline", cmdline.from());
@@ -155,8 +155,8 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<
 
 pub fn run_fork(
     cypher: &mut CypherStream,
-    par_uuid: &str,
-    ch_uuid: &str,
+    par_uuid: &uuid5,
+    ch_uuid: &uuid5,
     ch_pid: i32,
 ) -> Result<(), String> {
     let mut props = HashMap::new();
