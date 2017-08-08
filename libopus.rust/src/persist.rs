@@ -4,9 +4,10 @@ use packstream::values::ValueCast;
 
 use std::collections::HashMap;
 
-use data::Node;
 
+use data::Node;
 use trace::TraceEvent;
+use invbloom::InvBloom;
 
 pub enum Transact {
     ProcCheck {
@@ -23,7 +24,10 @@ pub enum Transact {
     Noop,
 }
 
-pub fn parse_trace(tr: &TraceEvent, proc_cache: &mut HashMap<String, ()>) -> Result<Transact, &'static str> {
+pub fn parse_trace(
+    tr: &TraceEvent,
+    proc_cache: &InvBloom,
+) -> Result<Transact, &'static str> {
     match &tr.event[..] {
         "audit:event:aue_execve:" => {
             Ok(Transact::Exec {
@@ -31,24 +35,23 @@ pub fn parse_trace(tr: &TraceEvent, proc_cache: &mut HashMap<String, ()>) -> Res
                 cmdline: tr.cmdline.clone().ok_or("exec missing cmdline")?,
             })
         }
-        "audit:event:aue_fork:" |
-        "audit:event:aue_vfork:" => {
-            proc_cache.insert(tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?, ());
+        "audit:event:aue_fork:" | "audit:event:aue_vfork:" => {
+            let ret_objuuid1 = tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?;
+            proc_cache.check(&ret_objuuid1);
             Ok(Transact::Fork {
                 par_uuid: tr.subjprocuuid.clone(),
-                ch_uuid: tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?,
+                ch_uuid: ret_objuuid1,
                 ch_pid: tr.retval,
             })
         }
         _ => {
-            if !proc_cache.contains_key(&tr.subjprocuuid) {
-                proc_cache.insert(tr.subjprocuuid.clone(), ());
+            if !proc_cache.check(&tr.subjprocuuid){
                 Ok(Transact::ProcCheck {
                     uuid: tr.subjprocuuid.clone(),
                     pid: tr.pid,
                     cmdline: tr.exec.clone().ok_or("other missing exec")?,
                 })
-            }else{
+            } else {
                 Ok(Transact::Noop)
             }
         }

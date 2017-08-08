@@ -9,10 +9,11 @@ use std::ffi::CStr;
 use std::ops::FnOnce;
 use std::os::unix::io::{RawFd, FromRawFd};
 use std::ptr;
-use std::collections::HashMap;
 use std;
 use persist;
+
 use trace::TraceEvent;
+use invbloom::InvBloom;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -108,12 +109,12 @@ pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
     };
     let evt_str = Deserializer::from_reader(stream).into_iter::<TraceEvent>();
 
-    let mut cache = HashMap::new();
+    let cache = InvBloom::new();
 
     for res in evt_str {
         match res {
             Ok(evt) => {
-                let tr = persist::parse_trace(&evt, &mut cache);
+                let tr = persist::parse_trace(&evt, &cache);
                 match tr {
                     Ok(tr) => {
                         match persist::execute(db, &tr) {
