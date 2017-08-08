@@ -97,12 +97,10 @@ pub unsafe extern "C" fn print_cfg(hdl: *const OpusHdl) {
 pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
     let hdl = &mut (&mut (*hdl).0);
     let stream = IOStream::from_raw_fd(fd);
-    hdl.db_conn = CypherStream::connect(&hdl.cfg.db_server,
-                                        &hdl.cfg.db_user,
-                                        &hdl.cfg.db_password);
+    hdl.db_conn = CypherStream::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password);
     let db = match hdl.db_conn {
-        Ok(ref mut conn) =>  conn,
-        Err(ref s)  => {
+        Ok(ref mut conn) => conn,
+        Err(ref s) => {
             println!("Database connection error: {}", s);
             return;
         }
@@ -121,12 +119,12 @@ pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
                             Ok(_) => (),
                             Err(e) => println!("{}", e),
                         }
-                    },
+                    }
                     Err(perr) => {
                         println!("PVM parsing error {}", perr);
                     }
                 };
-            },
+            }
             Err(perr) => {
                 println!("Parsing error: {}", perr);
                 break;

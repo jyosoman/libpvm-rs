@@ -57,9 +57,10 @@ impl GenNode {
                 if fields.len() != 3 {
                     return Err("Node structure has incorrect number of fields");
                 }
-                let id = fields.remove(0).as_int().ok_or(
-                    "id field is not an integer",
-                )?;
+                let id = fields
+                    .remove(0)
+                    .as_int()
+                    .ok_or("id field is not an integer")?;
                 let labs = fields
                     .remove(0)
                     .as_vec()
@@ -67,9 +68,10 @@ impl GenNode {
                     .iter()
                     .map(|i| i.as_string().unwrap())
                     .collect();
-                let props = fields.remove(0).as_map().ok_or(
-                    "properties field is not a map",
-                )?;
+                let props = fields
+                    .remove(0)
+                    .as_map()
+                    .ok_or("properties field is not a map")?;
                 Ok(GenNode {
                     id: id,
                     labs: labs,
@@ -101,25 +103,28 @@ impl ProcessNode {
         props
     }
 
-    pub fn from_props(
-        props: HashMap<String, Value>,
-    ) -> Result<ProcessNode, &'static str> {
+    pub fn from_props(props: HashMap<String, Value>) -> Result<ProcessNode, &'static str> {
         Ok(ProcessNode {
-            db_id: ::data::NodeID(props.get("db_id").and_then(Value::as_int).ok_or(
-                "db_id property is missing or not an Integer",
-            )?),
-            cmdline: props.get("cmdline").and_then(Value::as_string).ok_or(
-                "cmdline property is missing or not a String",
-            )?,
-            uuid: props.get("uuid").and_then(Value::as_string).ok_or(
-                "uuid property is missing or not a String",
-            )?,
-            pid: props.get("pid").and_then(Value::as_int).ok_or(
-                "pid property is missing or not an Integer",
-            )?,
-            thin: props.get("thin").and_then(Value::as_bool).ok_or(
-                "thin property is missing or not a bool",
-            )?,
+            db_id: ::data::NodeID(props
+                .get("db_id")
+                .and_then(Value::as_int)
+                .ok_or("db_id property is missing or not an Integer")?),
+            cmdline: props
+                .get("cmdline")
+                .and_then(Value::as_string)
+                .ok_or("cmdline property is missing or not a String")?,
+            uuid: props
+                .get("uuid")
+                .and_then(Value::as_string)
+                .ok_or("uuid property is missing or not a String")?,
+            pid: props
+                .get("pid")
+                .and_then(Value::as_int)
+                .ok_or("pid property is missing or not an Integer")?,
+            thin: props
+                .get("thin")
+                .and_then(Value::as_bool)
+                .ok_or("thin property is missing or not a bool")?,
         })
     }
 }
@@ -154,9 +159,10 @@ impl Edge {
             } => {
                 assert_eq!(signature, 0x52);
                 assert_eq!(fields.len(), 5);
-                let dest_id = NodeID(fields.remove(2).as_int().ok_or(
-                    "DestID field is not an Integer",
-                )?);
+                let dest_id = NodeID(fields
+                    .remove(2)
+                    .as_int()
+                    .ok_or("DestID field is not an Integer")?);
                 let class = fields
                     .remove(3)
                     .as_map()

@@ -9,11 +9,13 @@ use data::Node;
 pub fn nodes_by_uuid(cypher: &mut CypherStream, uuid: &str) -> Vec<Node> {
     let mut props = HashMap::new();
     props.insert("uuid", uuid.from());
-    let result = cypher.run(
-        "MATCH (n {uuid: {uuid}})
-         RETURN n",
-        props,
-    ).unwrap();
+    let result = cypher
+        .run(
+            "MATCH (n {uuid: {uuid}})
+              RETURN n",
+            props,
+        )
+        .unwrap();
     let mut records: VecDeque<Data> = VecDeque::new();
     while cypher.fetch(&result, &mut records) > 0 {}
     let _ = cypher.fetch_summary(&result);

@@ -24,10 +24,7 @@ pub enum Transact {
     Noop,
 }
 
-pub fn parse_trace(
-    tr: &TraceEvent,
-    proc_cache: &InvBloom,
-) -> Result<Transact, &'static str> {
+pub fn parse_trace(tr: &TraceEvent, proc_cache: &InvBloom) -> Result<Transact, &'static str> {
     match &tr.event[..] {
         "audit:event:aue_execve:" => {
             Ok(Transact::Exec {
@@ -45,7 +42,7 @@ pub fn parse_trace(
             })
         }
         _ => {
-            if !proc_cache.check(&tr.subjprocuuid){
+            if !proc_cache.check(&tr.subjprocuuid) {
                 Ok(Transact::ProcCheck {
                     uuid: tr.subjprocuuid.clone(),
                     pid: tr.pid,
@@ -91,7 +88,7 @@ pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), String
         Ok(res) => {
             cypher.fetch_summary(&res);
             Ok(())
-        },
+        }
         Err(e) => Err(format!("{:?}", e)),
     }
 }
@@ -118,7 +115,7 @@ pub fn proc_check(
         Ok(res) => {
             cypher.fetch_summary(&res);
             Ok(())
-        },
+        }
         Err(e) => Err(format!("{:?}", e)),
     }
 }
@@ -151,7 +148,7 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<
         Ok(res) => {
             cypher.fetch_summary(&res);
             Ok(())
-        },
+        }
         Err(e) => Err(format!("{:?}", e)),
     }
 }
@@ -181,7 +178,7 @@ pub fn run_fork(
         Ok(res) => {
             cypher.fetch_summary(&res);
             Ok(())
-        },
+        }
         Err(e) => Err(format!("{:?}", e)),
     }
 }
