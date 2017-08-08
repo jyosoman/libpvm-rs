@@ -131,6 +131,7 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<
          WHERE NOT (p)-[:INF {class: 'next'}]->()
          SET p.cmdline = {cmdline}
          SET p.thin = false
+         RETURN 0
          UNION
          MATCH (p:Process {uuid: {uuid},
                            thin: false})
@@ -139,7 +140,8 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<
                             pid: p.pid,
                             cmdline: {cmdline},
                             thin: false})
-         CREATE (p)-[:INF {class: 'next'}]->(q)",
+         CREATE (p)-[:INF {class: 'next'}]->(q)
+         RETURN 0",
         props,
     );
     match result {
