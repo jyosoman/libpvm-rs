@@ -22,7 +22,7 @@ pub enum Transact {
     },
 }
 
-pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
+pub fn parse_trace(tr: &TraceEvent, proc_cache: &mut HashMap<String, ()>) -> Result<Transact, &'static str> {
     match &tr.event[..] {
         "audit:event:aue_execve" => {
             Ok(Transact::Exec {
@@ -32,6 +32,7 @@ pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
         }
         "audit:event:aue_fork" |
         "audit:event:aue_vfork" => {
+            proc_cache.insert(tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?, ());
             Ok(Transact::Fork {
                 par_uuid: tr.subjprocuuid.clone(),
                 ch_uuid: tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?,
@@ -39,16 +40,21 @@ pub fn parse_trace(tr: &TraceEvent) -> Result<Transact, &'static str> {
             })
         }
         _ => {
-            Ok(Transact::ProcCheck {
-                uuid: tr.subjprocuuid.clone(),
-                pid: tr.pid,
-                cmdline: tr.exec.clone().ok_or("other missing exec")?,
-            })
+            if !proc_cache.contains_key(&tr.subjprocuuid) {
+                proc_cache.insert(tr.subjprocuuid.clone(), ());
+                Ok(Transact::ProcCheck {
+                    uuid: tr.subjprocuuid.clone(),
+                    pid: tr.pid,
+                    cmdline: tr.exec.clone().ok_or("other missing exec")?,
+                })
+            }else{
+                Err("Cache hit")
+            }
         }
     }
 }
 
-pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), &'static str> {
+pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
     match *tr {
         Transact::ProcCheck {
             ref uuid,
@@ -67,22 +73,22 @@ pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), &'static 
     }
 }
 
-pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), &'static str> {
+pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), String> {
     let result = cypher.run(
         "MERGE (p:Process {db_id: {db_id}})
          SET p.uuid = {uuid}
          SET p.cmdline = {cmdline}
          SET p.pid = {pid}
-         SET p.thin = {thin}
-         WITH p
-         FOREACH (ch IN {chs} |
-             MERGE (q:Process {db_id: ch.id})
-             MERGE (p)-[e:INF]->(q)
-             SET e.class = ch.class)",
+         SET p.thin = {thin}",
         node.get_props(),
     );
-    cypher.fetch_summary(&result);
-    Ok(())
+    match result {
+        Ok(res) => {
+            cypher.fetch_summary(&res);
+            Ok(())
+        },
+        Err(e) => Err(format!("{:?}", e)),
+    }
 }
 
 pub fn proc_check(
@@ -90,7 +96,7 @@ pub fn proc_check(
     uuid: &str,
     pid: i32,
     cmdline: &str,
-) -> Result<(), &'static str> {
+) -> Result<(), String> {
     let mut props = HashMap::new();
     props.insert("uuid", uuid.from());
     props.insert("pid", pid.from());
@@ -103,11 +109,16 @@ pub fn proc_check(
           ON CREATE SET p.thin = true",
         props,
     );
-    cypher.fetch_summary(&result);
-    Ok(())
+    match result {
+        Ok(res) => {
+            cypher.fetch_summary(&res);
+            Ok(())
+        },
+        Err(e) => Err(format!("{:?}", e)),
+    }
 }
 
-pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<(), &'static str> {
+pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<(), String> {
     let mut props = HashMap::new();
     props.insert("uuid", uuid.from());
     props.insert("cmdline", cmdline.from());
@@ -129,8 +140,13 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &str, cmdline: &str) -> Result<
          CREATE (p)-[:INF {class: 'next'}]->(q)",
         props,
     );
-    cypher.fetch_summary(&result);
-    Ok(())
+    match result {
+        Ok(res) => {
+            cypher.fetch_summary(&res);
+            Ok(())
+        },
+        Err(e) => Err(format!("{:?}", e)),
+    }
 }
 
 pub fn run_fork(
@@ -138,7 +154,7 @@ pub fn run_fork(
     par_uuid: &str,
     ch_uuid: &str,
     ch_pid: i32,
-) -> Result<(), &'static str> {
+) -> Result<(), String> {
     let mut props = HashMap::new();
     props.insert("par_uuid", par_uuid.from());
     props.insert("ch_uuid", ch_uuid.from());
@@ -154,6 +170,11 @@ pub fn run_fork(
          CREATE (p)-[:INF {class: 'child'}]->(c)",
         props,
     );
-    cypher.fetch_summary(&result);
-    Ok(())
+    match result {
+        Ok(res) => {
+            cypher.fetch_summary(&res);
+            Ok(())
+        },
+        Err(e) => Err(format!("{:?}", e)),
+    }
 }

@@ -42,7 +42,6 @@ mod tests {
             cmdline: String::from("./foo"),
             pid: 2,
             thin: false,
-            rel: vec![data::Edge::Child(data::NodeID(1))],
         });
         let q = data::Node::Process(data::ProcessNode {
             db_id: data::NodeID(1),
@@ -50,7 +49,6 @@ mod tests {
             cmdline: String::from("./bar"),
             pid: 1,
             thin: false,
-            rel: Vec::new(),
         });
         let mut cypher = CypherStream::connect("localhost:7687", "neo4j", "opus").unwrap();
         let i = Instant::now();

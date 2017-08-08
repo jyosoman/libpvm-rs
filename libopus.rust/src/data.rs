@@ -19,14 +19,13 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn from_value(node: Value, edges: Value) -> Result<Node, &'static str> {
+    pub fn from_value(node: Value) -> Result<Node, &'static str> {
         let gen_n = GenNode::from_value(node)?;
-        let edges = edges.as_vec().ok_or("Edges list not a vector")?;
         if gen_n.labs.len() != 1 {
             return Err("Node has more than one label");
         }
         match &gen_n.labs[0][..] {
-            "Process" => Ok(Node::Process(ProcessNode::from_props(gen_n.props, edges)?)),
+            "Process" => Ok(Node::Process(ProcessNode::from_props(gen_n.props)?)),
             _ => Err("Unrecognised node label"),
         }
     }
@@ -89,7 +88,6 @@ pub struct ProcessNode {
     pub cmdline: String,
     pub pid: i32,
     pub thin: bool,
-    pub rel: Vec<Edge>,
 }
 
 impl ProcessNode {
@@ -100,22 +98,12 @@ impl ProcessNode {
         props.insert("cmdline", self.cmdline.from());
         props.insert("pid", self.pid.from());
         props.insert("thin", self.thin.from());
-        let mut edges = Vec::new();
-        for r in &self.rel {
-            edges.push(r.get_props());
-        }
-        props.insert("chs", Value::List(edges));
         props
     }
 
     pub fn from_props(
         props: HashMap<String, Value>,
-        mut edges: Vec<Value>,
     ) -> Result<ProcessNode, &'static str> {
-        let mut rel = Vec::new();
-        for r in edges.drain(..) {
-            rel.push(Edge::from_value(r)?);
-        }
         Ok(ProcessNode {
             db_id: ::data::NodeID(props.get("db_id").and_then(Value::as_int).ok_or(
                 "db_id property is missing or not an Integer",
@@ -132,7 +120,6 @@ impl ProcessNode {
             thin: props.get("thin").and_then(Value::as_bool).ok_or(
                 "thin property is missing or not a bool",
             )?,
-            rel: rel,
         })
     }
 }
