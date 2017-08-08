@@ -1,3 +1,8 @@
+/*
+ * Reverse bloom filter based on
+ * https://www.somethingsimilar.com/2012/05/21/the-opposite-of-a-bloom-filter/
+ */
+
 use std::sync::Mutex;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -7,14 +12,14 @@ const N: usize = 256;
 
 #[derive(Default)]
 pub struct InvBloom {
-    data: Vec<Mutex<Cell<String>>>,
+    data: Vec<Mutex<Cell<usize>>>,
 }
 
 impl InvBloom {
     pub fn new() -> InvBloom {
         let mut data = Vec::with_capacity(N);
         for _ in 0..N {
-            data.push(Mutex::new(Cell::new(String::from(""))));
+            data.push(Mutex::new(Cell::new(0)));
         }
         InvBloom { data: data }
     }
@@ -23,10 +28,9 @@ impl InvBloom {
         let hash = {
             let mut hasher = DefaultHasher::new();
             test.hash(&mut hasher);
-            (hasher.finish() as usize) % N
+            hasher.finish() as usize
         };
-        let didx = self.data[hash].lock().unwrap();
-        let prev = didx.replace(test.clone());
-        &prev == test
+        let prev = self.data[hash % N].lock().unwrap().replace(hash);
+        prev == hash
     }
 }
