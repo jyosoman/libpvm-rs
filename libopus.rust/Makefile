@@ -4,7 +4,8 @@ BUILD_DIR := build
 
 IDIR=src/include
 ODIR=build
-LDIR=target/debug
+#LDIR=target/debug
+LDIR=target/release
 LIBS=-lopus
 
 CC=gcc
@@ -23,7 +24,7 @@ test: rust copususer
 	(cd build && ./copususer)
 
 rust:
-	@cargo build && cp $(LDIR)/libopus.so $(ODIR)
+	@cargo build --release && cp $(LDIR)/libopus.so $(ODIR)
 
 $(DEPS): rust
 

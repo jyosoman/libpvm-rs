@@ -7,9 +7,10 @@ use std::sync::Mutex;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::cell::Cell;
-use trace::uuid5;
+use trace::Uuid5;
 
 const N: usize = 256;
+const NMASK: usize = N - 1;
 
 #[derive(Default)]
 pub struct InvBloom {
@@ -25,13 +26,13 @@ impl InvBloom {
         InvBloom { data: data }
     }
 
-    pub fn check(&self, test: &uuid5) -> bool {
+    pub fn check(&self, test: &Uuid5) -> bool {
         let hash = {
             let mut hasher = DefaultHasher::new();
             test.hash(&mut hasher);
             hasher.finish() as usize
         };
-        let prev = self.data[hash % N].lock().unwrap().replace(hash);
+        let prev = self.data[hash & NMASK].lock().unwrap().replace(hash);
         prev == hash
     }
 }

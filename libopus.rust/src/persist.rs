@@ -6,19 +6,19 @@ use std::collections::HashMap;
 
 
 use data::Node;
-use trace::{uuid5, TraceEvent};
+use trace::{Uuid5, TraceEvent};
 use invbloom::InvBloom;
 
 pub enum Transact {
     ProcCheck {
-        uuid: uuid5,
+        uuid: Uuid5,
         pid: i32,
         cmdline: String,
     },
-    Exec { uuid: uuid5, cmdline: String },
+    Exec { uuid: Uuid5, cmdline: String },
     Fork {
-        par_uuid: uuid5,
-        ch_uuid: uuid5,
+        par_uuid: Uuid5,
+        ch_uuid: Uuid5,
         ch_pid: i32,
     },
     Noop,
@@ -95,7 +95,7 @@ pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), String
 
 pub fn proc_check(
     cypher: &mut CypherStream,
-    uuid: &uuid5,
+    uuid: &Uuid5,
     pid: i32,
     cmdline: &str,
 ) -> Result<(), String> {
@@ -120,7 +120,7 @@ pub fn proc_check(
     }
 }
 
-pub fn run_exec(cypher: &mut CypherStream, uuid: &uuid5, cmdline: &str) -> Result<(), String> {
+pub fn run_exec(cypher: &mut CypherStream, uuid: &Uuid5, cmdline: &str) -> Result<(), String> {
     let mut props = HashMap::new();
     props.insert("uuid", uuid.from());
     props.insert("cmdline", cmdline.from());
@@ -155,8 +155,8 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &uuid5, cmdline: &str) -> Resul
 
 pub fn run_fork(
     cypher: &mut CypherStream,
-    par_uuid: &uuid5,
-    ch_uuid: &uuid5,
+    par_uuid: &Uuid5,
+    ch_uuid: &Uuid5,
     ch_pid: i32,
 ) -> Result<(), String> {
     let mut props = HashMap::new();

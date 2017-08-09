@@ -1,5 +1,6 @@
 #![feature(try_from)]
 #![feature(i128_type)]
+#![feature(slice_patterns)]
 
 extern crate futures_cpupool;
 extern crate libc;
