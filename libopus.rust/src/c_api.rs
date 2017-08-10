@@ -111,18 +111,20 @@ pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
     for res in evt_str {
         match res {
             Ok(evt) => {
-                let tr = persist::parse_trace(&evt, &cache);
-                match tr {
-                    Ok(tr) => {
-                        match persist::execute(db, &tr) {
-                            Ok(_) => (),
-                            Err(e) => println!("{}", e),
+                let trs = persist::parse_trace(&evt, &cache);
+                match trs {
+                    Ok(mut trs) => {
+                        for tr in trs.drain(..) {
+                            match persist::execute(db, &tr) {
+                                Ok(_) => (),
+                                Err(e) => println!("{}", e),
+                            }
                         }
                     }
                     Err(perr) => {
                         println!("PVM parsing error {}", perr);
                     }
-                };
+                }
             }
             Err(perr) => {
                 println!("Parsing error: {}", perr);

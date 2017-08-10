@@ -24,35 +24,40 @@ pub enum Transact {
     Noop,
 }
 
-pub fn parse_trace(tr: &TraceEvent, proc_cache: &InvBloom) -> Result<Transact, &'static str> {
+pub fn cache_check(tr: &TraceEvent, proc_cache: &InvBloom) -> Result<Transact, &'static str> {
+    if !proc_cache.check(&tr.subjprocuuid) {
+        Ok(Transact::ProcCheck {
+            uuid: tr.subjprocuuid.clone(),
+            pid: tr.pid,
+            cmdline: tr.exec.clone().ok_or("other missing exec")?,
+        })
+    } else {
+        Ok(Transact::Noop)
+    }
+}
+
+pub fn parse_trace(tr: &TraceEvent, proc_cache: &InvBloom) -> Result<Vec<Transact>, &'static str> {
+    let mut ret = Vec::with_capacity(2);
+    ret.push(cache_check(tr, proc_cache)?);
     match &tr.event[..] {
         "audit:event:aue_execve:" => {
-            Ok(Transact::Exec {
+            ret.push(Transact::Exec {
                 uuid: tr.subjprocuuid.clone(),
                 cmdline: tr.cmdline.clone().ok_or("exec missing cmdline")?,
-            })
+            });
         }
         "audit:event:aue_fork:" | "audit:event:aue_vfork:" => {
             let ret_objuuid1 = tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?;
             proc_cache.check(&ret_objuuid1);
-            Ok(Transact::Fork {
+            ret.push(Transact::Fork {
                 par_uuid: tr.subjprocuuid.clone(),
                 ch_uuid: ret_objuuid1,
                 ch_pid: tr.retval,
-            })
+            });
         }
-        _ => {
-            if !proc_cache.check(&tr.subjprocuuid) {
-                Ok(Transact::ProcCheck {
-                    uuid: tr.subjprocuuid.clone(),
-                    pid: tr.pid,
-                    cmdline: tr.exec.clone().ok_or("other missing exec")?,
-                })
-            } else {
-                Ok(Transact::Noop)
-            }
-        }
+        _ => {}
     }
+    Ok(ret)
 }
 
 pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
