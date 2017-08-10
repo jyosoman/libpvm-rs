@@ -31,6 +31,7 @@ mod tests {
     use super::query::low;
     use neo4j::cypher::CypherStream;
     use std::time::Instant;
+    use trace::Uuid5;
 
     const NANO: f64 = 1e9_f64;
 
@@ -41,14 +42,14 @@ mod tests {
     fn test_cypher() {
         let p = data::Node::Process(data::ProcessNode {
             db_id: data::NodeID(0),
-            uuid: String::from("0000-0000-0000"),
+            uuid: Uuid5::zero(),
             cmdline: String::from("./foo"),
             pid: 2,
             thin: false,
         });
         let q = data::Node::Process(data::ProcessNode {
             db_id: data::NodeID(1),
-            uuid: String::from("0000-0000-0000"),
+            uuid: Uuid5::zero(),
             cmdline: String::from("./bar"),
             pid: 1,
             thin: false,
