@@ -15,11 +15,11 @@ pub enum Uuid5 {
 const GROUP_SZ: [u8; 6] =    [8, 4, 4,  4,  12, 0];
 // accumulated lenghts for above when represented as hypenated hex groups
 // track rust RFC 911 and issue #24111 for const fn
-const GROUP_SZC:[usize; 6] = [0, 8, 13, 18, 23, 35];
+const GROUP_SZC:[usize; 6] = [0, 8, 13, 18, 23, 36];
 
 // group sizes for two concatenated Uuid5s (workaround)
 const GROUP_SZ2: [u8; 11] =    [8, 4, 4,  4,  12, 8,  4,  4,  4,  12, 0];
-const GROUP_SZ2C:[usize; 11] = [0, 8, 13, 18, 23, 36, 45, 50, 55, 60, 72];
+const GROUP_SZ2C:[usize; 11] = [0, 8, 13, 18, 23, 36, 45, 50, 55, 60, 73];
 
 #[derive(Deserialize, Debug)]
 pub struct TraceEvent {
@@ -117,14 +117,14 @@ impl Display for Uuid5 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &Uuid5::Single(v) => {
-                let vf = format!("{:32x}", v);
+                let vf = format!("{:032x}", v);
                 write!(f, "{}-{}-{}-{}-{}",
                        &vf[0..8], &vf[8..12], &vf[12..16],
                        &vf[16..20], &vf[20..])
             },
             &Uuid5::Double([v,v1]) => {
-                let vf = format!("{:32x}", v);
-                let vf1 = format!("{:32x}", v1);
+                let vf = format!("{:032x}", v);
+                let vf1 = format!("{:032x}", v1);
                 write!(f, "{}-{}-{}-{}-{}:{}-{}-{}-{}-{}",
                        &vf[0..8], &vf[8..12], &vf[12..16],
                        &vf[16..20], &vf[20..],
