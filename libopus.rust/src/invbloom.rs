@@ -6,7 +6,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use trace::uuid5;
+use trace::Uuid5;
 
 const N: usize = 256;  // have to pick power of 2
 const NMASK: usize = N - 1;
@@ -25,7 +25,7 @@ impl InvBloom {
         InvBloom { data: data }
     }
 
-    pub fn check(&self, test: &uuid5) -> bool {
+    pub fn check(&self, test: &Uuid5) -> bool {
         let hash = {
             let mut hasher = DefaultHasher::new();
             test.hash(&mut hasher);

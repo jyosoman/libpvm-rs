@@ -2,115 +2,24 @@ use std::fmt::{self, Display};
 use std::error::Error;
 use std::num::ParseIntError;
 use std::str::FromStr;
-use packstream::values::{ValueCast, Value};
+use packstream::values::{self, Value};
 use serde::de::{self, Visitor, Deserialize, Deserializer};
 
-#[derive(Deserialize, Debug)]
-pub struct TraceEventOld {
-    pub event: String,
-    pub host: Option<String>,
-    pub time: u64,
-    pub pid: i32,
-    pub ppid: i32,
-    pub tid: i32,
-    pub uid: i32,
-    pub exec: Option<String>,
-    pub cmdline: Option<String>,
-    pub upath1: Option<String>,
-    pub upath2: Option<String>,
-    pub fd: Option<i32>,
-    pub flags: Option<i32>,
-    pub fdpath: Option<String>,
-    pub subjprocuuid: String,
-    pub subjthruuid: String,
-    pub arg_objuuid1: Option<String>,
-    pub arg_objuuid2: Option<String>,
-    pub ret_objuuid1: Option<String>,
-    pub ret_objuuid2: Option<String>,
-    pub retval: i32,
-}
-
 #[derive(Debug, PartialEq, Hash, Clone)]
-pub struct uuid5(u128);
-
-impl uuid5 {
-    pub fn zero() -> uuid5 {
-        uuid5(0)
-    }
+pub enum Uuid5 {
+    Single(u128),
+    Double([u128;2]),
 }
 
-impl FromStr for uuid5 {
-    type Err = ParseIntError;
+// Uuid5 group sizes
+const GROUP_SZ: [u8; 6] =    [8, 4, 4,  4,  12, 0];
+// accumulated lenghts for above when represented as hypenated hex groups
+// track rust RFC 911 and issue #24111 for const fn
+const GROUP_SZC:[usize; 6] = [0, 8, 13, 18, 23, 35];
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut uuid_numstr = String::with_capacity(32);
-        let uuid_format_sz = [8, 4, 4, 4, 12, 0];
-        let mut start = 0;
-        let mut end = uuid_format_sz[0];
-        for i in 1..uuid_format_sz.len() {
-            uuid_numstr.push_str(&s[start..end]);
-            start += uuid_format_sz[i-1] + 1; // skip "-"
-            end += uuid_format_sz[i] + 1;
-        }
-        Ok(uuid5(u128::from_str_radix(&uuid_numstr[..], 16)?))
-    }
-}
-
-impl Display for uuid5 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let val = self.0;
-        let vf = format!("{:x}", val);
-        write!(f, "{}-{}-{}-{}-{}", &vf[0..8], &vf[8..12], &vf[12..16], &vf[16..20], &vf[20..])
-    }
-}
-
-
-impl ValueCast for uuid5 {
-    fn from(&self) -> Value {
-        Value::String(format!("{}", self))
-    }
-}
-
-
-struct UUID5Visitor;
-
-impl<'de> Visitor<'de> for UUID5Visitor {
-    type Value = uuid5;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a uuid5 (UUID version 5) value")
-    }
-
-    fn visit_string<E>(self, value: String) -> Result<uuid5, E>
-        where E: de::Error
-    {
-        let pval_r = uuid5::from_str(&value[..]);
-        match pval_r {
-            Ok(pval) => Ok(pval),
-            Err(e) => Err(E::custom(format!("uuid5 parsing: {}", e.description()))),
-        }
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<uuid5, E>
-        where E: de::Error
-    {
-        let pval_r = uuid5::from_str(value);
-        match pval_r {
-            Ok(pval) => Ok(pval),
-            Err(e) => Err(E::custom(format!("uuid5 parsing: {}", e.description()))),
-        }
-    }
-
-}
-
-
-impl<'de> Deserialize<'de> for uuid5 {
-    fn deserialize<D>(deserializer: D) -> Result<uuid5, D::Error>
-        where D: Deserializer<'de>
-    {
-        deserializer.deserialize_string(UUID5Visitor)
-    }
-}
+// group sizes for two concatenated Uuid5s (workaround)
+const GROUP_SZ2: [u8; 11] =    [8, 4, 4,  4,  12, 8,  4,  4,  4,  12, 0];
+const GROUP_SZ2C:[usize; 11] = [0, 8, 13, 18, 23, 36, 45, 50, 55, 60, 72];
 
 #[derive(Deserialize, Debug)]
 pub struct TraceEvent {
@@ -128,11 +37,149 @@ pub struct TraceEvent {
     pub fd: Option<i32>,
     pub flags: Option<i32>,
     pub fdpath: Option<String>,
-    pub subjprocuuid: uuid5,
-    pub subjthruuid: uuid5,
-    pub arg_objuuid1: Option<uuid5>,
-    pub arg_objuuid2: Option<uuid5>,
-    pub ret_objuuid1: Option<uuid5>,
-    pub ret_objuuid2: Option<uuid5>,
+    pub subjprocuuid: Uuid5,
+    pub subjthruuid: Uuid5,
+    pub arg_objuuid1: Option<Uuid5>,
+    pub arg_objuuid2: Option<Uuid5>,
+    pub ret_objuuid1: Option<Uuid5>,
+    pub ret_objuuid2: Option<Uuid5>,
     pub retval: i32,
 }
+
+#[derive(Debug)]
+pub enum Uuid5Error {
+    Formatting(String),
+    Parse(ParseIntError),
+}
+
+impl From<ParseIntError> for Uuid5Error {
+    fn from(err: ParseIntError) -> Uuid5Error {
+        Uuid5Error::Parse(err)
+    }
+}
+
+impl Error for Uuid5Error {
+    fn description(&self) -> &str {
+        match self {
+            &Uuid5Error::Formatting(ref s) => s,
+            &Uuid5Error::Parse(ref err) => err.description(),
+        }
+    }
+}
+
+impl Display for Uuid5Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Uuid5Error::Formatting(ref s) => write!(f, "{}", s),
+            &Uuid5Error::Parse(ref err) => write!(f, "{}", err),
+        }
+    }
+}
+
+impl Uuid5 {
+    pub fn zero() -> Uuid5 {
+        Uuid5::Single(0)
+    }
+}
+
+impl FromStr for Uuid5 {
+    type Err = Uuid5Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let slen = s.len();
+        if slen != 36 && slen != 73 {
+            return Err(Uuid5Error::Formatting(format!("{} is an invalid UUID v5 format",s)));
+        }
+        let mut uuid_numstr = String::with_capacity(slen - 4);
+
+        match slen {
+            36 => {
+                uuid_numstr.push_str(&s[GROUP_SZC[0]..GROUP_SZC[1]]);
+                for i in 2..GROUP_SZC.len() {
+                    uuid_numstr.push_str(&s[GROUP_SZC[i-1] + 1..GROUP_SZC[i]]);
+                }
+                Ok(Uuid5::Single(u128::from_str_radix(&uuid_numstr[..], 16)?))
+            },
+            73 => {
+                uuid_numstr.push_str(&s[GROUP_SZ2C[0]..GROUP_SZ2C[1]]);
+                for i in 2..GROUP_SZ2C.len() {
+                    uuid_numstr.push_str(&s[GROUP_SZ2C[i-1] + 1..GROUP_SZ2C[i]]);
+                }
+                Ok(Uuid5::Double([u128::from_str_radix(&uuid_numstr[..32], 16)?,
+                                  u128::from_str_radix(&uuid_numstr[32..], 16)?]))
+            }
+            _ => Err(Uuid5Error::Formatting(String::from("invalid UUID v5 format")))
+        }
+    }
+}
+
+impl Display for Uuid5 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Uuid5::Single(v) => {
+                let vf = format!("{:x}", v);
+                write!(f, "{}-{}-{}-{}-{}",
+                       &vf[0..8], &vf[8..12], &vf[12..16],
+                       &vf[16..20], &vf[20..])
+            },
+            &Uuid5::Double([v,v1]) => {
+                let vf = format!("{:x}", v);
+                let vf1 = format!("{:x}", v1);
+                write!(f, "{}-{}-{}-{}-{}:{}-{}-{}-{}-{}",
+                       &vf[0..8], &vf[8..12], &vf[12..16],
+                       &vf[16..20], &vf[20..],
+                       &vf1[0..8], &vf1[8..12], &vf1[12..16],
+                       &vf1[16..20], &vf1[20..])
+            },
+        }
+    }
+}
+
+
+impl values::ValueCast for Uuid5 {
+    fn from(&self) -> Value {
+        Value::String(format!("{}", self))
+    }
+}
+
+
+struct Uuid5Visitor;
+
+impl<'de> Visitor<'de> for Uuid5Visitor {
+    type Value = Uuid5;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a Uuid5 (UUID version 5) value")
+    }
+
+    fn visit_string<E>(self, value: String) -> Result<Uuid5, E>
+        where E: de::Error
+    {
+        let pval_r = Uuid5::from_str(&value[..]);
+        match pval_r {
+            Ok(pval) => Ok(pval),
+            Err(e) => Err(E::custom(format!("Uuid5 parsing: {}", e.description()))),
+        }
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Uuid5, E>
+        where E: de::Error
+    {
+        let pval_r = Uuid5::from_str(value);
+        match pval_r {
+            Ok(pval) => Ok(pval),
+            Err(e) => Err(E::custom(format!("Uuid5 parsing: {}", e.description()))),
+        }
+    }
+
+}
+
+
+impl<'de> Deserialize<'de> for Uuid5 {
+    fn deserialize<D>(deserializer: D) -> Result<Uuid5, D::Error>
+        where D: Deserializer<'de>
+    {
+        deserializer.deserialize_string(Uuid5Visitor)
+    }
+}
+

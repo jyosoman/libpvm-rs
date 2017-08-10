@@ -1,7 +1,7 @@
 # libopus Exploration
 
 ## Implementations
-* Rust - Inactive
+* Rust - Active
 * Go - Inactive
 * C++ - Inactive
 
