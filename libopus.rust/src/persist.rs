@@ -127,13 +127,6 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &Uuid5, cmdline: &str) -> Resul
 
     let result = cypher.run(
         "MATCH (p:Process {uuid: {uuid},
-                           thin: true})
-         WHERE NOT (p)-[:INF {class: 'next'}]->()
-         SET p.cmdline = {cmdline}
-         SET p.thin = false
-         RETURN 0
-         UNION
-         MATCH (p:Process {uuid: {uuid},
                            thin: false})
          WHERE NOT (p)-[:INF {class: 'next'}]->()
          CREATE (q:Process {uuid: p.uuid,
@@ -141,6 +134,13 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &Uuid5, cmdline: &str) -> Resul
                             cmdline: {cmdline},
                             thin: false})
          CREATE (p)-[:INF {class: 'next'}]->(q)
+         RETURN 0
+         UNION
+         MATCH (p:Process {uuid: {uuid},
+                           thin: true})
+         WHERE NOT (p)-[:INF {class: 'next'}]->()
+         SET p.cmdline = {cmdline}
+         SET p.thin = false
          RETURN 0",
         props,
     );
