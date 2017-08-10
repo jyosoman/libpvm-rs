@@ -117,14 +117,14 @@ impl Display for Uuid5 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &Uuid5::Single(v) => {
-                let vf = format!("{:x}", v);
+                let vf = format!("{:32x}", v);
                 write!(f, "{}-{}-{}-{}-{}",
                        &vf[0..8], &vf[8..12], &vf[12..16],
                        &vf[16..20], &vf[20..])
             },
             &Uuid5::Double([v,v1]) => {
-                let vf = format!("{:x}", v);
-                let vf1 = format!("{:x}", v1);
+                let vf = format!("{:32x}", v);
+                let vf1 = format!("{:32x}", v1);
                 write!(f, "{}-{}-{}-{}-{}:{}-{}-{}-{}-{}",
                        &vf[0..8], &vf[8..12], &vf[12..16],
                        &vf[16..20], &vf[20..],
