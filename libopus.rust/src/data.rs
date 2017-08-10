@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use packstream::values::{Value, ValueCast};
 
+use trace::Uuid5;
 use value_as::CastValue;
 
 #[derive(Debug)]
@@ -86,7 +87,7 @@ impl GenNode {
 #[derive(Debug)]
 pub struct ProcessNode {
     pub db_id: NodeID,
-    pub uuid: String,
+    pub uuid: Uuid5,
     pub cmdline: String,
     pub pid: i32,
     pub thin: bool,
@@ -115,8 +116,8 @@ impl ProcessNode {
                 .ok_or("cmdline property is missing or not a String")?,
             uuid: props
                 .get("uuid")
-                .and_then(Value::as_string)
-                .ok_or("uuid property is missing or not a String")?,
+                .and_then(Value::as_uuid5)
+                .ok_or("uuid property is missing or not a UUID5")?,
             pid: props
                 .get("pid")
                 .and_then(Value::as_int)
