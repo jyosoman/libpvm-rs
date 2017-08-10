@@ -34,3 +34,38 @@ impl InvBloom {
         prev == hash
     }
 }
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+
+    #[test]
+    fn creation() {
+        InvBloom::new();
+    }
+
+    #[test]
+    fn check() {
+        let ib = InvBloom::new();
+        assert_eq!(ib.check(&1), false);
+    }
+
+    #[test]
+    fn not_seen_before() {
+        let ib = InvBloom::new();
+        for i in 0..1000 {
+            assert_eq!(ib.check(&i), false);
+        }
+    }
+
+    #[test]
+    fn seen_before() {
+        let ib = InvBloom::new();
+        assert_eq!(ib.check(&1), false);
+        assert_eq!(ib.check(&1), true);
+        assert_eq!(ib.check(&1), true);
+        assert_eq!(ib.check(&2), false);
+        assert_eq!(ib.check(&2), true);
+        assert_eq!(ib.check(&2), true);
+    }
+}
