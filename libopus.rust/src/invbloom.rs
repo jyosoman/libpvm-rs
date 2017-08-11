@@ -53,7 +53,7 @@ mod tests{
     #[test]
     fn not_seen_before() {
         let ib = InvBloom::new();
-        for i in 0..1000 {
+        for i in 0..100000 {
             assert_eq!(ib.check(&i), false);
         }
     }
