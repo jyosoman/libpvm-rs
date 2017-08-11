@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use packstream::values::{Value, ValueCast};
 
-use trace::Uuid5;
+use uuid::Uuid5;
 use value_as::CastValue;
 
 #[derive(Debug)]

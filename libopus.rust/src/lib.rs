@@ -24,6 +24,7 @@ pub mod persist;
 pub mod query;
 pub mod value_as;
 pub mod invbloom;
+pub mod uuid;
 
 #[cfg(test)]
 mod tests {

@@ -6,8 +6,9 @@ use std::collections::HashMap;
 
 
 use data::Node;
-use trace::{Uuid5, TraceEvent};
+use trace::TraceEvent;
 use invbloom::InvBloom;
+use uuid::Uuid5;
 
 pub enum Transact {
     ProcCheck {

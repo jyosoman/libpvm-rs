@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use packstream::values::Value;
 
-use trace::Uuid5;
+use uuid::Uuid5;
 
 pub trait CastValue {
     fn as_string(&self) -> Option<String>;
