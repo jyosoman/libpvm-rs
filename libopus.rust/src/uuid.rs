@@ -138,7 +138,7 @@ impl<'de> Visitor<'de> for Uuid5Visitor {
     where
         E: de::Error,
     {
-        let pval_r = Uuid5::from_str(&value[..]);
+        let pval_r = value.parse::<Uuid5>();
         match pval_r {
             Ok(pval) => Ok(pval),
             Err(e) => Err(E::custom(format!("Uuid5 parsing: {}", e.description()))),
@@ -149,7 +149,7 @@ impl<'de> Visitor<'de> for Uuid5Visitor {
     where
         E: de::Error,
     {
-        let pval_r = Uuid5::from_str(value);
+        let pval_r = value.parse::<Uuid5>();
         match pval_r {
             Ok(pval) => Ok(pval),
             Err(e) => Err(E::custom(format!("Uuid5 parsing: {}", e.description()))),
