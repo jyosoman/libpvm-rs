@@ -85,9 +85,7 @@ impl FromStr for Uuid5 {
                     u128::from_str_radix(&v2[..], 16)?,
                 ]))
             }
-            _ => Err(Uuid5Error::Formatting(
-                String::from("invalid UUID v5 format"),
-            )),
+            _ => unreachable!(),
         }
     }
 }
