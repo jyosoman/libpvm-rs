@@ -2,6 +2,8 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::num::ParseIntError;
 use std::str::FromStr;
+use std::string::ToString;
+
 use packstream::values::{self, Value};
 use serde::de::{self, Visitor, Deserialize, Deserializer};
 
@@ -110,21 +112,11 @@ impl Display for Uuid5 {
                 )
             }
             Uuid5::Double([v, v1]) => {
-                let vf = format!("{:032x}", v);
-                let vf1 = format!("{:032x}", v1);
                 write!(
                     f,
-                    "{}-{}-{}-{}-{}:{}-{}-{}-{}-{}",
-                    &vf[0..8],
-                    &vf[8..12],
-                    &vf[12..16],
-                    &vf[16..20],
-                    &vf[20..],
-                    &vf1[0..8],
-                    &vf1[8..12],
-                    &vf1[12..16],
-                    &vf1[16..20],
-                    &vf1[20..]
+                    "{}:{}",
+                    Uuid5::Single(v).to_string(),
+                    Uuid5::Single(v1).to_string()
                 )
             }
         }
@@ -134,7 +126,7 @@ impl Display for Uuid5 {
 
 impl values::ValueCast for Uuid5 {
     fn from(&self) -> Value {
-        Value::String(format!("{}", self))
+        Value::String(self.to_string())
     }
 }
 
