@@ -66,16 +66,16 @@ pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
             ref uuid,
             pid,
             ref cmdline,
-        } => proc_check(cypher, &uuid, pid, &cmdline[..]),
+        } => proc_check(cypher, uuid, pid, &cmdline[..]),
         Transact::Exec {
             ref uuid,
             ref cmdline,
-        } => run_exec(cypher, &uuid, &cmdline[..]),
+        } => run_exec(cypher, uuid, &cmdline[..]),
         Transact::Fork {
             ref par_uuid,
             ref ch_uuid,
             ch_pid,
-        } => run_fork(cypher, &par_uuid, &ch_uuid, ch_pid),
+        } => run_fork(cypher, par_uuid, ch_uuid, ch_pid),
         Transact::Noop => Ok(()),
     }
 }

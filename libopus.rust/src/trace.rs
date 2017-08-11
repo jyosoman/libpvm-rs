@@ -60,18 +60,18 @@ impl From<ParseIntError> for Uuid5Error {
 
 impl Error for Uuid5Error {
     fn description(&self) -> &str {
-        match self {
-            &Uuid5Error::Formatting(ref s) => s,
-            &Uuid5Error::Parse(ref err) => err.description(),
+        match *self {
+            Uuid5Error::Formatting(ref s) => s,
+            Uuid5Error::Parse(ref err) => err.description(),
         }
     }
 }
 
 impl Display for Uuid5Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Uuid5Error::Formatting(ref s) => write!(f, "{}", s),
-            &Uuid5Error::Parse(ref err) => write!(f, "{}", err),
+        match *self {
+            Uuid5Error::Formatting(ref s) => write!(f, "{}", s),
+            Uuid5Error::Parse(ref err) => write!(f, "{}", err),
         }
     }
 }
@@ -115,14 +115,14 @@ impl FromStr for Uuid5 {
 
 impl Display for Uuid5 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Uuid5::Single(v) => {
+        match *self {
+            Uuid5::Single(v) => {
                 let vf = format!("{:032x}", v);
                 write!(f, "{}-{}-{}-{}-{}",
                        &vf[0..8], &vf[8..12], &vf[12..16],
                        &vf[16..20], &vf[20..])
             },
-            &Uuid5::Double([v,v1]) => {
+            Uuid5::Double([v,v1]) => {
                 let vf = format!("{:032x}", v);
                 let vf1 = format!("{:032x}", v1);
                 write!(f, "{}-{}-{}-{}-{}:{}-{}-{}-{}-{}",
