@@ -1,5 +1,5 @@
-use std::fmt::{self, Display};
 use std::error::Error;
+use std::fmt::{self, Display};
 use std::num::ParseIntError;
 use std::str::FromStr;
 use packstream::values::{self, Value};
