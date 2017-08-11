@@ -12,13 +12,13 @@ pub enum Uuid5 {
 }
 
 // Uuid5 group sizes
-const GROUP_SZ: [u8; 6] =    [8, 4, 4,  4,  12, 0];
+//const GROUP_SZ: [u8; 6] =    [8, 4, 4,  4,  12, 0];
 // accumulated lenghts for above when represented as hypenated hex groups
 // track rust RFC 911 and issue #24111 for const fn
 const GROUP_SZC:[usize; 6] = [0, 8, 13, 18, 23, 36];
 
 // group sizes for two concatenated Uuid5s (workaround)
-const GROUP_SZ2: [u8; 11] =    [8, 4, 4,  4,  12, 8,  4,  4,  4,  12, 0];
+//const GROUP_SZ2: [u8; 11] =    [8, 4, 4,  4,  12, 8,  4,  4,  4,  12, 0];
 const GROUP_SZ2C:[usize; 11] = [0, 8, 13, 18, 23, 36, 45, 50, 55, 60, 73];
 
 #[derive(Deserialize, Debug)]

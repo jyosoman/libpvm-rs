@@ -3,7 +3,6 @@ extern crate futures;
 
 use self::nix::sys::socket::{getsockname, getsockopt, SockAddr, SockType, sockopt};
 use self::nix::sys::stat::fstat;
-use self::futures::{Stream, Poll, Async};
 use std::os::unix::io::{FromRawFd, RawFd};
 use std::os::unix;
 use std::error::Error;
@@ -32,7 +31,6 @@ pub enum FdClass {
 
 pub struct IOStream {
     src: Box<Read>,
-    src_type: IOType,
 }
 
 impl Read for UdpSocketR {
@@ -58,15 +56,9 @@ impl FromRawFd for IOStream {
                     e
                 )
             }
-            _ => {
-                panic!(
-                    "Unsupported input stream. You have passed a fd type that is not supported by libopus"
-                )
-            }
         };
         IOStream {
             src: fd_obj,
-            src_type: iotype,
         }
     }
 }
