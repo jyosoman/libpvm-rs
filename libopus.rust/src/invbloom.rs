@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-const N: usize = 256;  // have to pick power of 2
+const N: usize = 256; // have to pick power of 2
 const NMASK: usize = N - 1;
 
 #[derive(Default)]
@@ -24,7 +24,7 @@ impl InvBloom {
         InvBloom { data: data }
     }
 
-    pub fn check<T:Hash>(&self, test: &T) -> bool {
+    pub fn check<T: Hash>(&self, test: &T) -> bool {
         let hash = {
             let mut hasher = DefaultHasher::new();
             test.hash(&mut hasher);
@@ -36,7 +36,7 @@ impl InvBloom {
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
 
     #[test]

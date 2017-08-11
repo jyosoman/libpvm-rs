@@ -57,9 +57,7 @@ impl FromRawFd for IOStream {
                 )
             }
         };
-        IOStream {
-            src: fd_obj,
-        }
+        IOStream { src: fd_obj }
     }
 }
 
