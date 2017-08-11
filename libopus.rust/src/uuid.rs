@@ -13,16 +13,6 @@ pub enum Uuid5 {
     Double([u128; 2]),
 }
 
-// Uuid5 group sizes
-//const GROUP_SZ: [u8; 6] =    [8, 4, 4,  4,  12, 0];
-// accumulated lenghts for above when represented as hypenated hex groups
-// track rust RFC 911 and issue #24111 for const fn
-const GROUP_SZC: [usize; 6] = [0, 8, 13, 18, 23, 36];
-
-// group sizes for two concatenated Uuid5s (workaround)
-//const GROUP_SZ2: [u8; 11] =    [8, 4, 4,  4,  12, 8,  4,  4,  4,  12, 0];
-const GROUP_SZ2C: [usize; 11] = [0, 8, 13, 18, 23, 36, 45, 50, 55, 60, 73];
-
 #[derive(Debug)]
 pub enum Uuid5Error {
     Formatting(String),
@@ -69,24 +59,30 @@ impl FromStr for Uuid5 {
                 format!("{} is an invalid UUID v5 format", s),
             ));
         }
-        let mut uuid_numstr = String::with_capacity(slen - 4);
 
         match slen {
             36 => {
-                uuid_numstr.push_str(&s[GROUP_SZC[0]..GROUP_SZC[1]]);
-                for i in 2..GROUP_SZC.len() {
-                    uuid_numstr.push_str(&s[GROUP_SZC[i - 1] + 1..GROUP_SZC[i]]);
-                }
-                Ok(Uuid5::Single(u128::from_str_radix(&uuid_numstr[..], 16)?))
+                Ok(Uuid5::Single(
+                    u128::from_str_radix(&s.replace("-", "")[..], 16)?,
+                ))
             }
             73 => {
-                uuid_numstr.push_str(&s[GROUP_SZ2C[0]..GROUP_SZ2C[1]]);
-                for i in 2..GROUP_SZ2C.len() {
-                    uuid_numstr.push_str(&s[GROUP_SZ2C[i - 1] + 1..GROUP_SZ2C[i]]);
-                }
+                let mut parts = s.split(":");
+                let v1 = parts
+                    .next()
+                    .ok_or(Uuid5Error::Formatting(
+                        String::from("invalid UUID v5 format"),
+                    ))?
+                    .replace("-", "");
+                let v2 = parts
+                    .next()
+                    .ok_or(Uuid5Error::Formatting(
+                        String::from("invalid UUID v5 format"),
+                    ))?
+                    .replace("-", "");
                 Ok(Uuid5::Double([
-                    u128::from_str_radix(&uuid_numstr[..32], 16)?,
-                    u128::from_str_radix(&uuid_numstr[32..], 16)?,
+                    u128::from_str_radix(&v1[..], 16)?,
+                    u128::from_str_radix(&v2[..], 16)?,
                 ]))
             }
             _ => Err(Uuid5Error::Formatting(
