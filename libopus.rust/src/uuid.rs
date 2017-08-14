@@ -1,7 +1,9 @@
-use std::fmt::{self, Display};
 use std::error::Error;
+use std::fmt::{self, Display};
 use std::num::ParseIntError;
 use std::str::FromStr;
+use std::string::ToString;
+
 use packstream::values::{self, Value};
 use serde::de::{self, Visitor, Deserialize, Deserializer};
 
@@ -10,16 +12,6 @@ pub enum Uuid5 {
     Single(u128),
     Double([u128; 2]),
 }
-
-// Uuid5 group sizes
-//const GROUP_SZ: [u8; 6] =    [8, 4, 4,  4,  12, 0];
-// accumulated lenghts for above when represented as hypenated hex groups
-// track rust RFC 911 and issue #24111 for const fn
-const GROUP_SZC: [usize; 6] = [0, 8, 13, 18, 23, 36];
-
-// group sizes for two concatenated Uuid5s (workaround)
-//const GROUP_SZ2: [u8; 11] =    [8, 4, 4,  4,  12, 8,  4,  4,  4,  12, 0];
-const GROUP_SZ2C: [usize; 11] = [0, 8, 13, 18, 23, 36, 45, 50, 55, 60, 73];
 
 #[derive(Debug)]
 pub enum Uuid5Error {
@@ -61,35 +53,22 @@ impl FromStr for Uuid5 {
     type Err = Uuid5Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let slen = s.len();
-        if slen != 36 && slen != 73 {
-            return Err(Uuid5Error::Formatting(
-                format!("{} is an invalid UUID v5 format", s),
-            ));
-        }
-        let mut uuid_numstr = String::with_capacity(slen - 4);
-
-        match slen {
+        match s.len() {
             36 => {
-                uuid_numstr.push_str(&s[GROUP_SZC[0]..GROUP_SZC[1]]);
-                for i in 2..GROUP_SZC.len() {
-                    uuid_numstr.push_str(&s[GROUP_SZC[i - 1] + 1..GROUP_SZC[i]]);
-                }
-                Ok(Uuid5::Single(u128::from_str_radix(&uuid_numstr[..], 16)?))
+                Ok(Uuid5::Single(
+                    u128::from_str_radix(&s.replace("-", "")[..], 16)?,
+                ))
             }
             73 => {
-                uuid_numstr.push_str(&s[GROUP_SZ2C[0]..GROUP_SZ2C[1]]);
-                for i in 2..GROUP_SZ2C.len() {
-                    uuid_numstr.push_str(&s[GROUP_SZ2C[i - 1] + 1..GROUP_SZ2C[i]]);
-                }
+                let stripped = s.replace("-", "");
                 Ok(Uuid5::Double([
-                    u128::from_str_radix(&uuid_numstr[..32], 16)?,
-                    u128::from_str_radix(&uuid_numstr[32..], 16)?,
+                    u128::from_str_radix(&stripped[..32], 16)?,
+                    u128::from_str_radix(&stripped[33..], 16)?,
                 ]))
             }
             _ => Err(Uuid5Error::Formatting(
-                String::from("invalid UUID v5 format"),
-            )),
+                format!("{} is an invalid UUID v5 format", s),
+            ))
         }
     }
 }
@@ -110,21 +89,11 @@ impl Display for Uuid5 {
                 )
             }
             Uuid5::Double([v, v1]) => {
-                let vf = format!("{:032x}", v);
-                let vf1 = format!("{:032x}", v1);
                 write!(
                     f,
-                    "{}-{}-{}-{}-{}:{}-{}-{}-{}-{}",
-                    &vf[0..8],
-                    &vf[8..12],
-                    &vf[12..16],
-                    &vf[16..20],
-                    &vf[20..],
-                    &vf1[0..8],
-                    &vf1[8..12],
-                    &vf1[12..16],
-                    &vf1[16..20],
-                    &vf1[20..]
+                    "{}:{}",
+                    Uuid5::Single(v).to_string(),
+                    Uuid5::Single(v1).to_string()
                 )
             }
         }
@@ -134,7 +103,7 @@ impl Display for Uuid5 {
 
 impl values::ValueCast for Uuid5 {
     fn from(&self) -> Value {
-        Value::String(format!("{}", self))
+        Value::String(self.to_string())
     }
 }
 
@@ -152,7 +121,7 @@ impl<'de> Visitor<'de> for Uuid5Visitor {
     where
         E: de::Error,
     {
-        let pval_r = Uuid5::from_str(&value[..]);
+        let pval_r = value.parse::<Uuid5>();
         match pval_r {
             Ok(pval) => Ok(pval),
             Err(e) => Err(E::custom(format!("Uuid5 parsing: {}", e.description()))),
@@ -163,7 +132,7 @@ impl<'de> Visitor<'de> for Uuid5Visitor {
     where
         E: de::Error,
     {
-        let pval_r = Uuid5::from_str(value);
+        let pval_r = value.parse::<Uuid5>();
         match pval_r {
             Ok(pval) => Ok(pval),
             Err(e) => Err(E::custom(format!("Uuid5 parsing: {}", e.description()))),
