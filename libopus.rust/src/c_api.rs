@@ -1,16 +1,17 @@
-
 use iostream::IOStream;
 use libc::c_char;
-use neo4j::cypher::CypherStream;
-use neo4j;
-use serde_json::Deserializer;
 use std::ffi::CStr;
 use std::ops::FnOnce;
 use std::os::unix::io::{RawFd, FromRawFd};
 use std::ptr;
+use std::sync::mpsc;
+use std::thread;
 use std;
-use persist;
 
+use neo4j::cypher::CypherStream;
+use serde_json::Deserializer;
+
+use persist;
 use trace::TraceEvent;
 use invbloom::InvBloom;
 
@@ -49,7 +50,6 @@ pub struct RConfig {
 
 pub struct LibOpus {
     cfg: RConfig,
-    db_conn: neo4j::bolt::Result<CypherStream>,
 }
 
 
@@ -81,7 +81,6 @@ pub unsafe extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
                 Option::Some(ptr::read(cfg.cfg_detail))
             },
         },
-        db_conn: Err(neo4j::bolt::BoltError::Connect("not connected")),
     }));
     Box::into_raw(hdl)
 }
@@ -96,34 +95,31 @@ pub unsafe extern "C" fn print_cfg(hdl: *const OpusHdl) {
 pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
     let hdl = &mut (&mut (*hdl).0);
     let stream = IOStream::from_raw_fd(fd);
-    hdl.db_conn = CypherStream::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password);
-    let db = match hdl.db_conn {
-        Ok(ref mut conn) => conn,
-        Err(ref s) => {
-            println!("Database connection error: {}", s);
-            return;
-        }
-    };
+    let mut db =
+        match CypherStream::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
+            Ok(conn) => conn,
+            Err(ref s) => {
+                println!("Database connection error: {}", s);
+                return;
+            }
+        };
     let evt_str = Deserializer::from_reader(stream).into_iter::<TraceEvent>();
 
     let cache = InvBloom::new();
 
+    let (mut send, recv) = mpsc::sync_channel(1024);
+
+    let db_worker = thread::spawn(move || for tr in recv.iter() {
+        if let Err(e) = persist::execute(&mut db, &tr) {
+            println!("{}", e);
+        }
+    });
+
     for res in evt_str {
         match res {
             Ok(evt) => {
-                let trs = persist::parse_trace(&evt, &cache);
-                match trs {
-                    Ok(mut trs) => {
-                        for tr in trs.drain(..) {
-                            match persist::execute(db, &tr) {
-                                Ok(_) => (),
-                                Err(e) => println!("{}", e),
-                            }
-                        }
-                    }
-                    Err(perr) => {
-                        println!("PVM parsing error {}", perr);
-                    }
+                if let Err(perr) = persist::parse_trace(&evt, &mut send, &cache) {
+                    println!("PVM parsing error {}", perr);
                 }
             }
             Err(perr) => {
@@ -131,6 +127,10 @@ pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
                 break;
             }
         }
+    }
+    drop(send);
+    if let Err(e) = db_worker.join() {
+        println!("Database thread panicked: {:?}", e);
     }
 }
 

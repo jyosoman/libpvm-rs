@@ -3,7 +3,7 @@ use neo4j::cypher::CypherStream;
 use packstream::values::ValueCast;
 
 use std::collections::HashMap;
-
+use std::sync::mpsc;
 
 use data::Node;
 use trace::TraceEvent;
@@ -22,43 +22,48 @@ pub enum Transact {
         ch_uuid: Uuid5,
         ch_pid: i32,
     },
-    Noop,
 }
 
-pub fn cache_check(tr: &TraceEvent, proc_cache: &InvBloom) -> Result<Transact, &'static str> {
+pub fn cache_check(
+    tr: &TraceEvent,
+    send: &mut mpsc::SyncSender<Transact>,
+    proc_cache: &InvBloom,
+) -> Result<(), &'static str> {
     if !proc_cache.check(&tr.subjprocuuid) {
-        Ok(Transact::ProcCheck {
+        send.send(Transact::ProcCheck {
             uuid: tr.subjprocuuid.clone(),
             pid: tr.pid,
             cmdline: tr.exec.clone().ok_or("other missing exec")?,
-        })
+        }).map_err(|_| "Database worker closed queue unexpectadly")
     } else {
-        Ok(Transact::Noop)
+        Ok(())
     }
 }
 
-pub fn parse_trace(tr: &TraceEvent, proc_cache: &InvBloom) -> Result<Vec<Transact>, &'static str> {
-    let mut ret = Vec::with_capacity(2);
-    ret.push(cache_check(tr, proc_cache)?);
+pub fn parse_trace(
+    tr: &TraceEvent,
+    send: &mut mpsc::SyncSender<Transact>,
+    proc_cache: &InvBloom,
+) -> Result<(), &'static str> {
+    cache_check(tr, send, proc_cache)?;
     match &tr.event[..] {
         "audit:event:aue_execve:" => {
-            ret.push(Transact::Exec {
+            send.send(Transact::Exec {
                 uuid: tr.subjprocuuid.clone(),
                 cmdline: tr.cmdline.clone().ok_or("exec missing cmdline")?,
-            });
+            }).map_err(|_| "Database worker closed queue unexpectadly")
         }
         "audit:event:aue_fork:" | "audit:event:aue_vfork:" => {
             let ret_objuuid1 = tr.ret_objuuid1.clone().ok_or("fork missing ret_objuuid1")?;
             proc_cache.check(&ret_objuuid1);
-            ret.push(Transact::Fork {
+            send.send(Transact::Fork {
                 par_uuid: tr.subjprocuuid.clone(),
                 ch_uuid: ret_objuuid1,
                 ch_pid: tr.retval,
-            });
+            }).map_err(|_| "Database worker closed queue unexpectadly")
         }
-        _ => {}
+        _ => Ok(()),
     }
-    Ok(ret)
 }
 
 pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
@@ -77,7 +82,6 @@ pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
             ref ch_uuid,
             ch_pid,
         } => run_fork(cypher, par_uuid, ch_uuid, ch_pid),
-        Transact::Noop => Ok(()),
     }
 }
 
