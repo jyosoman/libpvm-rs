@@ -53,39 +53,22 @@ impl FromStr for Uuid5 {
     type Err = Uuid5Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let slen = s.len();
-        if slen != 36 && slen != 73 {
-            return Err(Uuid5Error::Formatting(
-                format!("{} is an invalid UUID v5 format", s),
-            ));
-        }
-
-        match slen {
+        match s.len() {
             36 => {
                 Ok(Uuid5::Single(
                     u128::from_str_radix(&s.replace("-", "")[..], 16)?,
                 ))
             }
             73 => {
-                let mut parts = s.split(":");
-                let v1 = parts
-                    .next()
-                    .ok_or(Uuid5Error::Formatting(
-                        String::from("invalid UUID v5 format"),
-                    ))?
-                    .replace("-", "");
-                let v2 = parts
-                    .next()
-                    .ok_or(Uuid5Error::Formatting(
-                        String::from("invalid UUID v5 format"),
-                    ))?
-                    .replace("-", "");
+                let stripped = s.replace("-", "");
                 Ok(Uuid5::Double([
-                    u128::from_str_radix(&v1[..], 16)?,
-                    u128::from_str_radix(&v2[..], 16)?,
+                    u128::from_str_radix(&stripped[..32], 16)?,
+                    u128::from_str_radix(&stripped[33..], 16)?,
                 ]))
             }
-            _ => unreachable!(),
+            _ => Err(Uuid5Error::Formatting(
+                format!("{} is an invalid UUID v5 format", s),
+            ))
         }
     }
 }
