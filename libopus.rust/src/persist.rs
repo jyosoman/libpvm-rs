@@ -86,7 +86,7 @@ pub fn execute(cypher: &mut CypherStream, tr: &Transact) -> Result<(), String> {
 }
 
 pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), String> {
-    let result = cypher.run(
+    cypher.run_unchecked(
         "MERGE (p:Process {db_id: {db_id}})
          SET p.uuid = {uuid}
          SET p.cmdline = {cmdline}
@@ -94,13 +94,13 @@ pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), String
          SET p.thin = {thin}",
         node.get_props(),
     );
-    match result {
+    /*match result {
         Ok(res) => {
             cypher.fetch_summary(&res);
             Ok(())
         }
         Err(e) => Err(format!("{:?}", e)),
-    }
+    }*/Ok(())
 }
 
 pub fn proc_check(
@@ -114,20 +114,20 @@ pub fn proc_check(
     props.insert("pid", pid.from());
     props.insert("cmdline", cmdline.from());
 
-    let result = cypher.run(
+    cypher.run_unchecked(
         "MERGE (p:Process {uuid: {uuid}})
           ON CREATE SET p.pid = {pid}
           ON CREATE SET p.cmdline = {cmdline}
           ON CREATE SET p.thin = true",
         props,
     );
-    match result {
+    /*match result {
         Ok(res) => {
             cypher.fetch_summary(&res);
             Ok(())
         }
         Err(e) => Err(format!("{:?}", e)),
-    }
+    }*/Ok(())
 }
 
 pub fn run_exec(cypher: &mut CypherStream, uuid: &Uuid5, cmdline: &str) -> Result<(), String> {
@@ -135,7 +135,7 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &Uuid5, cmdline: &str) -> Resul
     props.insert("uuid", uuid.from());
     props.insert("cmdline", cmdline.from());
 
-    let result = cypher.run(
+    cypher.run_unchecked(
         "MATCH (p:Process {uuid: {uuid},
                            thin: false})
          WHERE NOT (p)-[:INF {class: 'next'}]->()
@@ -154,13 +154,13 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &Uuid5, cmdline: &str) -> Resul
          RETURN 0",
         props,
     );
-    match result {
+    /*match result {
         Ok(res) => {
             cypher.fetch_summary(&res);
             Ok(())
         }
         Err(e) => Err(format!("{:?}", e)),
-    }
+    }*/Ok(())
 }
 
 pub fn run_fork(
@@ -174,7 +174,7 @@ pub fn run_fork(
     props.insert("ch_uuid", ch_uuid.from());
     props.insert("ch_pid", ch_pid.from());
 
-    let result = cypher.run(
+    cypher.run_unchecked(
         "MATCH (p:Process {uuid: {par_uuid}})
          WHERE NOT (p)-[:INF {class: 'next'}]->()
          CREATE (c:Process {uuid: {ch_uuid},
@@ -184,11 +184,11 @@ pub fn run_fork(
          CREATE (p)-[:INF {class: 'child'}]->(c)",
         props,
     );
-    match result {
+    /*match result {
         Ok(res) => {
             cypher.fetch_summary(&res);
             Ok(())
         }
         Err(e) => Err(format!("{:?}", e)),
-    }
+    }*/Ok(())
 }
