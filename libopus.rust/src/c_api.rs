@@ -1,5 +1,6 @@
 use iostream::IOStream;
 use libc::c_char;
+use std::collections::HashMap;
 use std::ffi::CStr;
 use std::ops::FnOnce;
 use std::os::unix::io::{RawFd, FromRawFd};
@@ -103,6 +104,8 @@ pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
                 return;
             }
         };
+    db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
+
     let evt_str = Deserializer::from_reader(stream).into_iter::<TraceEvent>();
 
     let cache = InvBloom::new();
