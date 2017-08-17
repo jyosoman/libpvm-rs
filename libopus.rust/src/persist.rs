@@ -119,7 +119,8 @@ pub fn proc_check(
         "MERGE (p:Process {uuid: {uuid}})
           ON CREATE SET p.pid = {pid}
           ON CREATE SET p.cmdline = {cmdline}
-          ON CREATE SET p.thin = true",
+          ON CREATE SET p.thin = true
+         RETURN 0",
         props,
     );
     /*match result {
@@ -184,7 +185,8 @@ pub fn run_fork(
                             pid: {ch_pid},
                             cmdline: p.cmdline,
                             thin: true})
-         CREATE (p)-[:INF {class: 'child'}]->(c)",
+         CREATE (p)-[:INF {class: 'child'}]->(c)
+         RETURN 0",
         props,
     );
     /*match result {
