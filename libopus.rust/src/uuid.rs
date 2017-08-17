@@ -68,7 +68,7 @@ impl FromStr for Uuid5 {
             }
             _ => Err(Uuid5Error::Formatting(
                 format!("{} is an invalid UUID v5 format", s),
-            ))
+            )),
         }
     }
 }

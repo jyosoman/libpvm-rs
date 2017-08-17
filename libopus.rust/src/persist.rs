@@ -100,7 +100,8 @@ pub fn persist_node(cypher: &mut CypherStream, node: &Node) -> Result<(), String
             Ok(())
         }
         Err(e) => Err(format!("{:?}", e)),
-    }*/Ok(())
+    }*/
+    Ok(())
 }
 
 pub fn proc_check(
@@ -127,7 +128,8 @@ pub fn proc_check(
             Ok(())
         }
         Err(e) => Err(format!("{:?}", e)),
-    }*/Ok(())
+    }*/
+    Ok(())
 }
 
 pub fn run_exec(cypher: &mut CypherStream, uuid: &Uuid5, cmdline: &str) -> Result<(), String> {
@@ -160,7 +162,8 @@ pub fn run_exec(cypher: &mut CypherStream, uuid: &Uuid5, cmdline: &str) -> Resul
             Ok(())
         }
         Err(e) => Err(format!("{:?}", e)),
-    }*/Ok(())
+    }*/
+    Ok(())
 }
 
 pub fn run_fork(
@@ -190,5 +193,6 @@ pub fn run_fork(
             Ok(())
         }
         Err(e) => Err(format!("{:?}", e)),
-    }*/Ok(())
+    }*/
+    Ok(())
 }
