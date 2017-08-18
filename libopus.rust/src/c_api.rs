@@ -113,10 +113,17 @@ pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
 
     let (mut send, recv) = mpsc::sync_channel(1024);
 
-    let db_worker = thread::spawn(move || for tr in recv.iter() {
-        if let Err(e) = persist::execute(&mut db, &tr) {
-            println!("{}", e);
+    let db_worker = thread::spawn(move || {
+        let mut trs = 0;
+        db.begin_transaction(None);
+        for tr in recv.iter() {
+            if let Err(e) = persist::execute(&mut db, &tr) {
+                println!("{}", e);
+            }
+            trs += 1;
         }
+        db.commit_transaction();
+        println!("Neo4J Queries Issued: {}", trs);
     });
 
     for res in evt_str {
