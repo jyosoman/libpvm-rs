@@ -1,21 +1,15 @@
 use iostream::IOStream;
 use libc::c_char;
-use std::collections::HashMap;
 use std::ffi::CStr;
 use std::io::BufReader;
 use std::ops::FnOnce;
 use std::os::unix::io::{RawFd, FromRawFd};
 use std::ptr;
-use std::sync::mpsc;
-use std::thread;
 use std;
 
 use neo4j::cypher::CypherStream;
-use serde_json::Deserializer;
 
-use persist;
-use trace::TraceEvent;
-use invbloom::InvBloom;
+use ingest;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -96,8 +90,8 @@ pub unsafe extern "C" fn print_cfg(hdl: *const OpusHdl) {
 #[no_mangle]
 pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
     let hdl = &mut (&mut (*hdl).0);
-    let stream = IOStream::from_raw_fd(fd);
-    let mut db =
+    let stream = BufReader::new(IOStream::from_raw_fd(fd));
+    let db =
         match CypherStream::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
             Ok(conn) => conn,
             Err(ref s) => {
@@ -105,44 +99,7 @@ pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
                 return;
             }
         };
-    db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
-
-    let evt_str = Deserializer::from_reader(BufReader::new(stream)).into_iter::<TraceEvent>();
-
-    let cache = InvBloom::new();
-
-    let (mut send, recv) = mpsc::sync_channel(1024);
-
-    let db_worker = thread::spawn(move || {
-        let mut trs = 0;
-        db.begin_transaction(None);
-        for tr in recv.iter() {
-            if let Err(e) = persist::execute(&mut db, &tr) {
-                println!("{}", e);
-            }
-            trs += 1;
-        }
-        db.commit_transaction();
-        println!("Neo4J Queries Issued: {}", trs);
-    });
-
-    for res in evt_str {
-        match res {
-            Ok(evt) => {
-                if let Err(perr) = persist::parse_trace(&evt, &mut send, &cache) {
-                    println!("PVM parsing error {}", perr);
-                }
-            }
-            Err(perr) => {
-                println!("Parsing error: {}", perr);
-                break;
-            }
-        }
-    }
-    drop(send);
-    if let Err(e) = db_worker.join() {
-        println!("Database thread panicked: {:?}", e);
-    }
+    ingest::ingest(stream, db);
 }
 
 #[no_mangle]

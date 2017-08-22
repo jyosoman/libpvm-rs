@@ -15,7 +15,7 @@ extern crate tokio_core;
 
 pub use c_api::*;
 
-mod ingest {}
+pub mod ingest;
 pub mod iostream;
 pub mod c_api;
 pub mod trace;
