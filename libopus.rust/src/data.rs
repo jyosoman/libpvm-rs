@@ -6,7 +6,7 @@ use uuid::Uuid5;
 use value_as::CastValue;
 
 #[derive(Debug)]
-pub struct NodeID(pub u64);
+pub struct NodeID(u64);
 
 impl ValueCast for NodeID {
     fn from(&self) -> Value {
@@ -96,7 +96,7 @@ pub struct ProcessNode {
 impl ProcessNode {
     pub fn get_props(&self) -> HashMap<&str, Value> {
         let mut props = HashMap::new();
-        props.insert("db_id", self.db_id.0.from());
+        props.insert("db_id", self.db_id.from());
         props.insert("uuid", self.uuid.from());
         props.insert("cmdline", self.cmdline.from());
         props.insert("pid", self.pid.from());
