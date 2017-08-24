@@ -7,7 +7,7 @@ use std::string::ToString;
 use packstream::values::{self, Value};
 use serde::de::{self, Visitor, Deserialize, Deserializer};
 
-#[derive(Debug, PartialEq, Hash, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 pub enum Uuid5 {
     Single(u128),
     Double([u128; 2]),
