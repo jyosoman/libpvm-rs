@@ -20,7 +20,6 @@ pub mod iostream;
 pub mod c_api;
 pub mod trace;
 pub mod data;
-pub mod persist;
 pub mod query;
 pub mod value_as;
 pub mod invbloom;

@@ -1,3 +1,7 @@
+mod parse;
+mod persist;
+mod pvm_cache;
+
 use std::collections::HashMap;
 use std::io::BufRead;
 use std::sync::mpsc;
@@ -6,49 +10,42 @@ use std::thread;
 use neo4j::cypher::CypherStream;
 use serde_json;
 
-use persist;
-use invbloom::InvBloom;
-
+use self::pvm_cache::PVMCache;
 
 pub fn ingest<R>(stream: R, mut db: CypherStream)
 where
     R: BufRead,
 {
-    db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
+    db.run_unchecked("CREATE INDEX ON :Process(db_id)", HashMap::new());
 
-    let cache = InvBloom::new();
+    let mut cache = PVMCache::new();
 
     let (mut send, recv) = mpsc::sync_channel(1024);
 
     let db_worker = thread::spawn(move || {
-        let mut trs = 0;
-        db.begin_transaction(None);
-        for tr in recv.iter() {
-            if let Err(e) = persist::execute(&mut db, &tr) {
-                println!("{}", e);
-            }
-            trs += 1;
-        }
-        db.commit_transaction();
-        println!("Neo4J Queries Issued: {}", trs);
+       persist::execute_loop(db, recv); 
     });
 
     for line in stream.lines() {
-        let res = match line {
-            Ok(l) => serde_json::from_slice(l.as_bytes()),
+        let l = match line {
+            Ok(l) => l,
             Err(perr) => {
                 println!("Parsing error: {}", perr);
                 break;
             }
         };
-        match res {
+        if l.is_empty() {
+            continue;
+        }
+        match serde_json::from_slice(l.as_bytes()) {
             Ok(evt) => {
-                if let Err(perr) = persist::parse_trace(&evt, &mut send, &cache) {
+                if let Err(perr) = parse::parse_trace(&evt, &mut send, &mut cache) {
                     println!("PVM parsing error {}", perr);
                 }
             }
             Err(perr) => {
                 println!("Parsing error: {}", perr);
+                println!("{}", l);
                 break;
             }
         }
