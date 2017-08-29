@@ -22,7 +22,7 @@ pub enum DBTr {
 pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     let mut trs = 0;
     db.begin_transaction(None);
-    for tr in recv.iter() {
+    for tr in recv {
         if let Err(e) = execute(&mut db, tr) {
             println!("{}", e);
         }
@@ -33,9 +33,9 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
             match s {
                 BoltSummary::Failure(m) => println!("Error: Commit failed due to {:?}", m),
                 BoltSummary::Ignored(_) => unreachable!(),
-                BoltSummary::Success(_) => {},
+                BoltSummary::Success(_) => {}
             }
-        },
+        }
         None => println!("Error: Database commit failed to produce a summary."),
     };
     println!("Neo4J Queries Issued: {}", trs);

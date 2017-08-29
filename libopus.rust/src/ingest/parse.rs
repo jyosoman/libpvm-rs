@@ -1,6 +1,6 @@
 use std::sync::mpsc::SyncSender;
 
-use ::trace::TraceEvent;
+use trace::TraceEvent;
 use super::persist::DBTr;
 use super::PVMCache;
 
