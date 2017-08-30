@@ -1,0 +1,3 @@
+[submodule "libopus.cpp/cmake"]
+	path = libopus.cpp/cmake
+	url = https://github.com/lc525/cmake-common
