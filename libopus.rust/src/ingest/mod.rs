@@ -31,7 +31,6 @@ where
     let mut pre_vec: Vec<String> = Vec::with_capacity(BATCH_SIZE);
     let mut post_vec: Vec<Option<TraceEvent>> = Vec::with_capacity(BATCH_SIZE);
     let mut lines = stream.lines();
-    let mut last = false;
 
     loop {
         pre_vec.clear();
@@ -47,7 +46,6 @@ where
                     }
                 }
                 None => {
-                    last = true;
                     break;
                 }
             };
@@ -81,7 +79,7 @@ where
                 None => continue,
             }
         }
-        if last {
+        if pre_vec.len() < BATCH_SIZE {
             break;
         }
     }
