@@ -24,7 +24,7 @@ where
 
     let mut cache = PVMCache::new();
 
-    let (mut send, recv) = mpsc::sync_channel(1024);
+    let (mut send, recv) = mpsc::sync_channel(BATCH_SIZE*2);
 
     let db_worker = thread::spawn(move || { persist::execute_loop(db, recv); });
 
