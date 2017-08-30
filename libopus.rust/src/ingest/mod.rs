@@ -28,7 +28,7 @@ where
 
     let db_worker = thread::spawn(move || { persist::execute_loop(db, recv); });
 
-    let mut pre_vec: Vec<Option<String>> = Vec::with_capacity(BATCH_SIZE);
+    let mut pre_vec: Vec<String> = Vec::with_capacity(BATCH_SIZE);
     let mut post_vec: Vec<Option<TraceEvent>> = Vec::with_capacity(BATCH_SIZE);
     let mut lines = stream.lines();
     let mut last = false;
@@ -54,23 +54,20 @@ where
             if l.is_empty() {
                 continue;
             }
-            pre_vec.push(Some(l));
+            pre_vec.push(l);
         }
 
         pre_vec
             .par_iter()
-            .map(|s| match *s {
-                Some(ref s) => {
-                    match serde_json::from_slice(s.as_bytes()) {
-                        Ok(evt) => Some(evt),
-                        Err(perr) => {
-                            println!("Parsing error: {}", perr);
-                            println!("{}", s);
-                            None
-                        }
+            .map(|s| {
+                match serde_json::from_slice(s.as_bytes()) {
+                    Ok(evt) => Some(evt),
+                    Err(perr) => {
+                        println!("Parsing error: {}", perr);
+                        println!("{}", s);
+                        None
                     }
                 }
-                None => None,
             })
             .collect_into(&mut post_vec);
 
