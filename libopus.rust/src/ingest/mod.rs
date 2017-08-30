@@ -69,10 +69,10 @@ where
             })
             .collect_into(&mut post_vec);
 
-        for tr in &post_vec {
-            match *tr {
-                Some(ref tr) => {
-                    if let Err(perr) = parse::parse_trace(tr, &mut send, &mut cache) {
+        for tr in post_vec.drain(..) {
+            match tr {
+                Some(tr) => {
+                    if let Err(perr) = parse::parse_trace(&tr, &mut send, &mut cache) {
                         println!("PVM parsing error {}", perr);
                     }
                 }
