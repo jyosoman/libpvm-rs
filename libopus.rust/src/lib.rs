@@ -12,15 +12,15 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio_core;
+extern crate rayon;
 
 pub use c_api::*;
 
-mod ingest {}
+pub mod ingest;
 pub mod iostream;
 pub mod c_api;
 pub mod trace;
 pub mod data;
-pub mod persist;
 pub mod query;
 pub mod value_as;
 pub mod invbloom;

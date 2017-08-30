@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
   char* user = malloc(5*sizeof(char));
   strcpy(user, "neo4j");
 
-  int in = open("data.json", O_RDONLY);
+  int in = open(argv[1], O_RDONLY);
 
   Config cfg = { Auto, "localhost:7687", user, "opus", 0 };
   OpusHdl* hdl = opus_init(cfg);
