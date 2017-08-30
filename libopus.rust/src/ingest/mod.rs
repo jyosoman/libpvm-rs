@@ -20,13 +20,13 @@ where
 {
     db.run_unchecked("CREATE INDEX ON :Process(db_id)", HashMap::new());
 
+    const BATCH_SIZE: usize = 1048576;
+
     let mut cache = PVMCache::new();
 
     let (mut send, recv) = mpsc::sync_channel(1024);
 
     let db_worker = thread::spawn(move || { persist::execute_loop(db, recv); });
-
-    const BATCH_SIZE: usize = 65536;
 
     let mut pre_vec: Vec<Option<String>> = Vec::with_capacity(BATCH_SIZE);
     let mut post_vec: Vec<Option<TraceEvent>> = Vec::with_capacity(BATCH_SIZE);
