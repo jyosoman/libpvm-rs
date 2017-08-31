@@ -38,12 +38,16 @@ if(WITH_DOCS)
        DESTINATION ${BINARY_BUILD_DIR})
 
   add_custom_target(doc ALL
-      ${SPHINX_EXECUTABLE}
-      -q -b html
-      -c "${BINARY_BUILD_DIR}"
-      -d "${SPHINX_CACHE_DIR}"
-      "${CMAKE_CURRENT_SOURCE_DIR}"
-      "${SPHINX_HTML_DIR}"
+    DEPENDS ${SPHINX_HTML_DIR}/index.html
+  )
+
+  file(GLOB_RECURSE LIBOPUS_DOCS_SRC . "*")
+
+  add_custom_command(OUTPUT ${SPHINX_HTML_DIR}/index.html
+      COMMAND ${SPHINX_EXECUTABLE} -q -b html -c "${BINARY_BUILD_DIR}"
+        -d "${SPHINX_CACHE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${SPHINX_HTML_DIR}"
+        DEPENDS ${LIBOPUS_DOCS_SRC}
       COMMENT "Building HTML documentation with Sphinx ${CMAKE_CURRENT_SOURCE_DIR}")
 
    if("${CMAKE_GENERATOR}" MATCHES Make)
