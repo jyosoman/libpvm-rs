@@ -163,14 +163,14 @@ message("!! Build type: ${CMAKE_BUILD_TYPE}")
 include(ExternalProject)
 
 # Boost
-set(BOOST_USE_STATIC_LIBS OFF)
-set(BOOST_USE_MULTITHREADED ON)
-set(BOOST_USE_STATIC_RUNTIME OFF)
-find_package(Boost 1.46.0 REQUIRED COMPONENTS log system)
+#set(BOOST_USE_STATIC_LIBS OFF)
+#set(BOOST_USE_MULTITHREADED ON)
+#set(BOOST_USE_STATIC_RUNTIME OFF)
+#find_package(Boost 1.46.0 REQUIRED COMPONENTS log system)
 
-if(Boost_FOUND)
-  include_directories( ${BOOST_INCLUDE_DIRS} )
-endif()
+#if(Boost_FOUND)
+#  include_directories( ${BOOST_INCLUDE_DIRS} )
+#endif()
 
 # Google Testing Framework
 set(FALLTHROUGH "0")
