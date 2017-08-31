@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
-use packstream::values::{Value, ValueCast};
+use packstream::values::Value;
 
 use uuid::Uuid5;
 use value_as::CastValue;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct NodeID(u64);
 
-impl ValueCast for NodeID {
-    fn from(&self) -> Value {
-        Value::Integer(self.0 as i64)
+impl From<NodeID> for Value {
+    fn from(val: NodeID) -> Self {
+        Value::Integer(val.0 as i64)
     }
 }
 
@@ -96,11 +96,11 @@ pub struct ProcessNode {
 impl ProcessNode {
     pub fn get_props(&self) -> HashMap<&str, Value> {
         let mut props = HashMap::new();
-        props.insert("db_id", self.db_id.from());
-        props.insert("uuid", self.uuid.from());
-        props.insert("cmdline", self.cmdline.from());
-        props.insert("pid", self.pid.from());
-        props.insert("thin", self.thin.from());
+        props.insert("db_id", self.db_id.into());
+        props.insert("uuid", self.uuid.into());
+        props.insert("cmdline", self.cmdline.clone().into());
+        props.insert("pid", self.pid.into());
+        props.insert("thin", self.thin.into());
         props
     }
 
@@ -140,13 +140,13 @@ impl Edge {
     pub fn get_props(&self) -> Value {
         let mut prop = HashMap::new();
         match *self {
-            Edge::Child(ref n) => {
-                prop.insert("id".to_string(), n.from());
-                prop.insert("class".to_string(), "child".from());
+            Edge::Child(n) => {
+                prop.insert("id".to_string(), n.into());
+                prop.insert("class".to_string(), "child".into());
             }
-            Edge::Next(ref n) => {
-                prop.insert("id".to_string(), n.from());
-                prop.insert("class".to_string(), "next".from());
+            Edge::Next(n) => {
+                prop.insert("id".to_string(), n.into());
+                prop.insert("class".to_string(), "next".into());
             }
         }
         Value::Map(prop)

@@ -4,7 +4,7 @@ use std::num::ParseIntError;
 use std::str::FromStr;
 use std::string::ToString;
 
-use packstream::values::{self, Value};
+use packstream::values::Value;
 use serde::de::{self, Visitor, Deserialize, Deserializer};
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
@@ -117,9 +117,9 @@ impl Display for Uuid5 {
 }
 
 
-impl values::ValueCast for Uuid5 {
-    fn from(&self) -> Value {
-        Value::String(self.to_string())
+impl From<Uuid5> for Value {
+    fn from(val: Uuid5) -> Self {
+        Value::String(val.to_string())
     }
 }
 

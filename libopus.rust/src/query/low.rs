@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
-use packstream::values::{Data, ValueCast};
+use packstream::values::Data;
 use neo4j::cypher::CypherStream;
 
 use data::Node;
@@ -8,7 +8,7 @@ use data::Node;
 
 pub fn nodes_by_uuid(cypher: &mut CypherStream, uuid: &str) -> Vec<Node> {
     let mut props = HashMap::new();
-    props.insert("uuid", uuid.from());
+    props.insert("uuid", uuid.into());
     let result = cypher
         .run(
             "MATCH (n {uuid: {uuid}})
