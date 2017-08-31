@@ -1,18 +1,44 @@
-# global build file
-# author: Lucian Carata <lc525@cam.ac.uk>
+# ========================================
+# Global Resourceful build file
+# Author: Lucian Carata <lc525@cam.ac.uk>
+# ========================================
 #
-# Build options/features:
+# The instructions below describe how to run cmake builds when you want to
+# have full flexibility in controlling the build process. For normal usecases,
+# the the stub Makefile provided at the root of the project will do the right
+# thing when called (run `make help` for details), including fetching and
+# building CMake itself if you don't have it in your PATH already.
 #
-# Run cmake from a separate build directory (out of source build is
-# recommended).
+# CMake build instructions:
 #
-# Available option list, add -D[OPTION_NAME]=ON to enable:
+# Run cmake from a separate build directory (out of source build is required).
+# The provided .build script within the build directory wraps some of the common
+# options:
+#
+# [..build]$ ./.build
+#
+# If you want to run cmake manually, that is of course also possible
+# (but check for what variables need setting before the command - the .build
+# script provides the required hints);
+#
+# Sample build command line:
+# [..]$ cd build
+# [..build]$ cmake -DCMAKE_BUILD_TYPE=Release ..
+# [..build]$ make
+#
+#
+# To look at available optional compilation features, run (from the separate
+# build dir):
+#
+# [..build]$ cmake -LH ..
+#
+# Highlights from option list, add -D[OPTION_NAME]=ON to cmake cmd to enable:
 #   - WITH_DOCS          - build project documentation
 #        default:   ON
 #        requires:  python3
 #                   sphinx (sphinx-doc.org)
 #
-#   - WITH_API_DOCS          - build project API documentation
+#   - WITH_API_DOCS      - build project API documentation
 #        default:   OFF when WITH_DOCS is ON
 #        requires:  doxygen (build time dependency)
 #
@@ -34,6 +60,9 @@ set(PNAME libopus)
 # set default project build options:
 set(DEFAULT_WITH_TESTS OFF)
 set(DEFAULT_WITH_DOCS ON)
+# Documentation: look for sphynx installations as part of the following python
+# interpreters, giving priority to the versions appearing earlier in the list;
+set(SPHINX_PYTHON_VERSIONS 3 2)
 
 # General cmake project definition follows. Customize as necessary
 project(${PNAME})
@@ -182,6 +211,34 @@ if(USE_REPO_GTEST OR FALLTHROUGH STREQUAL "1")
 endif()
 #  if(USE_SYSTEM_GTEST)
 #endif()
+
+# libneo4j-client driver
+find_package(libneo4jclient)
+if(NOT LIBNEO4JCLIENT_FOUND)
+  set(LIBNEO4JCLIENT_PREFIX ${CMAKE_SOURCE_DIR}/external/libneo4j-client)
+  MESSAGE(" \\-- libneo4j-client will be downloaded and built in ${LIBNEO4JCLIENT_PREFIX}")
+  ExternalProject_Add(
+      libneo4jclient
+      PREFIX ${CMAKE_SOURCE_DIR}/build/libneo4jclient
+      GIT_REPOSITORY https://github.com/cleishm/libneo4j-client.git
+      GIT_TAG v2.1.3
+      INSTALL_COMMAND ""
+      UPDATE_COMMAND "./autogen.sh"
+      PATCH_COMMAND git apply ${LIBNEO4JCLIENT_PREFIX}/../patches/libneo4jclient.patch
+      CONFIGURE_COMMAND ${LIBNEO4JCLIENT_PREFIX}/configure --disable-tools
+      BUILD_COMMAND make clean check
+      TMP_DIR ${CMAKE_SOURCE_DIR}/build/libneo4jclient
+      STAMP_DIR ${CMAKE_SOURCE_DIR}/build/libneo4jclient
+      DOWNLOAD_DIR ${LIBNEO4JCLIENT_PREFIX}
+      SOURCE_DIR ${LIBNEO4JCLIENT_PREFIX}
+      BINARY_DIR ${LIBNEO4JCLIENT_PREFIX}
+  )
+set(LIBNEO4J_LIBRARY "${LIBNEO4JCLIENT_PREFIX}/src/lib/libneo4j-client.so")
+set(LIBNEO4J_INCLUDE_DIR "${LIBNEO4JCLIENT_PREFIX}/src/lib")
+
+set(LIBNEO4J_LIBRARIES ${LIBNEO4J_LIBRARY})
+set(LIBNEO4J_INCLUDE_DIRS ${LIBNEO4J_INCLUDE_DIR})
+endif()
 
 if(WITH_TESTS)
   add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -V)

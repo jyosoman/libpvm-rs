@@ -62,5 +62,5 @@ fi
 if [ ${CLEAN_EXTERNAL} -eq 1 ]
 then
   echo "Cleaning external dependencies ..."
-  find ../external/ ! -name '.gitignore' ! -path ../external/ -delete
+  find ../external/ ! -path ../external/ ! -path ../external/patches ! -path "../external/patches/*" -delete
 fi
