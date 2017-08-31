@@ -1,8 +1,6 @@
 use neo4j::bolt::BoltSummary;
 use neo4j::cypher::CypherStream;
 
-use packstream::values::ValueCast;
-
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
@@ -50,10 +48,10 @@ fn execute(cypher: &mut CypherStream, tr: DBTr) -> Result<(), String> {
             pid,
             cmdline,
         } => {
-            props.insert("db_id", id.from());
-            props.insert("uuid", uuid.from());
-            props.insert("pid", pid.from());
-            props.insert("cmdline", cmdline.from());
+            props.insert("db_id", id.into());
+            props.insert("uuid", uuid.into());
+            props.insert("pid", pid.into());
+            props.insert("cmdline", cmdline.into());
             Ok(cypher.run_unchecked(
                 "CREATE (p:Process {db_id: $db_id,
                                     uuid: $uuid,
@@ -63,9 +61,9 @@ fn execute(cypher: &mut CypherStream, tr: DBTr) -> Result<(), String> {
             ))
         }
         DBTr::CreateRel { src, dst, class } => {
-            props.insert("src", src.from());
-            props.insert("dst", dst.from());
-            props.insert("class", class.from());
+            props.insert("src", src.into());
+            props.insert("dst", dst.into());
+            props.insert("class", class.into());
             Ok(cypher.run_unchecked(
                 "MATCH (s:Process {db_id: $src}),
                        (d:Process {db_id: $dst})
@@ -74,9 +72,9 @@ fn execute(cypher: &mut CypherStream, tr: DBTr) -> Result<(), String> {
             ))
         }
         DBTr::UpdateNode { id, pid, cmdline } => {
-            props.insert("db_id", id.from());
-            props.insert("pid", pid.from());
-            props.insert("cmdline", cmdline.from());
+            props.insert("db_id", id.into());
+            props.insert("pid", pid.into());
+            props.insert("cmdline", cmdline.into());
             Ok(cypher.run_unchecked(
                 "MATCH (p:Process {db_id: $db_id})
                  SET p.pid = $pid
