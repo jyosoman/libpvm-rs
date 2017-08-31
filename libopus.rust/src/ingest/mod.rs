@@ -29,7 +29,7 @@ where
     let tmr = Instant::now();
     db.run_unchecked("CREATE INDEX ON :Process(db_id)", HashMap::new());
 
-    const BATCH_SIZE: usize = 1048576;
+    const BATCH_SIZE: usize = 0x80000;
 
     let mut cache = PVMCache::new();
 
