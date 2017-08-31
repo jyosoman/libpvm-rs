@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::io::BufRead;
 use std::sync::mpsc;
 use std::thread;
+use std::time::Instant;
 
 use rayon::prelude::*;
 use neo4j::cypher::CypherStream;
@@ -14,10 +15,18 @@ use serde_json;
 use self::pvm_cache::PVMCache;
 use trace::TraceEvent;
 
+fn print_time(ref tmr: Instant) {
+    let dur = tmr.elapsed();
+    println!("{:.3} Seconds elapsed",
+             dur.as_secs() as f64
+             + dur.subsec_nanos() as f64 * 1e-9);
+}
+
 pub fn ingest<R>(stream: R, mut db: CypherStream)
 where
     R: BufRead,
 {
+    let tmr = Instant::now();
     db.run_unchecked("CREATE INDEX ON :Process(db_id)", HashMap::new());
 
     const BATCH_SIZE: usize = 1048576;
@@ -84,7 +93,11 @@ where
         }
     }
     drop(send);
+    println!("Parse Complete");
+    print_time(tmr);
     if let Err(e) = db_worker.join() {
         println!("Database thread panicked: {:?}", e);
     }
+    println!("Ingestion Complete");
+    print_time(tmr);
 }
