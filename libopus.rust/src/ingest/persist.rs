@@ -26,7 +26,10 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     let mut trs = 0;
     let mut nodes: Vec<HashMap<&str, Value>> = Vec::new();
     let mut edges: Vec<HashMap<&str, Value>> = Vec::new();
-    let mut update: Vec<HashMap<&str, Value>> = Vec::new(); 
+    let mut update: Vec<HashMap<&str, Value>> = Vec::new();
+
+    const BATCH_SIZE: usize = 1000;
+
     db.begin_transaction(None);
     for tr in recv {
         let mut props = HashMap::new();
@@ -52,19 +55,24 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
             }
             _ => {}
         }
-        trs += 1;
-        if trs % 1000 == 0 {
+        if nodes.len() >= BATCH_SIZE {
             execute(&mut db, DBTr::CreateNodes(nodes.clone().into()));
-            execute(&mut db, DBTr::CreateRels(edges.clone().into()));
-            execute(&mut db, DBTr::UpdateNodes(update.clone().into()));
             nodes.clear();
+        }
+        if edges.len() >= BATCH_SIZE {
+            execute(&mut db, DBTr::CreateRels(edges.clone().into()));
             edges.clear();
+        }
+        if update.len() >= BATCH_SIZE {
+            execute(&mut db, DBTr::UpdateNodes(update.clone().into()));
             update.clear();
         }
-    }
+        trs += 1;
+   }
     execute(&mut db, DBTr::CreateNodes(nodes.into()));
     execute(&mut db, DBTr::CreateRels(edges.into()));
     execute(&mut db, DBTr::UpdateNodes(update.into()));
+    println!("Final Commit");
     match db.commit_transaction() {
         Some(s) => {
             match s {
