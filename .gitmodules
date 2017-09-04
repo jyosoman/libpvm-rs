@@ -1,6 +1,6 @@
 [submodule "libopus.cpp/cmake"]
 	path = libopus.cpp/cmake
-	url = https://github.com/lc525/cmake-common
+	url = git@github.com:lc525/cmake-common
 
 [submodule "libopus.rust/modules/rusty-bolt"]
 	path = libopus.rust/modules/rusty-bolt

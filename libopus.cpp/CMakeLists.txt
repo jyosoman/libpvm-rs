@@ -58,7 +58,7 @@ cmake_minimum_required(VERSION 2.8)
 set(PNAME libopus)
 
 # set default project build options:
-set(DEFAULT_WITH_TESTS OFF)
+set(DEFAULT_WITH_TESTS ON)
 set(DEFAULT_WITH_DOCS ON)
 # Documentation: look for sphynx installations as part of the following python
 # interpreters, giving priority to the versions appearing earlier in the list;
@@ -203,11 +203,11 @@ if(USE_REPO_GTEST OR FALLTHROUGH STREQUAL "1")
   )
   set(GTEST_LIBRARY "${GTEST_PREFIX}/build-aux/libgtest.a")
   set(GTEST_MAIN_LIBRARY "${GTEST_PREFIX}/build-aux/libgtest_main.a")
-  set(GTEST_INCLUDE_DIR "${GTEST_PREFIX}/include")
+  set(GTEST_INCLUDE_DIR "${GTEST_PREFIX}/include" CACHE STRING "gtest include dir")
 
   set(GTEST_LIBRARIES ${GTEST_LIBRARY})
   set(GTEST_MAIN_LIBRARIES ${GTEST_MAIN_LIBRARY})
-  set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIR})
+  set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIR} CACHE STRING "gtest include dirs")
 endif()
 #  if(USE_SYSTEM_GTEST)
 #endif()
@@ -218,7 +218,7 @@ if(NOT LIBNEO4JCLIENT_FOUND)
   set(LIBNEO4JCLIENT_PREFIX ${CMAKE_SOURCE_DIR}/external/libneo4j-client)
   MESSAGE(" \\-- libneo4j-client will be downloaded and built in ${LIBNEO4JCLIENT_PREFIX}")
   ExternalProject_Add(
-      libneo4jclient
+      libneo4jclient_external
       PREFIX ${CMAKE_SOURCE_DIR}/build/libneo4jclient
       GIT_REPOSITORY https://github.com/cleishm/libneo4j-client.git
       GIT_TAG v2.1.3
@@ -233,7 +233,7 @@ if(NOT LIBNEO4JCLIENT_FOUND)
       SOURCE_DIR ${LIBNEO4JCLIENT_PREFIX}
       BINARY_DIR ${LIBNEO4JCLIENT_PREFIX}
   )
-set(LIBNEO4J_LIBRARY "${LIBNEO4JCLIENT_PREFIX}/src/lib/libneo4j-client.so")
+set(LIBNEO4J_LIBRARY "${LIBNEO4JCLIENT_PREFIX}/src/lib/.libs/libneo4j-client.so")
 set(LIBNEO4J_INCLUDE_DIR "${LIBNEO4JCLIENT_PREFIX}/src/lib")
 
 set(LIBNEO4J_LIBRARIES ${LIBNEO4J_LIBRARY})
@@ -276,11 +276,12 @@ set(GEN_INCLUDE_DIR ${PROJECT_BINARY_DIR} CACHE STRING "include for gen configs"
 
 # common includes and project settings
 include_directories("${GEN_INCLUDE_DIR}") # for generated configs
+include_directories(${LIBNEO4J_INCLUDE_DIR})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/include")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/external/ezOptionParser")
+#include_directories("${CMAKE_CURRENT_SOURCE_DIR}/external/ezOptionParser")
 
-set (${PNAME}_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/include)
 set (${PNAME}_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set (${PNAME}_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/include)
 
 if (WITH_DOCS)
   add_subdirectory(docs)
@@ -290,22 +291,38 @@ endif (WITH_DOCS)
 ###
 ## Project Sources and Tests
 ##
-## Example adding project sources
-#set (tigstore_SOURCES
-    #${tigstore_SOURCE_DIR}/particle.cpp
-    #${tigstore_SOURCE_DIR}/alloc.cpp
-#)
+set (libopus_SOURCES
+    ${libopus_SOURCE_DIR}/lib/libopus.cpp
+)
 
-#set (tigstore_HEADERS
-    #${tigstore_INCLUDE_DIR}/particle.h
-    #${tigstore_INCLUDE_DIR}/util.h
-    #${tigstore_INCLUDE_DIR}/alloc.h
-#)
+set (libopus_HEADERS
+    ${libopus_INCLUDE_DIR}/opus/opus.h
+)
 
-#set(tigstore_LINK pthread ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
+add_library(libneo4j_client SHARED IMPORTED)
+set_target_properties(libneo4j_client PROPERTIES IMPORTED_LOCATION ${LIBNEO4J_LIBRARY})
+add_dependencies(libneo4j_client libneo4jclient_external)
+
+set(libopus_LINK libneo4j_client)
+
+add_library(opus SHARED ${libopus_SOURCES})
+set_target_properties(opus PROPERTIES
+  VERSION "${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION}"
+  SOVERSION "${PROJECT_MAJOR_VERSION}")
+
+add_library(opus_static STATIC ${libopus_SOURCES})
+add_dependencies(opus libneo4j_client)
+add_dependencies(opus_static libneo4j_client)
+
+install(DIRECTORY src/include/opus/ DESTINATION include/rscfl)
+install(FILES ${PROJECT_BINARY_DIR}/config.h DESTINATION include/rscfl)
+install(TARGETS opus opus_static
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
 
 ###
-## Executable example:
+## Executableis:
 
-#add_executable(${PNAME} ${tigstore_SOURCES})
-#target_link_libraries(${PNAME} ${tigstore_LINK})
+# add tests
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/tests)

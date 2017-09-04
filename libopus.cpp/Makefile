@@ -2,7 +2,7 @@
 
 BUILD_DIR := build
 
-.PHONY: all doc clean mrproper distclean install uninstall help format
+.PHONY: all doc clean check mrproper distclean install uninstall help format
 
 all:
 	@cd ${BUILD_DIR} && ./.build $(args)
@@ -10,6 +10,8 @@ doc:
 	@cd ${BUILD_DIR} && ./.build -t doc $(args)
 clean:
 	@cd ${BUILD_DIR} && ./.clean $(args)
+check:
+	@cd ${BUILD_DIR} && make check
 mrproper:
 	@cd ${BUILD_DIR} && ./.clean -g $(args)
 distclean:
