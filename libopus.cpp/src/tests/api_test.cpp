@@ -9,6 +9,9 @@
 #include <stdio.h>
 
 #include "opus/opus.h"
+#include "../lib/db_tr.h"
+
+#include <neo4j-client.h>
 
 class APITest : public testing::Test
 {
@@ -41,3 +44,22 @@ TEST_F(APITest,
   ASSERT_TRUE(true);
 }
 
+TEST_F(APITest,
+       ProcessEvents)
+{
+  neo4j_connection_t *connection = neo4j_connect("neo4j://neo4j:opus@localhost:7687", nullptr, NEO4J_INSECURE);
+  if (connection == nullptr)
+  {
+    neo4j_perror(stderr, errno, "Connection failed");
+    FAIL();
+  }
+
+  auto tr = new DBCreateNode(1, std::string("00000000-0000-0000-0000-000000000000"), 42, std::string("foo"));
+
+  tr->execute(connection);
+
+  delete tr;
+
+  neo4j_close(connection);
+  ASSERT_TRUE(true);
+}

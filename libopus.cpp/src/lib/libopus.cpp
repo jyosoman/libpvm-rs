@@ -1,5 +1,6 @@
 #include "opus/opus.h"
 #include "opus_session.h"
+#include "db_tr.h"
 
 #include <iostream>
 #include <neo4j-client.h>

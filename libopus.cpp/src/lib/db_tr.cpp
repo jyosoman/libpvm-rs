@@ -1,0 +1,52 @@
+//
+// Created by tb403 on 04/09/17.
+//
+
+#include "db_tr.h"
+
+bool DBCreateNode::execute(neo4j_connection_t* conn) const {
+  auto static const N_PROPS = 4;
+  auto props = static_cast<neo4j_map_entry_t*>(malloc(sizeof(neo4j_map_entry_t)*N_PROPS));
+  props[0] = neo4j_map_entry("db_id", neo4j_int(this->db_id));
+  props[1] = neo4j_map_entry("uuid", neo4j_string(this->uuid.c_str()));
+  props[2] = neo4j_map_entry("pid", neo4j_int(this->pid));
+  props[3] = neo4j_map_entry("cmdline", neo4j_string(this->cmdline.c_str()));
+  auto res = neo4j_send(conn,
+                        R"str(CREATE (n:Process {db_id: $db_id,
+                                                 uuid: $uuid,
+                                                 pid: $pid,
+                                                 cmdline: $cmdline}))str",
+                        neo4j_map(props, N_PROPS));
+  neo4j_close_results(res);
+  free(props);
+}
+
+bool DBCreateRel::execute(neo4j_connection_t* conn) const {
+  auto static const N_PROPS = 3;
+  auto props = static_cast<neo4j_map_entry_t*>(malloc(sizeof(neo4j_map_entry_t)*N_PROPS));
+  props[0] = neo4j_map_entry("src", neo4j_int(this->src));
+  props[1] = neo4j_map_entry("dst", neo4j_int(this->dst));
+  props[2] = neo4j_map_entry("class", neo4j_string(this->rclass.c_str()));
+  auto res = neo4j_send(conn,
+                        R"str(MATCH (s:Process {db_id: $src}),
+                                    (d:Process {db_id: $dst})
+                              CREATE (s)-[:INF {class: $class}]->(d))str",
+                        neo4j_map(props, N_PROPS));
+  neo4j_close_results(res);
+  free(props);
+}
+
+bool DBUpdateNode::execute(neo4j_connection_t* conn) const {
+  auto static const N_PROPS = 3;
+  auto props = static_cast<neo4j_map_entry_t*>(malloc(sizeof(neo4j_map_entry_t)*N_PROPS));
+  props[0] = neo4j_map_entry("db_id", neo4j_int(this->db_id));
+  props[1] = neo4j_map_entry("pid", neo4j_int(this->pid));
+  props[2] = neo4j_map_entry("cmdline", neo4j_string(this->cmdline.c_str()));
+  auto res = neo4j_send(conn,
+                        R"str(MATCH (p:Process {db_id: $db_id})
+                              SET p.pid = $pid
+                              SET p.cmdline = $cmdline)str",
+                        neo4j_map(props, N_PROPS));
+  neo4j_close_results(res);
+  free(props);
+}
