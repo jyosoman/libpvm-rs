@@ -287,6 +287,9 @@ if (WITH_DOCS)
   add_subdirectory(docs)
 endif (WITH_DOCS)
 
+add_library(libneo4j_client SHARED IMPORTED)
+set_target_properties(libneo4j_client PROPERTIES IMPORTED_LOCATION ${LIBNEO4J_LIBRARY})
+add_dependencies(libneo4j_client libneo4jclient_external)
 
 ###
 ## Project Sources and Tests
@@ -299,9 +302,11 @@ set (libopus_HEADERS
     ${libopus_INCLUDE_DIR}/opus/opus.h
 )
 
-add_library(libneo4j_client SHARED IMPORTED)
-set_target_properties(libneo4j_client PROPERTIES IMPORTED_LOCATION ${LIBNEO4J_LIBRARY})
-add_dependencies(libneo4j_client libneo4jclient_external)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+
 
 set(libopus_LINK libneo4j_client)
 
