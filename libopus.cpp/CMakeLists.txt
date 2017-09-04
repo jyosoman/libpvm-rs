@@ -296,10 +296,12 @@ add_dependencies(libneo4j_client libneo4jclient_external)
 ##
 set (libopus_SOURCES
     ${libopus_SOURCE_DIR}/lib/libopus.cpp
+    ${libopus_SOURCE_DIR}/lib/opus_session.cpp
 )
 
 set (libopus_HEADERS
     ${libopus_INCLUDE_DIR}/opus/opus.h
+    ${libopus_SOURCE_DIR}/lib/opus_session.h
 )
 
 set(CMAKE_CXX_STANDARD 14)
