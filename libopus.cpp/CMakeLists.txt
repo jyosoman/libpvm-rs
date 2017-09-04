@@ -223,8 +223,8 @@ if(NOT LIBNEO4JCLIENT_FOUND)
       GIT_REPOSITORY https://github.com/cleishm/libneo4j-client.git
       GIT_TAG v2.1.3
       INSTALL_COMMAND ""
-      UPDATE_COMMAND "./autogen.sh"
-      PATCH_COMMAND git apply ${LIBNEO4JCLIENT_PREFIX}/../patches/libneo4jclient.patch
+      UPDATE_COMMAND ""
+      PATCH_COMMAND ./autogen.sh && git apply ${LIBNEO4JCLIENT_PREFIX}/../patches/libneo4jclient.patch
       CONFIGURE_COMMAND ${LIBNEO4JCLIENT_PREFIX}/configure --disable-tools
       BUILD_COMMAND make clean check
       TMP_DIR ${CMAKE_SOURCE_DIR}/build/libneo4jclient

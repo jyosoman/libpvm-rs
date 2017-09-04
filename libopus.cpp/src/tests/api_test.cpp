@@ -15,7 +15,11 @@ class APITest : public testing::Test
  protected:
   virtual void SetUp()
   {
-    Config cfg = { Auto, "localhost:7687", "neo4j", "opus", 0 };
+    Config cfg = { Auto,
+                  (char*)"localhost:7687",
+                  (char*)"neo4j",
+                  (char*)"opus",
+                  0 };
     hdl = opus_init(cfg);
     ASSERT_NE(nullptr, hdl);
   }
