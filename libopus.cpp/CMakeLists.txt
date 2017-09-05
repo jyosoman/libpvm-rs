@@ -326,8 +326,8 @@ add_library(opus_static STATIC ${libopus_SOURCES})
 add_dependencies(opus libneo4j_client)
 add_dependencies(opus_static libneo4j_client)
 
-install(DIRECTORY src/include/opus/ DESTINATION include/rscfl)
-install(FILES ${PROJECT_BINARY_DIR}/config.h DESTINATION include/rscfl)
+install(DIRECTORY src/include/opus/ DESTINATION include/opus)
+install(FILES ${PROJECT_BINARY_DIR}/config.h DESTINATION include/opus)
 install(TARGETS opus opus_static
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
