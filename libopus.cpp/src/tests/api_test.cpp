@@ -1,3 +1,4 @@
+// Copyright [2017] <Thomas Bytheway & Lucian Carata>
 /**** Notice
  * api_test.cpp: libopus source code
  *
@@ -11,7 +12,9 @@
 #include "opus/internal/db_tr.h"
 #include "opus/internal/opus_session.h"
 
-using namespace opus::internal;
+using std::string;
+using opus::internal::OpusSession;
+using opus::internal::DBCreateNode;
 
 class APITest : public testing::Test {
  protected:
@@ -49,9 +52,9 @@ TEST_F(APITest,
   }
 
   auto tr = new DBCreateNode(1,
-                             std::string("00000000-0000-0000-0000-000000000000"),
+                             string("00000000-0000-0000-0000-000000000000"),
                              42,
-                             std::string("foo"));
+                             string("foo"));
 
   tr->execute(conn);
 

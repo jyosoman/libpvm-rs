@@ -1,3 +1,4 @@
+// Copyright [2017] <Thomas Bytheway & Lucian Carata>
 #include <neo4j-client.h>
 
 #include "opus/opus.h"

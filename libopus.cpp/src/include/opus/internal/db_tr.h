@@ -1,9 +1,10 @@
+// Copyright [2017] <Thomas Bytheway & Lucian Carata>
 //
 // Created by tb403 on 04/09/17.
 //
 
-#ifndef LIBOPUS_CPP_SRC_LIB_DB_TR_H_
-#define LIBOPUS_CPP_SRC_LIB_DB_TR_H_
+#ifndef LIBOPUS_CPP_SRC_INCLUDE_OPUS_INTERNAL_DB_TR_H_
+#define LIBOPUS_CPP_SRC_INCLUDE_OPUS_INTERNAL_DB_TR_H_
 
 #include <neo4j-client.h>
 #include <string>
@@ -61,7 +62,7 @@ class DBUpdateNode : DBTr {
   bool execute(neo4j_connection_t *conn) const override;
 };
 
-}
-}
+}  // namespace internal
+}  // namespace opus
 
-#endif  // LIBOPUS_CPP_SRC_LIB_DB_TR_H_
+#endif  // LIBOPUS_CPP_SRC_INCLUDE_OPUS_INTERNAL_DB_TR_H_

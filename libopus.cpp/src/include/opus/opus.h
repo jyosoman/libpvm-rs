@@ -1,6 +1,7 @@
+// Copyright [2017] <Thomas Bytheway & Lucian Carata>
 
-#ifndef cheddar_generated_opus_h
-#define cheddar_generated_opus_h
+#ifndef LIBOPUS_CPP_SRC_INCLUDE_OPUS_OPUS_H_
+#define LIBOPUS_CPP_SRC_INCLUDE_OPUS_OPUS_H_
 
 
 #ifdef __cplusplus
@@ -12,21 +13,21 @@ extern "C" {
 
 
 typedef enum CfgMode {
-	Auto,
-	Advanced,
+  Auto,
+  Advanced,
 } CfgMode;
 
 typedef struct AdvancedConfig {
-	int32_t consumer_threads;
-	int32_t persistence_threads;
+  int32_t consumer_threads;
+  int32_t persistence_threads;
 } AdvancedConfig;
 
 typedef struct Config {
-	CfgMode cfg_mode;
-	char* db_server;
-	char* db_user;
-	char* db_password;
-	AdvancedConfig* cfg_detail;
+  CfgMode cfg_mode;
+  char* db_server;
+  char* db_user;
+  char* db_password;
+  AdvancedConfig* cfg_detail;
 } Config;
 
 typedef struct OpusHdl OpusHdl;
@@ -46,4 +47,4 @@ void opus_cleanup(OpusHdl* hdl);
 #endif
 
 
-#endif
+#endif  // LIBOPUS_CPP_SRC_INCLUDE_OPUS_OPUS_H_

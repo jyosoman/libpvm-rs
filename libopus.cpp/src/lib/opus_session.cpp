@@ -1,3 +1,4 @@
+// Copyright [2017] <Thomas Bytheway & Lucian Carata>
 //
 // Created by tb403 on 04/09/17.
 //
@@ -46,5 +47,5 @@ neo4j_connection_t *OpusSession::db() {
   return this->conn;
 }
 
-}
-}
+}  // namespace internal
+}  // namespace opus

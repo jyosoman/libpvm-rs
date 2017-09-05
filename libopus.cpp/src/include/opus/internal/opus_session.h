@@ -1,8 +1,9 @@
+// Copyright [2017] <Thomas Bytheway & Lucian Carata>
 //
 // Created by tb403 on 04/09/17.
 //
-#ifndef LIBOPUS_CPP_SRC_LIB_OPUS_SESSION_H_
-#define LIBOPUS_CPP_SRC_LIB_OPUS_SESSION_H_
+#ifndef LIBOPUS_CPP_SRC_INCLUDE_OPUS_INTERNAL_OPUS_SESSION_H_
+#define LIBOPUS_CPP_SRC_INCLUDE_OPUS_INTERNAL_OPUS_SESSION_H_
 
 #include "opus/opus.h"
 
@@ -26,7 +27,7 @@ class OpusSession {
   neo4j_connection_t *db();
 };
 
-}
-}
+}  // namespace internal
+}  // namespace opus
 
-#endif  // LIBOPUS_CPP_SRC_LIB_OPUS_SESSION_H_
+#endif  // LIBOPUS_CPP_SRC_INCLUDE_OPUS_INTERNAL_OPUS_SESSION_H_
