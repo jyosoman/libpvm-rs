@@ -1,0 +1,10 @@
+image: dtg/puppet:16.04
+
+stages:
+    - lint
+
+cpplint:
+    stage: lint
+    script:
+        - "pip install cpplint"
+        - "find libopus.cpp/src -name '*.{cpp|c|h}' | xargs cpplint"
