@@ -3,45 +3,35 @@
  *
  **/
 
-#include <errno.h>
 #include <fcntl.h>
 #include <string>
 #include "gtest/gtest.h"
-#include <stdio.h>
 
 #include "opus/opus.h"
 #include "../lib/db_tr.h"
 #include "../lib/opus_session.h"
 
-#include <neo4j-client.h>
-
-class APITest : public testing::Test
-{
+class APITest : public testing::Test {
  protected:
-  virtual void SetUp()
-  {
-    Config cfg = { Auto,
-                  (char*)"localhost:7687",
-                  (char*)"neo4j",
-                  (char*)"opus",
-                  0 };
+  void SetUp() override {
+    Config cfg = {Auto,
+                  const_cast<char*>("bolt://localhost"),
+                  const_cast<char*>("neo4j"),
+                  const_cast<char*>("opus"),
+                  nullptr};
     hdl = opus_init(cfg);
     ASSERT_NE(nullptr, hdl);
   }
 
-  virtual void TearDown()
-  {
+  void TearDown() override {
     opus_cleanup(hdl);
   }
 
-  OpusHdl* hdl;
-
+  OpusHdl *hdl;
 };
 
-
 TEST_F(APITest,
-       PrintConfig)
-{
+       PrintConfig) {
   print_cfg(hdl);
   ASSERT_TRUE(true);
 }

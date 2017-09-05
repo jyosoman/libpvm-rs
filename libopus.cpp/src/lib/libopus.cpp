@@ -1,26 +1,22 @@
-#include "opus/opus.h"
-#include "opus_session.h"
-#include "db_tr.h"
-
-#include <iostream>
 #include <neo4j-client.h>
 
-using namespace std;
+#include "opus/opus.h"
+#include "./opus_session.h"
 
-OpusHdl* opus_init(Config cfg){
+OpusHdl *opus_init(Config cfg) {
   neo4j_client_init();
   auto session = new OpusSession(cfg);
   return session->to_hdl();
 }
 
-void print_cfg(OpusHdl const* hdl){
-  cout<<"libOpus configuration"<<endl;
+void print_cfg(OpusHdl const *hdl) {
+  printf("libOpus configuration");
 }
 
-void process_events(OpusHdl* hdl, int fd){
+void process_events(OpusHdl *hdl, int fd) {
 }
 
-void opus_cleanup(OpusHdl* hdl){
+void opus_cleanup(OpusHdl *hdl) {
   auto session = OpusSession::from_hdl(hdl);
   delete session;
   neo4j_client_cleanup();
