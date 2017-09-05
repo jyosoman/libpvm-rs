@@ -1,9 +1,9 @@
 # libopus Exploration
 
 ## Implementations
-* Rust - Active
+* Rust - Complete
 * Go - Inactive
-* C++ - Inactive
+* C++ - Active
 
 ## Test-harness
 Inactive
