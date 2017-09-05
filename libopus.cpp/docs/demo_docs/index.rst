@@ -53,10 +53,10 @@ Giant tables
 API Test
 ========
 
-.. automodule:: test_py_module.test
-    :members:
-    :private-members:
-    :special-members:
+.. .. automodule:: test_py_module.test
+..    :members:
+..    :private-members:
+..    :special-members:
 
 Optional parameter args
 -----------------------
@@ -88,7 +88,7 @@ Code test
 .. parsed-literal::
 
     # parsed-literal test
-    curl -O http://someurl/release-|version|.tar-gz
+    curl -O http://someurl/release-1.0.tar-gz
 
 
 .. code-block:: json
@@ -136,7 +136,7 @@ Code with Sidebar
 
     With a sidebar on the right.
 
-.. literalinclude:: test_py_module/test.py
+.. literalinclude:: ./test_py_module/test.py
     :language: python
     :linenos:
     :lines: 1-40
@@ -175,8 +175,7 @@ If I type ````an inline literal```` it will wrap it in ``<tt>``. You can
 see more details on the `Inline Markup`_ on the Docutils homepage.
 
 Also with ``sphinx.ext.autodoc``, which I use in the demo, I can link to
-:class:`test_py_module.test.Foo`. It will link you right my code
-documentation for it.
+. It will link you right my code documentation for it.
 
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
 .. _Docutils: http://docutils.sourceforge.net/

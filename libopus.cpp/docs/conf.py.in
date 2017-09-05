@@ -35,6 +35,8 @@ extensions = [
     # 'autodoc_c',
     # 'numpydoc',
     # 'sphinx.ext.napoleon',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.autodoc',
 ]
 
 # Napoleon settings

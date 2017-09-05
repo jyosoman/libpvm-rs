@@ -21,10 +21,10 @@ A list
 - here
   - is
   - some
-    - list
-    - items
-    - `yahoo <http://www.yahoo.com>`_
-    - ``huh``
+  - list
+  - items
+  - `yahoo <http://www.yahoo.com>`_
+  - ``huh``
 - how
 - ``inline literall``
 - ``inline literall``
@@ -41,7 +41,6 @@ Second list level
   - here is an inner bullet ``oh``
 
     - one more ``with an inline literally``. `yahoo <http://www.yahoo.com>`_
-      
       heh heh. child. try to beat this embed:
 
       .. literalinclude:: test_py_module/test.py
