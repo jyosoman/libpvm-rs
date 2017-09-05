@@ -239,6 +239,10 @@ set(LIBNEO4J_INCLUDE_DIR "${LIBNEO4JCLIENT_PREFIX}/src/lib")
 set(LIBNEO4J_LIBRARIES ${LIBNEO4J_LIBRARY})
 set(LIBNEO4J_INCLUDE_DIRS ${LIBNEO4J_INCLUDE_DIR})
 endif()
+include_directories(${LIBNEO4J_INCLUDE_DIR})
+
+# Rapidjson
+include_directories(${CMAKE_SOURCE_DIR}/external/rapidjson/include)
 
 if(WITH_TESTS)
   add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -V)
@@ -276,7 +280,6 @@ set(GEN_INCLUDE_DIR ${PROJECT_BINARY_DIR} CACHE STRING "include for gen configs"
 
 # common includes and project settings
 include_directories("${GEN_INCLUDE_DIR}") # for generated configs
-include_directories(${LIBNEO4J_INCLUDE_DIR})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/include")
 #include_directories("${CMAKE_CURRENT_SOURCE_DIR}/external/ezOptionParser")
 
