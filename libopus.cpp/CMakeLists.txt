@@ -319,7 +319,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(libopus_LINK libneo4j_client)
 
-add_library(opus SHARED ${libopus_SOURCES})
+add_library(opus SHARED ${libopus_SOURCES} ${libopus_PRIVATE_HEADERS} ${libopus_HEADERS})
 set_target_properties(opus PROPERTIES
   VERSION "${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION}"
   SOVERSION "${PROJECT_MAJOR_VERSION}"
@@ -328,7 +328,7 @@ set_target_properties(opus PROPERTIES
   PRIVATE_HEADER "${libopus_PRIVATE_HEADERS}"
 )
 
-add_library(opus_static STATIC ${libopus_SOURCES})
+add_library(opus_static STATIC ${libopus_SOURCES} ${libopus_PRIVATE_HEADERS} ${libopus_HEADERS})
 add_dependencies(opus libneo4j_client)
 add_dependencies(opus_static libneo4j_client)
 
