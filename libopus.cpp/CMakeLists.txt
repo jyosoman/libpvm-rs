@@ -305,8 +305,8 @@ set (libopus_SOURCES
 
 set (libopus_HEADERS
     ${libopus_INCLUDE_DIR}/opus/opus.h
-    ${libopus_SOURCE_DIR}/lib/opus_session.h
-    ${libopus_SOURCE_DIR}/lib/db_tr.h
+    ${libopus_INCLUDE_DIR}/internal/opus_session.h
+    ${libopus_INCLUDE_DIR}/internal/db_tr.h
 )
 
 set(CMAKE_CXX_STANDARD 14)

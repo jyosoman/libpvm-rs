@@ -1,7 +1,9 @@
 #include <neo4j-client.h>
 
 #include "opus/opus.h"
-#include "./opus_session.h"
+#include "opus/internal/opus_session.h"
+
+using opus::internal::OpusSession;
 
 OpusHdl *opus_init(Config cfg) {
   neo4j_client_init();

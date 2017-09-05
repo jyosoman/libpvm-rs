@@ -8,6 +8,8 @@
 #include <neo4j-client.h>
 #include <string>
 
+namespace opus::internal {
+
 class DBTr {
  public:
   virtual bool execute(neo4j_connection_t *conn) const = 0;
@@ -57,5 +59,7 @@ class DBUpdateNode : DBTr {
 
   bool execute(neo4j_connection_t *conn) const override;
 };
+
+}
 
 #endif  // LIBOPUS_CPP_SRC_LIB_DB_TR_H_

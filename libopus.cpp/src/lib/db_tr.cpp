@@ -2,7 +2,9 @@
 // Created by tb403 on 04/09/17.
 //
 
-#include "./db_tr.h"
+#include "opus/internal/db_tr.h"
+
+namespace opus::internal {
 
 bool DBCreateNode::execute(neo4j_connection_t *conn) const {
   auto static const N_PROPS = 4;
@@ -46,4 +48,6 @@ bool DBUpdateNode::execute(neo4j_connection_t *conn) const {
                         "SET p.cmdline = $cmdline",
                         neo4j_map(props, N_PROPS));
   neo4j_close_results(res);
+}
+
 }

@@ -1,10 +1,12 @@
 //
 // Created by tb403 on 04/09/17.
 //
-#include "./opus_session.h"
+#include "opus/internal/opus_session.h"
 
 #include <neo4j-client.h>
 #include <cerrno>
+
+namespace opus::internal {
 
 OpusSession::OpusSession(Config cfg) {
   this->cfg = cfg;
@@ -41,4 +43,6 @@ neo4j_connection_t *OpusSession::db() {
     neo4j_config_free(neo_cfg);
   }
   return this->conn;
+}
+
 }

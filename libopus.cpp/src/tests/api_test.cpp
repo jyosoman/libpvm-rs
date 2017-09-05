@@ -8,8 +8,10 @@
 #include "gtest/gtest.h"
 
 #include "opus/opus.h"
-#include "../lib/db_tr.h"
-#include "../lib/opus_session.h"
+#include "opus/internal/db_tr.h"
+#include "opus/internal/opus_session.h"
+
+using namespace opus::internal;
 
 class APITest : public testing::Test {
  protected:
