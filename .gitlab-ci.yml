@@ -11,8 +11,10 @@ cpplint:
         - "find libopus.cpp/src -regex '.*\\.\\(cpp\\|h\\)' | xargs cpplint"
 
 makeall:
+    variables: 
+        GIT_SUBMODULE_STRATEGY: normal
     stage: build
     script:
-        - "make"
+        - "cd libopus.cpp && make"
     only: 
         - master
