@@ -6,5 +6,6 @@ stages:
 cpplint:
     stage: lint
     script:
+        - "apt install python-pip"
         - "pip install cpplint"
         - "find libopus.cpp/src -name '*.{cpp|c|h}' | xargs cpplint"
