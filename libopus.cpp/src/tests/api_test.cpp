@@ -51,14 +51,23 @@ TEST_F(APITest,
     FAIL();
   }
 
-  auto tr = new DBCreateNode(1,
-                             string("00000000-0000-0000-0000-000000000000"),
-                             42,
-                             string("foo"));
+  if (neo4j_check_failure(
+      neo4j_send(conn, "BEGIN", neo4j_null)) != 0) {
+    FAIL();
+  }
 
-  tr->execute(conn);
+  for (int i = 1; i <= 30000; i++) {
+    auto tr = new DBCreateNode(i,
+                               string("00000000-0000-0000-0000-000000000000"),
+                               42,
+                               string("foo"));
 
-  delete tr;
+    tr->execute(conn);
+    delete tr;
+  }
 
-  ASSERT_TRUE(true);
+  if (neo4j_check_failure(
+      neo4j_send(conn, "COMMIT", neo4j_null)) != 0) {
+    FAIL();
+  }
 }
