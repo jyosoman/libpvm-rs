@@ -8,7 +8,8 @@
 
 #include <neo4j-client.h>
 
-namespace opus::internal {
+namespace opus {
+namespace internal {
 
 class OpusSession {
   Config cfg;
@@ -25,6 +26,7 @@ class OpusSession {
   neo4j_connection_t *db();
 };
 
+}
 }
 
 #endif  // LIBOPUS_CPP_SRC_LIB_OPUS_SESSION_H_

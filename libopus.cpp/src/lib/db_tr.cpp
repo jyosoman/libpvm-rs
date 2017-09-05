@@ -4,7 +4,8 @@
 
 #include "opus/internal/db_tr.h"
 
-namespace opus::internal {
+namespace opus {
+namespace internal {
 
 bool DBCreateNode::execute(neo4j_connection_t *conn) const {
   auto static const N_PROPS = 4;
@@ -50,4 +51,5 @@ bool DBUpdateNode::execute(neo4j_connection_t *conn) const {
   neo4j_close_results(res);
 }
 
+}
 }

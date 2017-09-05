@@ -6,7 +6,8 @@
 #include <neo4j-client.h>
 #include <cerrno>
 
-namespace opus::internal {
+namespace opus {
+namespace internal {
 
 OpusSession::OpusSession(Config cfg) {
   this->cfg = cfg;
@@ -45,4 +46,5 @@ neo4j_connection_t *OpusSession::db() {
   return this->conn;
 }
 
+}
 }
