@@ -10,9 +10,15 @@
 namespace opus {
 namespace internal {
 
+#define ERR_MSG_LEN 1024
+
 OpusSession::OpusSession(Config cfg) {
   this->cfg = cfg;
   this->conn = nullptr;
+  this->_pinned_err_buf = new char[ERR_MSG_LEN];
+  this->api_hdl.err = NO_ERR;
+  this->api_hdl.message = "";
+  this->api_hdl._internal = this;
 }
 
 OpusSession::~OpusSession() {
@@ -22,11 +28,11 @@ OpusSession::~OpusSession() {
 }
 
 OpusHdl *OpusSession::to_hdl() {
-  return reinterpret_cast<OpusHdl *>(this);
+  return &api_hdl;
 }
 
 OpusSession *OpusSession::from_hdl(OpusHdl *hdl) {
-  return reinterpret_cast<OpusSession *>(hdl);
+  return reinterpret_cast<OpusSession *>(hdl->_internal);
 }
 
 const OpusSession *OpusSession::from_hdl(const OpusHdl *hdl) {
@@ -45,7 +51,8 @@ neo4j_connection_t *OpusSession::db() {
     neo4j_config_set_max_pipelined_requests(neo_cfg, 5000);
     this->conn = neo4j_connect(this->cfg.db_server, neo_cfg, NEO4J_INSECURE);
     if (this->conn == nullptr) {
-      neo4j_perror(stderr, errno, "Connection failed");
+      api_hdl.err = ERR_DATABASE;
+      api_hdl.message = neo4j_strerror(errno, _pinned_err_buf, ERR_MSG_LEN);
     }
     neo4j_config_free(neo_cfg);
   }

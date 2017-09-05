@@ -17,6 +17,13 @@ typedef enum CfgMode {
   Advanced,
 } CfgMode;
 
+typedef enum OpusErr {
+  NO_ERR,
+  ERR_DATABASE,
+  ERR_PARSING,
+  ERR_PVM,
+} OpusErr;
+
 typedef struct AdvancedConfig {
   int32_t consumer_threads;
   int32_t persistence_threads;
@@ -30,7 +37,12 @@ typedef struct Config {
   AdvancedConfig* cfg_detail;
 } Config;
 
-typedef struct OpusHdl OpusHdl;
+typedef struct OpusHdl {
+  OpusErr err;
+  const char* message;
+
+  void* _internal;
+} OpusHdl;
 
 OpusHdl* opus_init(Config cfg);
 

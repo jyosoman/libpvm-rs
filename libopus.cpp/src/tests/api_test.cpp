@@ -47,9 +47,7 @@ TEST_F(APITest,
 
   auto conn = session->db();
 
-  if (conn == nullptr) {
-    FAIL();
-  }
+  ASSERT_NE(conn, nullptr) << hdl->message;
 
   if (neo4j_check_failure(
       neo4j_send(conn, "BEGIN", neo4j_null)) != 0) {

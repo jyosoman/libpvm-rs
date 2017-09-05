@@ -21,7 +21,7 @@ bool DBCreateNode::execute(neo4j_connection_t *conn) const {
                         "                   pid: $pid,"
                         "                   cmdline: $cmdline})",
                         neo4j_map(props, N_PROPS));
-  neo4j_close_results(res);
+  return (neo4j_close_results(res) == 0);
 }
 
 bool DBCreateRel::execute(neo4j_connection_t *conn) const {
@@ -35,7 +35,7 @@ bool DBCreateRel::execute(neo4j_connection_t *conn) const {
                         "      (d:Process {db_id: $dst})"
                         "CREATE (s)-[:INF {class: $class}]->(d)",
                         neo4j_map(props, N_PROPS));
-  neo4j_close_results(res);
+  return (neo4j_close_results(res) == 0);
 }
 
 bool DBUpdateNode::execute(neo4j_connection_t *conn) const {
@@ -49,7 +49,7 @@ bool DBUpdateNode::execute(neo4j_connection_t *conn) const {
                         "SET p.pid = $pid"
                         "SET p.cmdline = $cmdline",
                         neo4j_map(props, N_PROPS));
-  neo4j_close_results(res);
+  return (neo4j_close_results(res) == 0);
 }
 
 }  // namespace internal

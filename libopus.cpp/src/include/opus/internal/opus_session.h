@@ -15,6 +15,9 @@ namespace internal {
 class OpusSession {
   Config cfg;
   neo4j_connection_t *conn;
+  OpusHdl api_hdl;
+
+  char* _pinned_err_buf;
  public:
   explicit OpusSession(Config cfg);
 

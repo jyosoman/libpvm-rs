@@ -1,10 +1,13 @@
 // Copyright [2017] <Thomas Bytheway & Lucian Carata>
+#include "opus/opus.h"
+
+#include <iostream>
 #include <neo4j-client.h>
 
-#include "opus/opus.h"
 #include "opus/internal/opus_session.h"
 
 using opus::internal::OpusSession;
+using namespace std;
 
 OpusHdl *opus_init(Config cfg) {
   neo4j_client_init();
