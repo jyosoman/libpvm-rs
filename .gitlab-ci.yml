@@ -17,4 +17,4 @@ makeall:
     script:
         - "cd libopus.cpp && make"
     only: 
-        - master
+        - web
