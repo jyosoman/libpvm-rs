@@ -271,6 +271,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall.cmake.in"
 add_custom_target(uninstall_files
   COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
 add_custom_target(uninstall)
+add_dependencies(uninstall uninstall_files)
 ensure_out_of_source_build("${PNAME} requires an out of source build. ")
 
 configure_project(${PROJECT_MAJOR_VERSION} ${PROJECT_MINOR_VERSION} ${PROJECT_PATCH_VERSION}
@@ -305,32 +306,38 @@ set (libopus_SOURCES
 
 set (libopus_HEADERS
     ${libopus_INCLUDE_DIR}/opus/opus.h
-    ${libopus_INCLUDE_DIR}/internal/opus_session.h
-    ${libopus_INCLUDE_DIR}/internal/db_tr.h
+)
+
+set (libopus_PRIVATE_HEADERS
+    ${libopus_INCLUDE_DIR}/opus/internal/opus_session.h
+    ${libopus_INCLUDE_DIR}/opus/internal/db_tr.h
 )
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
-
 set(libopus_LINK libneo4j_client)
 
 add_library(opus SHARED ${libopus_SOURCES})
 set_target_properties(opus PROPERTIES
   VERSION "${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION}"
-  SOVERSION "${PROJECT_MAJOR_VERSION}")
+  SOVERSION "${PROJECT_MAJOR_VERSION}"
+  FRAMEWORK ON
+  PUBLIC_HEADER "${libopus_HEADERS}"
+  PRIVATE_HEADER "${libopus_PRIVATE_HEADERS}"
+)
 
 add_library(opus_static STATIC ${libopus_SOURCES})
 add_dependencies(opus libneo4j_client)
 add_dependencies(opus_static libneo4j_client)
 
-install(DIRECTORY src/include/opus/ DESTINATION include/opus)
 install(FILES ${PROJECT_BINARY_DIR}/config.h DESTINATION include/opus)
 install(TARGETS opus opus_static
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
+    PUBLIC_HEADER DESTINATION include/opus
+    PRIVATE_HEADER DESTINATION include/opus/internal
 )
 
 ###
