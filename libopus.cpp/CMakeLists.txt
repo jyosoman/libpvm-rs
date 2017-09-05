@@ -303,6 +303,7 @@ set (libopus_SOURCES
     ${libopus_SOURCE_DIR}/lib/opus_session.cpp
     ${libopus_SOURCE_DIR}/lib/db_tr.cpp
     ${libopus_SOURCE_DIR}/lib/pvm_cache.cpp
+    ${libopus_SOURCE_DIR}/lib/node.cpp
 )
 
 set (libopus_HEADERS
@@ -313,6 +314,7 @@ set (libopus_PRIVATE_HEADERS
     ${libopus_INCLUDE_DIR}/opus/internal/opus_session.h
     ${libopus_INCLUDE_DIR}/opus/internal/db_tr.h
     ${libopus_INCLUDE_DIR}/opus/internal/pvm_cache.h
+    ${libopus_INCLUDE_DIR}/opus/internal/node.h
 )
 
 set(CMAKE_CXX_STANDARD 14)
