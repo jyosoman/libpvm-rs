@@ -5,11 +5,13 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <string>
 #include "gtest/gtest.h"
 #include <stdio.h>
 
 #include "opus/opus.h"
 #include "../lib/db_tr.h"
+#include "../lib/opus_session.h"
 
 #include <neo4j-client.h>
 
@@ -45,21 +47,23 @@ TEST_F(APITest,
 }
 
 TEST_F(APITest,
-       ProcessEvents)
-{
-  neo4j_connection_t *connection = neo4j_connect("neo4j://neo4j:opus@localhost:7687", nullptr, NEO4J_INSECURE);
-  if (connection == nullptr)
-  {
-    neo4j_perror(stderr, errno, "Connection failed");
+       ProcessEvents) {
+  auto session = OpusSession::from_hdl(hdl);
+
+  auto conn = session->db();
+
+  if (conn == nullptr) {
     FAIL();
   }
 
-  auto tr = new DBCreateNode(1, std::string("00000000-0000-0000-0000-000000000000"), 42, std::string("foo"));
+  auto tr = new DBCreateNode(1,
+                             std::string("00000000-0000-0000-0000-000000000000"),
+                             42,
+                             std::string("foo"));
 
-  tr->execute(connection);
+  tr->execute(conn);
 
   delete tr;
 
-  neo4j_close(connection);
   ASSERT_TRUE(true);
 }

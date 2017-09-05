@@ -1,18 +1,26 @@
 //
 // Created by tb403 on 04/09/17.
 //
-#ifndef LIBOPUS_LIBOPUS_H_H
-#define LIBOPUS_LIBOPUS_H_H
+#ifndef LIBOPUS_CPP_SRC_LIB_OPUS_SESSION_H_
+#define LIBOPUS_CPP_SRC_LIB_OPUS_SESSION_H_
 
 #include "opus/opus.h"
 
-class OpusSession{
+#include <neo4j-client.h>
+
+class OpusSession {
   Config cfg;
-public:
+  neo4j_connection_t *conn;
+ public:
   explicit OpusSession(Config cfg);
 
-  OpusHdl* to_hdl();
-  static OpusSession* from_hdl(OpusHdl* hdl);
+  ~OpusSession();
+
+  OpusHdl *to_hdl();
+
+  static OpusSession *from_hdl(OpusHdl *hdl);
+
+  neo4j_connection_t *db();
 };
 
-#endif //LIBOPUS_LIBOPUS_H_H
+#endif  // LIBOPUS_CPP_SRC_LIB_OPUS_SESSION_H_
