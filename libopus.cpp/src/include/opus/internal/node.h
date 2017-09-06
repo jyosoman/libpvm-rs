@@ -25,7 +25,7 @@ class Node {
                              cmdline(std::move(cmdline)),
                              thin(thin) {}
 
-  const string* get_cmdline() const {return &(this->cmdline); }
+  const string get_cmdline() const { return this->cmdline; }
   const int64_t get_db_id() const { return this->db_id; }
   const bool get_thin() const { return this->thin; }
 

@@ -9,6 +9,7 @@
 #include <atomic>
 #include <unordered_map>
 #include <string>
+#include <utility>
 
 #include "opus/internal/node.h"
 
@@ -22,7 +23,7 @@ class PVMCache {
   std::atomic_int id_counter;
  public:
   Node* add(string uuid, string cmdline, bool thin);
-  Node* check(string uuid, string cmdline);
+  std::pair<Node*, bool> check(string uuid, string cmdline);
 };
 
 }  // namespace internal

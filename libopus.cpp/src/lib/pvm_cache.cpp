@@ -6,6 +6,7 @@
 #include "../include/opus/internal/pvm_cache.h"
 
 #include <string>
+#include <utility>
 
 namespace opus {
 namespace internal {
@@ -18,12 +19,15 @@ Node* PVMCache::add(string uuid, string cmdline, bool thin) {
   return node;
 }
 
-Node* PVMCache::check(string uuid, string cmdline) {
+std::pair<Node*, bool> PVMCache::check(string uuid, string cmdline) {
   auto it = this->node_cache.find(uuid);
   if ( it != this->node_cache.end() ) {
-    return it->second;
+    return std::make_pair(it->second, false);
   } else {
-    return this->add(std::move(uuid), std::move(cmdline), true);
+    return std::make_pair(this->add(std::move(uuid),
+                                    std::move(cmdline),
+                                    true),
+                          true);
   }
 }
 

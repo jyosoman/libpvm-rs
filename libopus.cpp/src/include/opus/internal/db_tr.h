@@ -12,52 +12,54 @@
 namespace opus {
 namespace internal {
 
+using std::string;
+
 class DBTr {
  public:
   virtual bool execute(neo4j_connection_t *conn) const = 0;
 };
 
-class DBCreateNode : DBTr {
+class DBCreateNode : public DBTr {
   int64_t db_id;
-  std::string uuid;
+  string uuid;
   int32_t pid;
-  std::string cmdline;
+  string cmdline;
  public:
   explicit DBCreateNode(int64_t db_id,
-                        std::string uuid,
+                        string uuid,
                         int32_t pid,
-                        std::string cmdline) : db_id(db_id),
-                                               uuid(std::move(uuid)),
-                                               pid(pid),
-                                               cmdline(std::move(cmdline)) {}
+                        string cmdline) : db_id(db_id),
+                                          uuid(std::move(uuid)),
+                                          pid(pid),
+                                          cmdline(std::move(cmdline)) {}
 
   bool execute(neo4j_connection_t *conn) const override;
 };
 
-class DBCreateRel : DBTr {
+class DBCreateRel : public DBTr {
   int64_t src;
   int64_t dst;
-  std::string rclass;
+  string rclass;
  public:
   explicit DBCreateRel(int64_t src,
                        int64_t dst,
-                       std::string rclass) : src(src),
-                                             dst(dst),
-                                             rclass(std::move(rclass)) {}
+                       string rclass) : src(src),
+                                        dst(dst),
+                                        rclass(std::move(rclass)) {}
 
   bool execute(neo4j_connection_t *conn) const override;
 };
 
-class DBUpdateNode : DBTr {
+class DBUpdateNode : public DBTr {
   int64_t db_id;
   int32_t pid;
-  std::string cmdline;
+  string cmdline;
  public:
   explicit DBUpdateNode(int64_t db_id,
                         int32_t pid,
-                        std::string cmdline) : db_id(db_id),
-                                               pid(pid),
-                                               cmdline(std::move(cmdline)) {}
+                        string cmdline) : db_id(db_id),
+                                          pid(pid),
+                                          cmdline(std::move(cmdline)) {}
 
   bool execute(neo4j_connection_t *conn) const override;
 };
