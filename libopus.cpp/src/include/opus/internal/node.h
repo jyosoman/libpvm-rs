@@ -29,7 +29,7 @@ class Node {
   const int64_t get_db_id() const { return this->db_id; }
   const bool get_thin() const { return this->thin; }
 
-  void set_cmdline(string cmdline) { this->cmdline = std::move(cmdline); }
+  void set_cmdline(const string &cmdline) { this->cmdline = cmdline; }
   void set_thin(bool thin) { this->thin = thin; }
 };
 

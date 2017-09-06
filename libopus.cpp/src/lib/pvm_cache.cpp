@@ -19,25 +19,26 @@ PVMCache::~PVMCache() {
   }
 }
 
-Node* PVMCache::add(string uuid, string cmdline, bool thin) {
-  auto node = new Node(this->id_counter++, std::move(cmdline), thin);
-  this->node_cache[std::move(uuid)] = node;
+Node* PVMCache::add(const string &uuid, const string &cmdline, bool thin) {
+  auto node = new Node(this->id_counter++, cmdline, thin);
+  this->node_cache[uuid] = node;
   return node;
 }
 
-std::pair<Node*, bool> PVMCache::check(string uuid, string cmdline) {
+std::pair<Node*, bool> PVMCache::check(const string &uuid,
+                                       const string &cmdline) {
   auto it = this->node_cache.find(uuid);
   if ( it != this->node_cache.end() ) {
     return std::make_pair(it->second, false);
   } else {
-    return std::make_pair(this->add(std::move(uuid),
-                                    std::move(cmdline),
+    return std::make_pair(this->add(uuid,
+                                    cmdline,
                                     true),
                           true);
   }
 }
 
-void PVMCache::release(string &uuid) {
+void PVMCache::release(const string &uuid) {
   delete this->node_cache[uuid];
   this->node_cache.erase(uuid);
 }
