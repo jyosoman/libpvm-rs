@@ -5,6 +5,7 @@
 
 #include "opus/internal/pvm.h"
 
+#include <string>
 #include <vector>
 
 namespace opus {
@@ -12,7 +13,7 @@ namespace internal {
 
 void pvm_parse(const TraceEvent *tr,
                PVMCache *cache,
-               std::vector<DBTr> *executions){
+               std::vector<DBTr> *executions) {
   auto par_chk = cache->check(tr->subjprocuuid, tr->exec);
   auto par = par_chk.first;
   if (par_chk.second) {
@@ -21,9 +22,10 @@ void pvm_parse(const TraceEvent *tr,
                                            tr->pid,
                                            tr->exec));
   }
-  if (tr->event == "audit:event:aue_execve:" ) {
+  if (tr->event == "audit:event:aue_execve:") {
       if (par->get_thin()) {
         par->set_cmdline(tr->cmdline);
+        par->set_thin(false);
         executions->push_back(DBUpdateNode(par->get_db_id(),
                                            tr->pid,
                                            tr->cmdline));
@@ -51,7 +53,6 @@ void pvm_parse(const TraceEvent *tr,
         executions->push_back(DBUpdateNode(ch->get_db_id(),
                                            tr->retval,
                                            par->get_cmdline()));
-
       }
       executions->push_back(DBCreateRel(par->get_db_id(),
                                         ch->get_db_id(),
