@@ -38,6 +38,7 @@ neo4j_connection_t *OpusSession::db() {
     if (neo4j_config_set_password(neo_cfg, this->cfg.db_password) != 0) {
       return nullptr;
     }
+    neo4j_config_set_max_pipelined_requests(neo_cfg, 5000);
     this->conn = neo4j_connect(this->cfg.db_server, neo_cfg, NEO4J_INSECURE);
     if (this->conn == nullptr) {
       neo4j_perror(stderr, errno, "Connection failed");
