@@ -13,4 +13,9 @@ if(WITH_TESTS)
   lib_test(api_test "${api_test_SOURCES}" "${TEST_LINK}")
   add_dependencies(api_test libneo4j_client)
 
+  set (parse_json_SOURCES
+    ${TESTS_DIR}/parse_json.cpp
+  )
+  lib_test(parse_json "${parse_json_SOURCES}" "${TEST_LINK}")
+
 endif(WITH_TESTS)

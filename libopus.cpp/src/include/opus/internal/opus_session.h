@@ -34,6 +34,7 @@ class OpusSession {
 };
 
 }  // namespace internal
+
 }  // namespace opus
 
 #endif  // LIBOPUS_CPP_SRC_INCLUDE_OPUS_INTERNAL_OPUS_SESSION_H_
