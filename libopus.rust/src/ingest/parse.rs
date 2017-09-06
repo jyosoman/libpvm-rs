@@ -74,6 +74,9 @@ pub fn parse_trace(
                 class: String::from("child"),
             }));
         }
+        "audit:event:aue_exit:" => {
+            pvm_cache.release(tr.subjprocuuid);
+        }
         _ => {}
     }
     ret.map_err(|_| "Database worker closed queue unexpectadly")

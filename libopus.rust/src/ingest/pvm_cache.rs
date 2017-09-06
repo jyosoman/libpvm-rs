@@ -40,6 +40,10 @@ impl PVMCache {
         }
     }
 
+    pub fn release(&mut self, uuid: Uuid5) {
+        self.node_cache.remove(&uuid);
+    }
+
     pub fn get(&self, uuid: Uuid5) -> &Node {
         &self.node_cache[&uuid]
     }
