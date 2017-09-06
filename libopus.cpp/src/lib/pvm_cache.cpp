@@ -37,5 +37,10 @@ std::pair<Node*, bool> PVMCache::check(string uuid, string cmdline) {
   }
 }
 
+void PVMCache::release(string &uuid) {
+  delete this->node_cache[uuid];
+  this->node_cache.erase(uuid);
+}
+
 }  // namespace internal
 }  // namespace opus

@@ -26,6 +26,7 @@ class PVMCache {
 
   Node* add(string uuid, string cmdline, bool thin);
   std::pair<Node*, bool> check(string uuid, string cmdline);
+  void release(string &uuid);
 };
 
 }  // namespace internal

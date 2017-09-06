@@ -57,6 +57,8 @@ void pvm_parse(const TraceEvent *tr,
       executions->push_back(DBCreateRel(par->get_db_id(),
                                         ch->get_db_id(),
                                         std::string("child")));
+  } else if (tr->event == "audit:event:aue_exit:") {
+    cache->release(tr->subjprocuuid);
   }
 }
 
