@@ -22,6 +22,8 @@ class PVMCache {
   std::unordered_map<string, Node*> node_cache;
   std::atomic_int id_counter;
  public:
+  ~PVMCache();
+
   Node* add(string uuid, string cmdline, bool thin);
   std::pair<Node*, bool> check(string uuid, string cmdline);
 };

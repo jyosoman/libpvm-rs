@@ -13,6 +13,12 @@ namespace internal {
 
 using std::string;
 
+PVMCache::~PVMCache() {
+  for (auto &it : this->node_cache) {
+    delete it.second;
+  }
+}
+
 Node* PVMCache::add(string uuid, string cmdline, bool thin) {
   auto node = new Node(this->id_counter++, std::move(cmdline), thin);
   this->node_cache[std::move(uuid)] = node;
