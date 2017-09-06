@@ -29,6 +29,10 @@ OpusSession *OpusSession::from_hdl(OpusHdl *hdl) {
   return reinterpret_cast<OpusSession *>(hdl);
 }
 
+const OpusSession *OpusSession::from_hdl(const OpusHdl *hdl) {
+  return reinterpret_cast<const OpusSession *>(hdl);
+}
+
 neo4j_connection_t *OpusSession::db() {
   if (this->conn == nullptr) {
     auto neo_cfg = neo4j_new_config();

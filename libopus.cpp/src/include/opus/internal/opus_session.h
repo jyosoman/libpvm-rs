@@ -20,9 +20,12 @@ class OpusSession {
 
   ~OpusSession();
 
+  const Config *get_cfg() const { return &(this->cfg); }
+
   OpusHdl *to_hdl();
 
   static OpusSession *from_hdl(OpusHdl *hdl);
+  static const OpusSession *from_hdl(const OpusHdl *hdl);
 
   neo4j_connection_t *db();
 };
