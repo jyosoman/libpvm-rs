@@ -10,11 +10,12 @@
 
 #include "opus/internal/db_tr.h"
 #include "opus/internal/pvm_cache.h"
+#include "opus/internal/trace.h"
 
 namespace opus {
 namespace internal {
 
-void pvm_parse(const TraceEvent &tr,
+void pvm_parse(const opus::trace::TraceEvent &tr,
                PVMCache *cache,
                std::vector<DBTr> *executions);
 

@@ -11,6 +11,8 @@
 namespace opus {
 namespace internal {
 
+using namespace opus::trace;
+
 void pvm_parse(const TraceEvent &tr,
                PVMCache *cache,
                std::vector<DBTr> *executions) {
