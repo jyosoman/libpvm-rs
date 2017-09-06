@@ -20,9 +20,9 @@ class APITest : public testing::Test {
  protected:
   void SetUp() override {
     Config cfg = {Auto,
-                  const_cast<char*>("bolt://localhost"),
-                  const_cast<char*>("neo4j"),
-                  const_cast<char*>("opus"),
+                  const_cast<char *>("bolt://localhost"),
+                  const_cast<char *>("neo4j"),
+                  const_cast<char *>("opus"),
                   nullptr};
     hdl = opus_init(cfg);
     ASSERT_NE(nullptr, hdl);
