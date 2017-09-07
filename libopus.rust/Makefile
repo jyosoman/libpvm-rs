@@ -4,8 +4,8 @@ BUILD_DIR := build
 
 IDIR=src/include
 ODIR=build
-LDIR=target/debug
-#LDIR=target/release
+#LDIR=target/debug
+LDIR=target/release
 LIBS=-lopus
 
 CC=gcc

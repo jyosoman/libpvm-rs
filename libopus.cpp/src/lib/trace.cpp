@@ -1,5 +1,6 @@
 #include "opus/internal/trace.h"
 
+#include <cstddef>
 #include <iostream>
 
 namespace opus {
