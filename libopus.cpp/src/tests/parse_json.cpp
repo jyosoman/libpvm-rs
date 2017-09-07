@@ -134,3 +134,44 @@ TEST_F(ParseJsonTest,
     ASSERT_NE(reader.GetParseErrorCode(), kParseErrorTermination);
   }
 }
+
+TEST_F(ParseJsonTest,
+       ParseTrace_UnknownFields) {
+
+  const char* json = "{\"event\": \"audit:event:aue_read:\", \"time\": 123333333333, \"pid\": 407, \"ppid\": 1, \"tid\": 100062, \"uid\": 0, \"subjprocuuid\": \"93d41a15-8bbb-11e6-a64a-0800270779c7\", \"subjthruuid\": \"89a75773-8bbb-11e6-a5db-0800270779c7\", \"address\": \"public/pickup\", \"retval\": 156, \"fictitious\":42}";
+  Reader reader;
+  TraceReaderHandler handler;
+  StringStream ss(json);
+  ParseResult r;
+  r = reader.Parse(ss, handler);
+  EXPECT_TRUE(r);
+
+  if(!r) {
+    EXPECT_NE(reader.GetParseErrorCode(), kParseErrorTermination);
+
+    ParseErrorCode e = reader.GetParseErrorCode();
+    size_t o = reader.GetErrorOffset();
+    std::clog << "Error: " << GetParseError_En(e) << std::endl;
+    std::clog << " at offset " << o << "  near '" << string(json).substr(o, 10) << "...'" << std::endl;
+  }
+}
+
+TEST_F(ParseJsonTest,
+       ParseTrace_ArrayValues) {
+
+  const char* json = "{\"event\": \"audit:event:aue_read:\", \"time\": 123333333333, \"pid\": 407, \"ppid\": 1, \"tid\": 100062, \"uid\": 0, \"subjprocuuid\": \"93d41a15-8bbb-11e6-a64a-0800270779c7\", \"subjthruuid\": \"89a75773-8bbb-11e6-a5db-0800270779c7\", \"address\": \"public/pickup\", \"retval\": 156, \"fictitious\":[42, \"hello\"]}";
+  Reader reader;
+  TraceReaderHandler handler;
+  StringStream ss(json);
+  ParseResult r;
+  r = reader.Parse(ss, handler);
+  EXPECT_TRUE(r);
+
+  if(!r) {
+    ASSERT_NE(reader.GetParseErrorCode(), kParseErrorTermination);
+    ParseErrorCode e = reader.GetParseErrorCode();
+    size_t o = reader.GetErrorOffset();
+    std::clog << "Error: " << GetParseError_En(e) << std::endl;
+    std::clog << " at offset " << o << "  near '" << string(json).substr(o, 10) << "...'" << std::endl;
+  }
+}

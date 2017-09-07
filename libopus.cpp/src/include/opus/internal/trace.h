@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "rapidjson/reader.h"
 #include "rapidjson/error/en.h"
@@ -81,13 +82,14 @@ namespace opus {
     {
       public:
       TraceReaderHandler() : state_(kExpectObjectStart),
-                             current_key(-1),
                              trace_member_offset(-1),
                              current_event_mask(0)
       {}
 
       bool StartObject();
       bool EndObject(rapidjson::SizeType);
+      bool StartArray();
+      bool EndArray(rapidjson::SizeType);
 
       bool Key(const char* str, rapidjson::SizeType len, bool copy);
       bool String(const char* str, rapidjson::SizeType size, bool copy);
@@ -102,6 +104,8 @@ namespace opus {
         return &events;
       }
 
+      std::stringstream parse_err;
+
       private:
       enum State {
           kExpectObjectStart,
@@ -109,7 +113,6 @@ namespace opus {
           kExpectValue,
           kIgnoreValue,
       } state_;
-      short current_key;
       short trace_member_offset;
       uint32_t current_event_mask;
       std::vector<std::unique_ptr<TraceEvent>> events;

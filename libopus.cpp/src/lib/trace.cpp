@@ -8,28 +8,33 @@ namespace opus {
 
 using namespace rapidjson;
 
-#define PARSE_KEY(field, maskv) {  \
-  trace_memeber_offset = offsetof(TraceEvent, field); \
-  current_event_mask |= maskv; \
-} \
+#define PARSE_KEY(field, maskv, key, k_len) {          \
+  if(memcmp(str, key, k_len) == 0) {                   \
+    trace_member_offset = offsetof(TraceEvent, field); \
+    state_ = kExpectValue;                             \
+    current_event_mask |= maskv;                       \
+  }                                                    \
+}
 
 
 bool TraceReaderHandler::StartObject() {
   switch(state_) {
     case kExpectObjectStart: {
       state_ = kExpectKeyOrEndObject;
-      current_key = 0;
       current_event = std::make_unique<TraceEvent>();
       return true;
     }
-    default: return false;
+    default: {
+      std::clog << "StartObject wrong state";
+      return false;
+    }
   }
 }
 
 bool TraceReaderHandler::EndObject(SizeType) {
   bool ret;
   if((current_event_mask & TraceEvent_required) == TraceEvent_required){
-    ret = (state_ == kExpectKeyOrEndObject);
+    ret = (state_ == kExpectKeyOrEndObject || state_ == kIgnoreValue);
     state_ = kExpectObjectStart;
     events.push_back(std::move(current_event));
     return ret;
@@ -40,109 +45,97 @@ bool TraceReaderHandler::EndObject(SizeType) {
     return false;
   }
 }
+bool TraceReaderHandler::StartArray() {
+  state_ = kIgnoreValue;
+  return true;
+}
+bool TraceReaderHandler::EndArray(SizeType) {
+  state_ = kExpectKeyOrEndObject;
+  return true;
+}
 
+// This function uses the properties of CADETS traces keys for identifying
+// them using the minimum number of comparisons.
+// Criteria used: key length, selective character comparisons for keys of
+// the same length.
 bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
   switch(state_) {
-    case kExpectKeyOrEndObject: {
-      state_ = kExpectValue;
-      current_key++;
+    case kExpectKeyOrEndObject:
+    case kIgnoreValue: {
+      state_ = kIgnoreValue;
       switch(len) {
         case 2: {
-          if(str[0]=='f'){
-            trace_member_offset = offsetof(TraceEvent, fd);
-            current_event_mask |= FD;
-          }
+          if(str[0]=='f')
+            PARSE_KEY(fd, FD, "fd", 2);
           break;
         }
         case 3: {
           switch(str[0]){
-            case 'p': {
-                trace_member_offset = offsetof(TraceEvent, pid);
-                current_event_mask |= PID;
-                break;
-            }
-            case 't': {
-                trace_member_offset = offsetof(TraceEvent, tid);
-                current_event_mask |= TID;
-                break;
-            }
-            case 'u': {
-                trace_member_offset = offsetof(TraceEvent, uid);
-                current_event_mask |= UID;
-                break;
-            }
+            case 'p':
+              PARSE_KEY(pid, PID, "pid", 3);
+              break;
+            case 't':
+              PARSE_KEY(tid, TID, "tid", 3);
+              break;
+            case 'u':
+              PARSE_KEY(uid, UID, "uid", 3);
+              break;
           }
           break;
         }
         case 4: {
           switch(str[0]){
-            case 'h': {
-                trace_member_offset = offsetof(TraceEvent, host);
-                current_event_mask |= HOST;
-                break;
-            }
-            case 't': {
-                trace_member_offset = offsetof(TraceEvent, time);
-                current_event_mask |= TIME;
-                break;
-            }
-            case 'p': {
-                trace_member_offset = offsetof(TraceEvent, ppid);
-                current_event_mask |= PPID;
-                break;
-            }
-            case 'e': {
-                trace_member_offset = offsetof(TraceEvent, exec);
-                current_event_mask |= EXEC;
-                break;
-            }
+            case 'h':
+              PARSE_KEY(host, HOST, "host", 4);
+              break;
+            case 't':
+              PARSE_KEY(time, TIME, "time", 4);
+              break;
+            case 'p':
+              PARSE_KEY(ppid, PPID, "ppid", 4);
+              break;
+            case 'e':
+              PARSE_KEY(exec, EXEC, "exec", 4);
+              break;
           }
           break;
         }
         case 5: {
           switch(str[0]){
-            case 'e': {
-                trace_member_offset = offsetof(TraceEvent, event);
-                current_event_mask |= EVENT;
-                break;
-            }
-            case 'f': {
-                trace_member_offset = offsetof(TraceEvent, flags);
-                current_event_mask |= FLAGS;
-                break;
-            }
+            case 'e':
+              PARSE_KEY(event, EVENT, "event", 5);
+              break;
+            case 'f':
+              PARSE_KEY(flags, FLAGS, "flags", 5);
+              break;
           }
           break;
         }
         case 6: {
           switch(str[5]){
-            case 'h': {
-                trace_member_offset = offsetof(TraceEvent, fdpath);
-                current_event_mask |= FDPATH;
-                break;
-            }
-            case '1': {
-                trace_member_offset = offsetof(TraceEvent, upath1);
-                current_event_mask |= UPATH1;
-                break;
-            }
-            case '2': {
-                trace_member_offset = offsetof(TraceEvent, upath2);
-                current_event_mask |= UPATH2;
-                break;
-            }
-            case 'l': {
-                trace_member_offset = offsetof(TraceEvent, retval);
-                current_event_mask |= RETVAL;
-                break;
-            }
+            case 'h':
+              PARSE_KEY(fdpath, FDPATH, "fdpath", 6);
+              break;
+            case '1':
+              PARSE_KEY(upath1, UPATH1, "upath1", 6);
+              break;
+            case '2':
+              PARSE_KEY(upath2, UPATH2, "upath2", 6);
+              break;
+            case 'l':
+              PARSE_KEY(retval, RETVAL, "retval", 6);
+              break;
           }
           break;
         }
         case 7: {
-          if(str[0]=='c'){
-            trace_member_offset = offsetof(TraceEvent, cmdline);
-            current_event_mask |= CMDLINE;
+          switch(str[0]){
+            case 'c':
+              PARSE_KEY(cmdline, CMDLINE, "cmdline", 7);
+              break;
+            case 'a':
+              PARSE_KEY(address, ADDRESS, "address", 7);
+              break;
           }
           if (str[0] == 'a') {
             trace_member_offset = offsetof(TraceEvent, address);
@@ -151,55 +144,46 @@ bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
           break;
         }
         case 11: {
-          if(str[0]=='s'){
-            trace_member_offset = offsetof(TraceEvent, subjthruuid);
-            current_event_mask |= SUBJTHRUUID;
-          }
+          if(str[0]=='s')
+            PARSE_KEY(subjthruuid, SUBJTHRUUID, "subjthruuid", 11);
           break;
         }
         case 12: {
           switch(str[0]){
-            case 's': {
-              trace_member_offset = offsetof(TraceEvent, subjprocuuid);
-              current_event_mask |= SUBJPROCUUID;
+            case 's':
+              PARSE_KEY(subjprocuuid, SUBJPROCUUID, "subjprocuuid", 12);
               break;
-            }
             case 'a': {
-              if(str[11] == '1'){
-                trace_member_offset = offsetof(TraceEvent, arg_objuuid1);
-                current_event_mask |= ARGOBJUUID1;
-              } else {
-                trace_member_offset = offsetof(TraceEvent, arg_objuuid2);
-                current_event_mask |= ARGOBJUUID2;
-              }
+              if(str[11] == '1')
+                PARSE_KEY(arg_objuuid1, ARGOBJUUID1, "arg_objuuid1", 12)
+              else
+                PARSE_KEY(arg_objuuid2, ARGOBJUUID2, "arg_objuuid2", 12)
               break;
             }
             case 'r': {
-              if(str[11] == '1'){
-                trace_member_offset = offsetof(TraceEvent, ret_objuuid1);
-                current_event_mask |= RETOBJUUID1;
-              } else {
-                trace_member_offset = offsetof(TraceEvent, ret_objuuid2);
-                current_event_mask |= RETOBJUUID2;
-              }
+              if(str[11] == '1')
+                PARSE_KEY(ret_objuuid1, RETOBJUUID1, "ret_objuuid1", 12)
+              else
+                PARSE_KEY(ret_objuuid2, RETOBJUUID2, "ret_objuuid2", 12)
               break;
             }
           }
           break;
         }
-        default:
-            state_=kIgnoreValue;
       }
       return true;
     }
-    default: return false;
+    default: {
+      std::cout<< "Unexpected state: "<< state_ <<std::endl;
+      return false; // unexpected state
+    }
   }
 }
 
 bool TraceReaderHandler::String(const char* str, SizeType, bool) {
-  std::string* m;
+  std::string* m = nullptr;
   switch(state_){
-    case kExpectValue:{
+    case kExpectValue: {
       switch(trace_member_offset) {
         case offsetof(TraceEvent, event):
           m = &current_event->event;
@@ -246,12 +230,11 @@ bool TraceReaderHandler::String(const char* str, SizeType, bool) {
       }
       // think of string_view and doing differen things whether the bool copy
       // argument is true or false
-      *m = str;
+      if(m != nullptr) *m = str;
       state_ = kExpectKeyOrEndObject;
       return true;
     }
     case kIgnoreValue:
-      state_ = kExpectKeyOrEndObject;
       return true;
     default: return false;
   }
@@ -272,7 +255,6 @@ bool TraceReaderHandler::Uint64(uint64_t val) {
       return true;
     }
     case kIgnoreValue:
-      state_ = kExpectKeyOrEndObject;
       return true;
     default: return false;
   }
@@ -293,7 +275,6 @@ bool TraceReaderHandler::Int64(int64_t val) {
       return true;
     }
     case kIgnoreValue:
-      state_ = kExpectKeyOrEndObject;
       return true;
     default: return false;
   }
@@ -331,7 +312,6 @@ bool TraceReaderHandler::Uint(unsigned val) {
       return true;
     }
     case kIgnoreValue:
-      state_ = kExpectKeyOrEndObject;
       return true;
     default: return false;
   }
@@ -369,7 +349,6 @@ bool TraceReaderHandler::Int(int val) {
       return true;
     }
     case kIgnoreValue:
-      state_ = kExpectKeyOrEndObject;
       return true;
     default: return false;
   }
