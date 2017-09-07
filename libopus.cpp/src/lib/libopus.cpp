@@ -1,6 +1,7 @@
 // Copyright [2017] <Thomas Bytheway & Lucian Carata>
 #include "opus/opus.h"
 
+#include <rapidjson/filereadstream.h>
 #include <neo4j-client.h>
 #include <queue>
 #include <iostream>
@@ -45,15 +46,11 @@ void process_events(OpusHdl *hdl, int fd) {
 
   auto fp = fdopen(fd, "r");
 
-  char line[65536];
-  memset(line, '\0', 65536);
-  while (fgets(line, 65536, fp) != nullptr) {
-    StringStream s(line);
-    if (reader.Parse(s, handler)) {
-      auto tr = handler.event();
-      pvm_parse(*tr, &pvm_cache, &trans);
-    }
-    memset(line, '\0', 65536);
+  char buf[65536];
+  FileReadStream fs(fp, buf, sizeof(buf));
+  while (!reader.Parse(fs, handler)) {
+    auto tr = handler.event();
+    pvm_parse(*tr, &pvm_cache, &trans);
   }
   auto db = session->db();
   neo4j_check_failure(neo4j_send(db, "BEGIN", neo4j_null));
