@@ -29,16 +29,17 @@ namespace opus {
       CMDLINE = 1 << 8,
       UPATH1  = 1 << 9,
       UPATH2  = 1 << 10,
-      FD      = 1 << 11,
-      FLAGS   = 1 << 12,
-      FDPATH  = 1 << 13,
-      SUBJPROCUUID = 1 << 14,
-      SUBJTHRUUID  = 1 << 15,
-      ARGOBJUUID1  = 1 << 16,
-      ARGOBJUUID2  = 1 << 17,
-      RETOBJUUID1  = 1 << 18,
-      RETOBJUUID2  = 1 << 19,
-      RETVAL       = 1 << 20,
+      ADDRESS = 1 << 11,
+      FD      = 1 << 12,
+      FLAGS   = 1 << 13,
+      FDPATH  = 1 << 14,
+      SUBJPROCUUID = 1 << 15,
+      SUBJTHRUUID  = 1 << 16,
+      ARGOBJUUID1  = 1 << 17,
+      ARGOBJUUID2  = 1 << 18,
+      RETOBJUUID1  = 1 << 19,
+      RETOBJUUID2  = 1 << 20,
+      RETVAL       = 1 << 21,
     };
 
     // Mask contains an 1 for every field required in TraceEvent. Every field in
@@ -62,6 +63,7 @@ namespace opus {
       std::string cmdline;
       std::string upath1;
       std::string upath2;
+      std::string address;
       int32_t fd;
       int32_t flags;
       std::string fdpath;

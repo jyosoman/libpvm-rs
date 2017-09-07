@@ -144,6 +144,10 @@ bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
             trace_member_offset = offsetof(TraceEvent, cmdline);
             current_event_mask |= CMDLINE;
           }
+          if (str[0] == 'a') {
+            trace_member_offset = offsetof(TraceEvent, address);
+            current_event_mask |= ADDRESS;
+          }
           break;
         }
         case 11: {
@@ -214,6 +218,9 @@ bool TraceReaderHandler::String(const char* str, SizeType, bool) {
           break;
         case offsetof(TraceEvent, upath2):
           m = &current_event->upath2;
+          break;
+        case offsetof(TraceEvent, address):
+          m = &current_event->address;
           break;
         case offsetof(TraceEvent, fdpath):
           m = &current_event->fdpath;
