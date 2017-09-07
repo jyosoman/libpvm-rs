@@ -1,11 +1,10 @@
 // Copyright [2017] <Thomas Bytheway & Lucian Carata>
-#include "opus/opus.h"
-
-#include <rapidjson/filereadstream.h>
 #include <neo4j-client.h>
+#include <rapidjson/filereadstream.h>
 #include <queue>
-#include <iostream>
 #include <string>
+
+#include "opus/opus.h"
 
 #include "opus/internal/opus_session.h"
 #include "opus/internal/db_tr.h"
@@ -20,7 +19,8 @@ using opus::internal::pvm_parse;
 using opus::trace::TraceReaderHandler;
 using opus::trace::TraceEvent;
 
-using namespace rapidjson;
+using rapidjson::Reader;
+using rapidjson::FileReadStream;
 
 OpusHdl *opus_init(Config cfg) {
   neo4j_client_init();

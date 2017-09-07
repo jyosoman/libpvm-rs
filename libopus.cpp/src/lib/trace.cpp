@@ -1,27 +1,28 @@
+// Copyright [2017] <Thomas Bytheway & Lucian Carata>
 #include "opus/internal/trace.h"
 
 #include <cstddef>
-#include <iostream>
+#include <iostream>  // NOLINT
+#include <string>
 
 namespace opus {
-  namespace trace {
+namespace trace {
 
-using namespace rapidjson;
+using rapidjson::SizeType;
 
 #define PARSE_KEY(field, maskv, key, k_len) {          \
-  if(memcmp(str, key, k_len) == 0) {                   \
+  if (memcmp(str, key, k_len) == 0) {                   \
     trace_member_offset = offsetof(TraceEvent, field); \
     state_ = kExpectValue;                             \
-    current_event_mask |= maskv;                       \
+    current_event_mask |= (maskv);                     \
   }                                                    \
 }
 
-
 bool TraceReaderHandler::StartObject() {
-  switch(state_) {
+  switch (state_) {
     case kExpectObjectStart: {
       state_ = kExpectKeyOrEndObject;
-      current_event.reset(new TraceEvent);
+      current_event = std::make_unique<TraceEvent>();
       return true;
     }
     default: {
@@ -33,22 +34,23 @@ bool TraceReaderHandler::StartObject() {
 
 bool TraceReaderHandler::EndObject(SizeType) {
   bool ret;
-  if((current_event_mask & TraceEvent_required) == TraceEvent_required){
+  if ((current_event_mask & TraceEvent_required) == TraceEvent_required) {
     ret = (state_ == kExpectKeyOrEndObject || state_ == kIgnoreValue);
     state_ = kExpectObjectStart;
     return ret;
-  }
-  else {
-    std::clog<<"Event missing required fields: "<<
-      (current_event_mask ^ TraceEvent_required)<<std::endl;
+  } else {
+    std::clog << "Event missing required fields: " <<
+              (current_event_mask ^ TraceEvent_required) << std::endl;
     current_event.reset(nullptr);
     return false;
   }
 }
+
 bool TraceReaderHandler::StartArray() {
   state_ = kIgnoreValue;
   return true;
 }
+
 bool TraceReaderHandler::EndArray(SizeType) {
   state_ = kExpectKeyOrEndObject;
   return true;
@@ -58,19 +60,20 @@ bool TraceReaderHandler::EndArray(SizeType) {
 // them using the minimum number of comparisons.
 // Criteria used: key length, selective character comparisons for keys of
 // the same length.
-bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
-  switch(state_) {
+bool TraceReaderHandler::Key(const char *str, SizeType len, bool) {
+  switch (state_) {
     case kExpectKeyOrEndObject:
     case kIgnoreValue: {
       state_ = kIgnoreValue;
-      switch(len) {
+      switch (len) {
         case 2: {
-          if(str[0]=='f')
+          if (str[0] == 'f') {
             PARSE_KEY(fd, FD, "fd", 2);
+          }
           break;
         }
         case 3: {
-          switch(str[0]){
+          switch (str[0]) {
             case 'p':
               PARSE_KEY(pid, PID, "pid", 3);
               break;
@@ -84,7 +87,7 @@ bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
           break;
         }
         case 4: {
-          switch(str[0]){
+          switch (str[0]) {
             case 'h':
               PARSE_KEY(host, HOST, "host", 4);
               break;
@@ -101,7 +104,7 @@ bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
           break;
         }
         case 5: {
-          switch(str[0]){
+          switch (str[0]) {
             case 'e':
               PARSE_KEY(event, EVENT, "event", 5);
               break;
@@ -112,7 +115,7 @@ bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
           break;
         }
         case 6: {
-          switch(str[5]){
+          switch (str[5]) {
             case 'h':
               PARSE_KEY(fdpath, FDPATH, "fdpath", 6);
               break;
@@ -129,7 +132,7 @@ bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
           break;
         }
         case 7: {
-          switch(str[0]){
+          switch (str[0]) {
             case 'c':
               PARSE_KEY(cmdline, CMDLINE, "cmdline", 7);
               break;
@@ -144,27 +147,30 @@ bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
           break;
         }
         case 11: {
-          if(str[0]=='s')
+          if (str[0] == 's') {
             PARSE_KEY(subjthruuid, SUBJTHRUUID, "subjthruuid", 11);
+          }
           break;
         }
         case 12: {
-          switch(str[0]){
+          switch (str[0]) {
             case 's':
               PARSE_KEY(subjprocuuid, SUBJPROCUUID, "subjprocuuid", 12);
               break;
             case 'a': {
-              if(str[11] == '1')
+              if (str[11] == '1') {
                 PARSE_KEY(arg_objuuid1, ARGOBJUUID1, "arg_objuuid1", 12)
-              else
+              } else {
                 PARSE_KEY(arg_objuuid2, ARGOBJUUID2, "arg_objuuid2", 12)
+              }
               break;
             }
             case 'r': {
-              if(str[11] == '1')
+              if (str[11] == '1') {
                 PARSE_KEY(ret_objuuid1, RETOBJUUID1, "ret_objuuid1", 12)
-              else
+              } else {
                 PARSE_KEY(ret_objuuid2, RETOBJUUID2, "ret_objuuid2", 12)
+              }
               break;
             }
           }
@@ -174,17 +180,17 @@ bool TraceReaderHandler::Key(const char* str, SizeType len, bool) {
       return true;
     }
     default: {
-      std::cout<< "Unexpected state: "<< state_ <<std::endl;
-      return false; // unexpected state
+      std::cout << "Unexpected state: " << state_ << std::endl;
+      return false;  // unexpected state
     }
   }
 }
 
-bool TraceReaderHandler::String(const char* str, SizeType, bool) {
-  std::string* m = nullptr;
-  switch(state_){
+bool TraceReaderHandler::String(const char *str, SizeType, bool) {
+  std::string *m = nullptr;
+  switch (state_) {
     case kExpectValue: {
-      switch(trace_member_offset) {
+      switch (trace_member_offset) {
         case offsetof(TraceEvent, event):
           m = &current_event->event;
           break;
@@ -228,61 +234,64 @@ bool TraceReaderHandler::String(const char* str, SizeType, bool) {
           m = &current_event->ret_objuuid2;
           break;
       }
-      // think of string_view and doing differen things whether the bool copy
+      // think of string_view and doing different things whether the bool copy
       // argument is true or false
-      if(m != nullptr) *m = str;
+      if (m != nullptr) *m = str;
       state_ = kExpectKeyOrEndObject;
       return true;
     }
     case kIgnoreValue:
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
 
 bool TraceReaderHandler::Uint64(uint64_t val) {
-  switch(state_){
+  switch (state_) {
     case kExpectValue: {
-      switch(trace_member_offset) {
+      switch (trace_member_offset) {
         case offsetof(TraceEvent, time):
           current_event->time = val;
           break;
         default:
-          std::clog<<"Key with offset "<<trace_member_offset<<
-            " was wrongly interpreted as Uint64"<<std::endl;
+          std::clog << "Key with offset " << trace_member_offset <<
+                    " was wrongly interpreted as Uint64" << std::endl;
       }
       state_ = kExpectKeyOrEndObject;
       return true;
     }
     case kIgnoreValue:
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
 
 bool TraceReaderHandler::Int64(int64_t val) {
-  switch(state_){
+  switch (state_) {
     case kExpectValue: {
-      switch(trace_member_offset) {
+      switch (trace_member_offset) {
         case offsetof(TraceEvent, time):
           current_event->time = static_cast<uint64_t>(val);
           break;
         default:
-          std::clog<<"Key with offset "<<trace_member_offset<<
-            " was wrongly interpreted as Int64"<<std::endl;
+          std::clog << "Key with offset " << trace_member_offset <<
+                    " was wrongly interpreted as Int64" << std::endl;
       }
       state_ = kExpectKeyOrEndObject;
       return true;
     }
     case kIgnoreValue:
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
 bool TraceReaderHandler::Uint(unsigned val) {
-  switch(state_){
+  switch (state_) {
     case kExpectValue: {
-      switch(trace_member_offset) {
+      switch (trace_member_offset) {
         case offsetof(TraceEvent, pid):
           current_event->pid = val;
           break;
@@ -305,21 +314,22 @@ bool TraceReaderHandler::Uint(unsigned val) {
           current_event->retval = val;
           break;
         default:
-          std::clog<<"Key with offset "<<trace_member_offset<<
-            " was wrongly interpreted as Uint"<<std::endl;
+          std::clog << "Key with offset " << trace_member_offset <<
+                    " was wrongly interpreted as Uint" << std::endl;
       }
       state_ = kExpectKeyOrEndObject;
       return true;
     }
     case kIgnoreValue:
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
 bool TraceReaderHandler::Int(int val) {
-  switch(state_){
+  switch (state_) {
     case kExpectValue: {
-      switch(trace_member_offset) {
+      switch (trace_member_offset) {
         case offsetof(TraceEvent, pid):
           current_event->pid = static_cast<uint32_t>(val);
           break;
@@ -342,17 +352,18 @@ bool TraceReaderHandler::Int(int val) {
           current_event->retval = static_cast<uint32_t>(val);
           break;
         default:
-          std::clog<<"Key with offset "<<trace_member_offset<<
-            " was wrongly interpreted as Int"<<std::endl;
+          std::clog << "Key with offset " << trace_member_offset <<
+                    " was wrongly interpreted as Int" << std::endl;
       }
       state_ = kExpectKeyOrEndObject;
       return true;
     }
     case kIgnoreValue:
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
 
-  } // namespace trace
-} // namespace opus
+}  // namespace trace
+}  // namespace opus
