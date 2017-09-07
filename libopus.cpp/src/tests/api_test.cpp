@@ -69,3 +69,10 @@ TEST_F(APITest,
     FAIL();
   }
 }
+
+TEST_F(APITest,
+       ParseTest) {
+  FILE* fp = fopen("/tmp/data.json", "r");
+  process_events(hdl, fileno(fp));
+  fclose(fp);
+}
