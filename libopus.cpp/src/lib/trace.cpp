@@ -21,7 +21,7 @@ bool TraceReaderHandler::StartObject() {
   switch(state_) {
     case kExpectObjectStart: {
       state_ = kExpectKeyOrEndObject;
-      current_event = std::make_unique<TraceEvent>();
+      current_event.reset(new TraceEvent);
       return true;
     }
     default: {
@@ -36,12 +36,12 @@ bool TraceReaderHandler::EndObject(SizeType) {
   if((current_event_mask & TraceEvent_required) == TraceEvent_required){
     ret = (state_ == kExpectKeyOrEndObject || state_ == kIgnoreValue);
     state_ = kExpectObjectStart;
-    events.push_back(std::move(current_event));
     return ret;
   }
   else {
     std::clog<<"Event missing required fields: "<<
       (current_event_mask ^ TraceEvent_required)<<std::endl;
+    current_event.reset(nullptr);
     return false;
   }
 }

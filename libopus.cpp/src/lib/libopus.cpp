@@ -50,8 +50,7 @@ void process_events(OpusHdl *hdl, int fd) {
   while (fgets(line, 65536, fp) != nullptr) {
     StringStream s(line);
     if (reader.Parse(s, handler)) {
-      auto tr = std::move(handler.get_events()->front());
-      handler.get_events()->clear();
+      auto tr = handler.event();
       pvm_parse(*tr, &pvm_cache, &trans);
     }
     memset(line, '\0', 65536);

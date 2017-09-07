@@ -100,9 +100,7 @@ namespace opus {
 
       bool Default() { return false; }
 
-      std::vector<std::unique_ptr<TraceEvent>>* get_events(){
-        return &events;
-      }
+      std::unique_ptr<TraceEvent> event() { return std::move(current_event); }
 
       std::stringstream parse_err;
 
@@ -115,7 +113,6 @@ namespace opus {
       } state_;
       short trace_member_offset;
       uint32_t current_event_mask;
-      std::vector<std::unique_ptr<TraceEvent>> events;
       std::unique_ptr<TraceEvent> current_event;
 
     };
