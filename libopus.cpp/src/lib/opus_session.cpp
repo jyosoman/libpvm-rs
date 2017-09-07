@@ -36,7 +36,7 @@ OpusSession *OpusSession::from_hdl(OpusHdl *hdl) {
 }
 
 const OpusSession *OpusSession::from_hdl(const OpusHdl *hdl) {
-  return reinterpret_cast<const OpusSession *>(hdl);
+  return reinterpret_cast<const OpusSession *>(hdl->_internal);
 }
 
 neo4j_connection_t *OpusSession::db() {

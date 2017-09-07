@@ -31,9 +31,9 @@ void print_cfg(OpusHdl const *hdl) {
   auto session = OpusSession::from_hdl(hdl);
   auto cfg = session->get_cfg();
   printf("libOpus configuration");
-  printf("db_server: %s", cfg->db_server);
-  printf("db_user: %s", cfg->db_user);
-  printf("db_password: %s", cfg->db_password);
+  printf("db_server: %s\n", cfg->db_server);
+  printf("db_user: %s\n", cfg->db_user);
+  printf("db_password: %s\n", cfg->db_password);
 }
 
 void process_events(OpusHdl *hdl, int fd) {
