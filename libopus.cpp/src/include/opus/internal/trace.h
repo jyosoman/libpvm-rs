@@ -81,6 +81,7 @@ struct TraceEvent {
 };
 
 const char* TraceEventOffset_ToName(size_t offset);
+void PrintTraceEventFieldOffsets();
 
 class TraceReaderHandler
     :public BaseReaderHandler<rapidjson::UTF8<>, TraceReaderHandler> {

@@ -11,6 +11,7 @@
 #include "opus/opus.h"
 #include "opus/internal/db_tr.h"
 #include "opus/internal/opus_session.h"
+#include "opus/internal/trace.h"
 
 using std::string;
 using opus::internal::OpusSession;

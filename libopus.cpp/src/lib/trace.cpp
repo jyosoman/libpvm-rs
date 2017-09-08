@@ -20,7 +20,10 @@ using rapidjson::SizeType;
 
 #define FOFF_TO_STR(field) \
   case offsetof(TraceEvent, field): \
-    return "#x"
+    return #field
+
+#define FOFF_TO_STDOUT(field) \
+  std::cout<< #field " offset:"<<offsetof(TraceEvent, field)<<std::endl
 
 const char* TraceEventOffset_ToName(size_t offset){
   switch(offset){
@@ -48,6 +51,31 @@ const char* TraceEventOffset_ToName(size_t offset){
    FOFF_TO_STR(retval);
    default: return "unknown";
   }
+}
+
+void PrintTraceEventFieldOffsets(){
+   FOFF_TO_STDOUT(event);
+   FOFF_TO_STDOUT(host);
+   FOFF_TO_STDOUT(time);
+   FOFF_TO_STDOUT(pid);
+   FOFF_TO_STDOUT(ppid);
+   FOFF_TO_STDOUT(tid);
+   FOFF_TO_STDOUT(uid);
+   FOFF_TO_STDOUT(exec);
+   FOFF_TO_STDOUT(cmdline);
+   FOFF_TO_STDOUT(upath1);
+   FOFF_TO_STDOUT(upath2);
+   FOFF_TO_STDOUT(address);
+   FOFF_TO_STDOUT(fd);
+   FOFF_TO_STDOUT(flags);
+   FOFF_TO_STDOUT(fdpath);
+   FOFF_TO_STDOUT(subjprocuuid);
+   FOFF_TO_STDOUT(subjthruuid);
+   FOFF_TO_STDOUT(arg_objuuid1);
+   FOFF_TO_STDOUT(arg_objuuid2);
+   FOFF_TO_STDOUT(ret_objuuid1);
+   FOFF_TO_STDOUT(ret_objuuid2);
+   FOFF_TO_STDOUT(retval);
 }
 
 bool TraceReaderHandler::StartObject() {

@@ -53,14 +53,16 @@ void process_events(OpusHdl *hdl, int fd) {
     pvm_parse(*tr, &pvm_cache, &trans);
   }
   auto db = session->db();
-  neo4j_check_failure(neo4j_send(db, "BEGIN", neo4j_null));
-  while (!trans.empty()) {
-    trans.front()->execute(db);
-    trans.pop();
-  }
-  auto commit = neo4j_send(db, "COMMIT", neo4j_null);
-  if (neo4j_check_failure(commit) != 0) {
-    printf("Commit Error: %s\n", neo4j_error_message(commit));
+  if(db != nullptr) {
+    neo4j_check_failure(neo4j_send(db, "BEGIN", neo4j_null));
+    while (!trans.empty()) {
+      trans.front()->execute(db);
+      trans.pop();
+    }
+    auto commit = neo4j_send(db, "COMMIT", neo4j_null);
+    if (neo4j_check_failure(commit) != 0) {
+      printf("Commit Error: %s\n", neo4j_error_message(commit));
+    }
   }
 }
 

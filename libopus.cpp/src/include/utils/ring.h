@@ -1,7 +1,7 @@
 /**
  * Lock-free multi-producer and multi-consumer ring buffer
  *
- * Ring buffer implementation inspired by
+ * Ring buffer implementation based on
  *
  *  1. LinuxJournal article, A. Krizhanovsky, Lock-free multi-producer
  *     multi-consumer queue on ring buffer. github.com/krizhanovsky/NatSys-Lab
