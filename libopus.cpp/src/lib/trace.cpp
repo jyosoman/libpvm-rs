@@ -18,6 +18,38 @@ using rapidjson::SizeType;
   }                                                    \
 }
 
+#define FOFF_TO_STR(field) \
+  case offsetof(TraceEvent, field): \
+    return "#x"
+
+const char* TraceEventOffset_ToName(size_t offset){
+  switch(offset){
+   FOFF_TO_STR(event);
+   FOFF_TO_STR(host);
+   FOFF_TO_STR(time);
+   FOFF_TO_STR(pid);
+   FOFF_TO_STR(ppid);
+   FOFF_TO_STR(tid);
+   FOFF_TO_STR(uid);
+   FOFF_TO_STR(exec);
+   FOFF_TO_STR(cmdline);
+   FOFF_TO_STR(upath1);
+   FOFF_TO_STR(upath2);
+   FOFF_TO_STR(address);
+   FOFF_TO_STR(fd);
+   FOFF_TO_STR(flags);
+   FOFF_TO_STR(fdpath);
+   FOFF_TO_STR(subjprocuuid);
+   FOFF_TO_STR(subjthruuid);
+   FOFF_TO_STR(arg_objuuid1);
+   FOFF_TO_STR(arg_objuuid2);
+   FOFF_TO_STR(ret_objuuid1);
+   FOFF_TO_STR(ret_objuuid2);
+   FOFF_TO_STR(retval);
+   default: return "unknown";
+  }
+}
+
 bool TraceReaderHandler::StartObject() {
   switch (state_) {
     case kExpectObjectStart: {
@@ -255,7 +287,7 @@ bool TraceReaderHandler::Uint64(uint64_t val) {
           current_event->time = val;
           break;
         default:
-          std::clog << "Key with offset " << trace_member_offset <<
+          std::clog << "Key " << TraceEventOffset_ToName(trace_member_offset) <<
                     " was wrongly interpreted as Uint64" << std::endl;
       }
       state_ = kExpectKeyOrEndObject;
@@ -276,7 +308,7 @@ bool TraceReaderHandler::Int64(int64_t val) {
           current_event->time = static_cast<uint64_t>(val);
           break;
         default:
-          std::clog << "Key with offset " << trace_member_offset <<
+          std::clog << "Key with offset " << TraceEventOffset_ToName(trace_member_offset) <<
                     " was wrongly interpreted as Int64" << std::endl;
       }
       state_ = kExpectKeyOrEndObject;
@@ -314,7 +346,7 @@ bool TraceReaderHandler::Uint(unsigned val) {
           current_event->retval = val;
           break;
         default:
-          std::clog << "Key with offset " << trace_member_offset <<
+          std::clog << "Key with offset " << TraceEventOffset_ToName(trace_member_offset) <<
                     " was wrongly interpreted as Uint" << std::endl;
       }
       state_ = kExpectKeyOrEndObject;
@@ -352,7 +384,7 @@ bool TraceReaderHandler::Int(int val) {
           current_event->retval = static_cast<uint32_t>(val);
           break;
         default:
-          std::clog << "Key with offset " << trace_member_offset <<
+          std::clog << "Key with offset " << TraceEventOffset_ToName(trace_member_offset) <<
                     " was wrongly interpreted as Int" << std::endl;
       }
       state_ = kExpectKeyOrEndObject;

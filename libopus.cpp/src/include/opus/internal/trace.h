@@ -80,6 +80,8 @@ struct TraceEvent {
   uint32_t retval;
 };
 
+const char* TraceEventOffset_ToName(size_t offset);
+
 class TraceReaderHandler
     :public BaseReaderHandler<rapidjson::UTF8<>, TraceReaderHandler> {
  public:
