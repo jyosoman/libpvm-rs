@@ -18,4 +18,8 @@ if(WITH_TESTS)
   )
   lib_test(parse_json "${parse_json_SOURCES}" "${TEST_LINK}")
 
+  set (ring_test_SOURCES
+    ${TESTS_DIR}/ring_test.cpp
+  )
+  lib_test(ring_test "${ring_test_SOURCES}" "${TEST_LINK}")
 endif(WITH_TESTS)

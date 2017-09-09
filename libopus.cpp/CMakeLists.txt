@@ -319,6 +319,7 @@ set (libopus_PRIVATE_HEADERS
     ${libopus_INCLUDE_DIR}/opus/internal/pvm.h
     ${libopus_INCLUDE_DIR}/opus/internal/pvm_cache.h
     ${libopus_INCLUDE_DIR}/opus/internal/trace.h
+    ${libopus_INCLUDE_DIR}/utils/ring.h
 )
 
 set(CMAKE_CXX_STANDARD 14)
