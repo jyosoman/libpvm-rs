@@ -1,7 +1,3 @@
-[submodule "libopus.cpp/cmake"]
-	path = libopus.cpp/cmake
-	url = git@github.com:lc525/cmake-common
-
-[submodule "libopus.rust/modules/rusty-bolt"]
-	path = libopus.rust/modules/rusty-bolt
+[submodule "modules/rusty-bolt"]
+	path = modules/rusty-bolt
 	url = git@github.com:HarkonenBade/rusty-bolt.git
