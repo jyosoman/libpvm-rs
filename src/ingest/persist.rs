@@ -56,22 +56,22 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
             _ => {}
         }
         if nodes.len() >= BATCH_SIZE {
-            execute(&mut db, DBTr::CreateNodes(nodes.clone().into()));
+            execute(&mut db, DBTr::CreateNodes(nodes.clone().into())).unwrap();
             nodes.clear();
         }
         if edges.len() >= BATCH_SIZE {
-            execute(&mut db, DBTr::CreateRels(edges.clone().into()));
+            execute(&mut db, DBTr::CreateRels(edges.clone().into())).unwrap();
             edges.clear();
         }
         if update.len() >= BATCH_SIZE {
-            execute(&mut db, DBTr::UpdateNodes(update.clone().into()));
+            execute(&mut db, DBTr::UpdateNodes(update.clone().into())).unwrap();
             update.clear();
         }
         trs += 1;
    }
-    execute(&mut db, DBTr::CreateNodes(nodes.into()));
-    execute(&mut db, DBTr::CreateRels(edges.into()));
-    execute(&mut db, DBTr::UpdateNodes(update.into()));
+    execute(&mut db, DBTr::CreateNodes(nodes.into())).unwrap();
+    execute(&mut db, DBTr::CreateRels(edges.into())).unwrap();
+    execute(&mut db, DBTr::UpdateNodes(update.into())).unwrap();
     println!("Final Commit");
     match db.commit_transaction() {
         Some(s) => {

@@ -1,6 +1,7 @@
 mod parse;
 mod persist;
 mod pvm_cache;
+mod db;
 
 use std::collections::HashMap;
 use std::io::BufRead;
@@ -13,6 +14,7 @@ use neo4j::cypher::CypherStream;
 use serde_json;
 
 use self::pvm_cache::PVMCache;
+use self::db::DB;
 use trace::TraceEvent;
 
 fn print_time(ref tmr: Instant) {
@@ -33,7 +35,9 @@ where
 
     let mut cache = PVMCache::new();
 
-    let (mut send, recv) = mpsc::sync_channel(BATCH_SIZE*2);
+    let (send, recv) = mpsc::sync_channel(BATCH_SIZE*2);
+
+    let mut db_inf = DB::create(send);
 
     let db_worker = thread::spawn(move || { persist::execute_loop(db, recv); });
 
@@ -81,7 +85,7 @@ where
         for tr in post_vec.drain(..) {
             match tr {
                 Some(tr) => {
-                    if let Err(perr) = parse::parse_trace(&tr, &mut send, &mut cache) {
+                    if let Err(perr) = parse::parse_trace(&tr, &mut db_inf, &mut cache) {
                         println!("PVM parsing error {}", perr);
                     }
                 }
@@ -92,7 +96,7 @@ where
             break;
         }
     }
-    drop(send);
+    drop(db_inf);
     println!("Parse Complete");
     print_time(tmr);
     if let Err(e) = db_worker.join() {
