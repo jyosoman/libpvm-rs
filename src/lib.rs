@@ -25,9 +25,4 @@ pub mod query;
 pub mod value_as;
 pub mod invbloom;
 pub mod uuid;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {}
-}
+pub mod checking_store;
