@@ -1,56 +1,64 @@
 use std::collections::HashMap;
+
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use uuid::Uuid5;
 
-pub struct PVMCache {
-    node_cache: HashMap<Uuid5, Node>,
-    id_counter: AtomicUsize,
-}
+use super::Node;
 
-pub struct Node {
-    pub db_id: i64,
-    pub cmdline: String,
-    pub thin: bool,
+use checking_store::{CheckingStore, DropGuard};
+
+pub type NodeGuard = DropGuard<i64, Node>;
+
+pub struct PVMCache {
+    uuid_cache: HashMap<Uuid5, i64>,
+    node_cache: CheckingStore<i64, Node>,
+    id_counter: AtomicUsize,
 }
 
 impl PVMCache {
     pub fn new() -> PVMCache {
         PVMCache {
-            node_cache: HashMap::new(),
+            uuid_cache: HashMap::new(),
+            node_cache: CheckingStore::new(),
             id_counter: AtomicUsize::new(0),
         }
     }
 
-    pub fn add(&mut self, uuid: Uuid5, cmdline: &str, thin: bool) {
+    pub fn add(&mut self, uuid: Uuid5, pid: i32, cmdline: &str, thin: bool) -> NodeGuard {
+        let id = self.id_counter.fetch_add(1, Ordering::SeqCst) as i64;
         let node = Node {
-            db_id: self.id_counter.fetch_add(1, Ordering::SeqCst) as i64,
+            db_id: id,
+            uuid,
+            pid,
             cmdline: String::from(cmdline),
-            thin: thin,
+            thin,
         };
-        self.node_cache.insert(uuid, node);
+        self.uuid_cache.insert(uuid, id);
+        self.node_cache.insert(id, node);
+        self.node_cache.checkout(&id).unwrap()
     }
 
-    pub fn check(&mut self, uuid: Uuid5, cmdline: &str) -> bool {
-        if !self.node_cache.contains_key(&uuid) {
-            self.add(uuid, cmdline, true);
-            true
+    pub fn check(&mut self, uuid: Uuid5, pid: i32, cmdline: &str) -> (bool, NodeGuard) {
+        if !self.uuid_cache.contains_key(&uuid) {
+            (true, self.add(uuid, pid, cmdline, true))
         } else {
-            false
+            (
+                false,
+                self.node_cache.checkout(&self.uuid_cache[&uuid]).unwrap(),
+            )
         }
     }
 
-    pub fn release(&mut self, uuid: Uuid5) {
-        self.node_cache.remove(&uuid);
+    pub fn release(&mut self, uuid: &Uuid5) {
+        self.uuid_cache.remove(uuid);
     }
 
-    pub fn get(&self, uuid: Uuid5) -> &Node {
-        &self.node_cache[&uuid]
-    }
+    //pub fn checkout(&mut self, uuid: &Uuid5) ->  NodeGuard{
+    //    self.node_cache.checkout(&self.uuid_cache[uuid]).unwrap()
+    //}
 
-    pub fn set(&mut self, uuid: Uuid5, cmdline: &str, thin: bool) {
-        let node = self.node_cache.get_mut(&uuid).unwrap();
-        node.cmdline = String::from(cmdline);
-        node.thin = thin;
+    pub fn checkin(&mut self, guard: NodeGuard) {
+        self.node_cache.checkin(guard)
     }
 }

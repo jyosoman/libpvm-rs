@@ -8,7 +8,7 @@ pub struct CheckingStore<K, V>
     where
         K: Hash + Eq + Clone,
 {
-    store: HashMap<K, Option<V>>,
+    store: HashMap<K, Option<Box<V>>>,
 }
 
 impl<K, V> CheckingStore<K, V>
@@ -27,9 +27,12 @@ impl<K, V> CheckingStore<K, V>
         if self.store.contains_key(&key) {
             panic!("Cannot overwrite store entry");
         }
-        self.store.insert(key, Some(val));
+        self.store.insert(key, Some(Box::new(val)));
     }
     pub fn remove(&mut self, key: &K) {
+        if self.store.contains_key(key) && self.store[key].is_none() {
+            panic!("Removing checked out item from store")
+        }
         self.store.remove(key);
     }
     pub fn checkout(&mut self, key: &K) -> Option<DropGuard<K, V>> {
@@ -49,24 +52,24 @@ impl<K, V> CheckingStore<K, V>
         if self.store[&key].is_some() {
             panic!("Returning replaced item");
         }
-        self.store.insert(key, Some(val));
+        self.store.get_mut(&key).unwrap().get_or_insert(val);
     }
 }
 
 pub struct DropGuard<K, V> {
     key: Option<K>,
-    inner: Option<V>,
+    inner: Option<Box<V>>,
 }
 
 impl<K, V> DropGuard<K, V> {
-    fn new(key: K, val: V) -> DropGuard<K, V> {
+    fn new(key: K, val: Box<V>) -> DropGuard<K, V> {
         DropGuard {
             key: Some(key),
             inner: Some(val),
         }
     }
 
-    fn unwrap(mut guard: DropGuard<K, V>) -> (K, V) {
+    fn unwrap(mut guard: DropGuard<K, V>) -> (K, Box<V>) {
         (guard.key.take().unwrap(), guard.inner.take().unwrap())
     }
 }
@@ -135,7 +138,7 @@ mod tests {
         let mut s: CheckingStore<i64, String> = CheckingStore::new();
         s.insert(1, String::from("test"));
         let first = s.checkout(&1).unwrap();
-        s.checkin(DropGuard::new(1, String::from("boo")));
+        s.checkin(DropGuard::new(1, Box::new(String::from("boo"))));
         s.checkin(first);
     }
 
@@ -143,7 +146,7 @@ mod tests {
     #[should_panic(expected = "Returning item not borrowed from store")]
     fn returning_none_store() {
         let mut s: CheckingStore<i64, String> = CheckingStore::new();
-        s.checkin(DropGuard::new(1, String::from("boo")))
+        s.checkin(DropGuard::new(1, Box::new(String::from("boo"))))
     }
 
     #[test]

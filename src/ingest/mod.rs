@@ -13,9 +13,19 @@ use rayon::prelude::*;
 use neo4j::cypher::CypherStream;
 use serde_json;
 
-use self::pvm_cache::PVMCache;
+use self::pvm_cache::{PVMCache, NodeGuard};
 use self::db::DB;
 use trace::TraceEvent;
+use uuid::Uuid5;
+
+#[derive(Debug)]
+pub struct Node {
+    pub db_id: i64,
+    pub uuid: Uuid5,
+    pub cmdline: String,
+    pub pid: i32,
+    pub thin: bool,
+}
 
 fn print_time(ref tmr: Instant) {
     let dur = tmr.elapsed();
@@ -85,9 +95,7 @@ where
         for tr in post_vec.drain(..) {
             match tr {
                 Some(tr) => {
-                    if let Err(perr) = parse::parse_trace(&tr, &mut db_inf, &mut cache) {
-                        println!("PVM parsing error {}", perr);
-                    }
+                    parse::parse_trace(&tr, &mut db_inf, &mut cache);
                 }
                 None => continue,
             }

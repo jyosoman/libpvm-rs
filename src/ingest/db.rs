@@ -1,44 +1,45 @@
 use std::sync::mpsc::SyncSender;
 
 use super::persist::DBTr;
-
-use uuid::Uuid5;
+use super::Node;
 
 pub struct DB {
     persist_pipe: SyncSender<DBTr>,
 }
 
 impl DB {
-    pub fn create(pipe: SyncSender<DBTr>) -> DB{
+    pub fn create(pipe: SyncSender<DBTr>) -> DB {
         DB { persist_pipe: pipe }
     }
 
-    pub fn create_node(
-        &mut self,
-        id: i64,
-        uuid: Uuid5,
-        pid: i32,
-        cmdline: String,
-    ) -> Result<(), &'static str> {
+    pub fn create_node(&mut self, node: &Node) {
         self.persist_pipe
             .send(DBTr::CreateNode {
-                id,
-                uuid,
-                pid,
-                cmdline,
+                id: node.db_id,
+                uuid: node.uuid,
+                pid: node.pid,
+                cmdline: node.cmdline.clone(),
             })
-            .map_err(|_| "Database worker closed queue unexpectadly")
+            .expect("Database worker closed queue unexpectadly")
     }
 
-    pub fn create_rel(&mut self, src: i64, dst: i64, class: String) -> Result<(), &'static str> {
+    pub fn create_rel(&mut self, src: &Node, dst: &Node, class: String) {
         self.persist_pipe
-            .send(DBTr::CreateRel { src, dst, class })
-            .map_err(|_| "Database worker closed queue unexpectadly")
+            .send(DBTr::CreateRel {
+                src: src.db_id,
+                dst: dst.db_id,
+                class,
+            })
+            .expect("Database worker closed queue unexpectadly")
     }
 
-    pub fn update_node(&mut self, id: i64, pid: i32, cmdline: String) -> Result<(), &'static str> {
+    pub fn update_node(&mut self, node: &Node) {
         self.persist_pipe
-            .send(DBTr::UpdateNode { id, pid, cmdline })
-            .map_err(|_| "Database worker closed queue unexpectadly")
+            .send(DBTr::UpdateNode {
+                id: node.db_id,
+                pid: node.pid,
+                cmdline: node.cmdline.clone(),
+            })
+            .expect("Database worker closed queue unexpectadly")
     }
 }
