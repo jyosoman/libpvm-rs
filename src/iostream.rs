@@ -1,7 +1,7 @@
-extern crate nix;
 extern crate futures;
+extern crate nix;
 
-use self::nix::sys::socket::{getsockname, getsockopt, SockAddr, SockType, sockopt};
+use self::nix::sys::socket::{getsockname, getsockopt, sockopt, SockAddr, SockType};
 use self::nix::sys::stat::fstat;
 use std::os::unix::io::{FromRawFd, RawFd};
 use std::os::unix;
@@ -66,7 +66,6 @@ impl Read for IOStream {
         (*self.src).read(buf)
     }
 }
-
 
 const S_IFMT: u32 = 0o170000;
 const S_IFSOCK: u32 = 0o140000;

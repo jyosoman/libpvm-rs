@@ -7,12 +7,12 @@ extern crate libc;
 extern crate neo4j;
 extern crate num_cpus;
 extern crate packstream;
+extern crate rayon;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio_core;
-extern crate rayon;
 
 pub use c_api::*;
 

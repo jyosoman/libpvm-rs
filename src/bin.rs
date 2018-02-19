@@ -1,10 +1,9 @@
-extern crate opus;
 extern crate futures;
 extern crate futures_cpupool;
+extern crate opus;
 
 use futures::Future;
 use futures_cpupool::CpuPool;
-
 
 pub fn main() {
     let pool = CpuPool::new_num_cpus();
@@ -17,5 +16,4 @@ pub fn main() {
     if let Ok(ret) = future.wait() {
         println!("{}", ret);
     }
-
 }

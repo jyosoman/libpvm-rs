@@ -4,20 +4,24 @@ use std::cmp::Eq;
 use std::thread;
 use std::ops::{Deref, DerefMut};
 
+use std::fmt::Debug;
+
 pub struct CheckingStore<K, V>
-    where
-        K: Hash + Eq + Clone,
+where
+    K: Hash + Eq + Clone,
+    V: Debug,
 {
     store: HashMap<K, Option<Box<V>>>,
 }
 
 impl<K, V> CheckingStore<K, V>
-    where
-        K: Hash + Eq + Clone,
+where
+    K: Hash + Eq + Clone,
+    V: Debug,
 {
     pub fn new() -> CheckingStore<K, V> {
-        CheckingStore{
-            store: HashMap::new()
+        CheckingStore {
+            store: HashMap::new(),
         }
     }
     pub fn contains_key(&self, key: &K) -> bool {
@@ -47,9 +51,11 @@ impl<K, V> CheckingStore<K, V>
     pub fn checkin(&mut self, guard: DropGuard<K, V>) {
         let (key, val) = DropGuard::unwrap(guard);
         if !self.store.contains_key(&key) {
+            eprintln!("{:?}", &val);
             panic!("Returning item not borrowed from store");
         }
         if self.store[&key].is_some() {
+            eprintln!("{:?}", &val);
             panic!("Returning replaced item");
         }
         self.store.get_mut(&key).unwrap().get_or_insert(val);
@@ -95,7 +101,6 @@ impl<K, V> DerefMut for DropGuard<K, V> {
         self.inner.as_mut().unwrap()
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -151,7 +156,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Checking out already checked out value")]
-    fn double_checkout(){
+    fn double_checkout() {
         let mut s: CheckingStore<i64, String> = CheckingStore::new();
         s.insert(1, String::from("test"));
         let a = s.checkout(&1).unwrap();

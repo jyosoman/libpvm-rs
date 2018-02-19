@@ -3,7 +3,7 @@ use libc::c_char;
 use std::ffi::CStr;
 use std::io::BufReader;
 use std::ops::FnOnce;
-use std::os::unix::io::{RawFd, FromRawFd};
+use std::os::unix::io::{FromRawFd, RawFd};
 use std::ptr;
 use std;
 
@@ -12,8 +12,7 @@ use neo4j::cypher::CypherStream;
 use ingest;
 
 #[repr(C)]
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum CfgMode {
     Auto,
     Advanced,
@@ -48,7 +47,6 @@ pub struct LibOpus {
     cfg: RConfig,
 }
 
-
 #[repr(C)]
 pub struct OpusHdl(LibOpus);
 
@@ -61,7 +59,6 @@ where
         .into_string()
         .unwrap_or_else(default)
 }
-
 
 #[no_mangle]
 pub unsafe extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
@@ -91,14 +88,14 @@ pub unsafe extern "C" fn print_cfg(hdl: *const OpusHdl) {
 pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
     let hdl = &mut (&mut (*hdl).0);
     let stream = BufReader::new(IOStream::from_raw_fd(fd));
-    let db =
-        match CypherStream::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
-            Ok(conn) => conn,
-            Err(ref s) => {
-                println!("Database connection error: {}", s);
-                return;
-            }
-        };
+    let db = match CypherStream::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password)
+    {
+        Ok(conn) => conn,
+        Err(ref s) => {
+            println!("Database connection error: {}", s);
+            return;
+        }
+    };
     ingest::ingest(stream, db);
 }
 

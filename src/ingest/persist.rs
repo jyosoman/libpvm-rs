@@ -16,9 +16,17 @@ pub enum DBTr {
         cmdline: String,
     },
     CreateNodes(Value),
-    CreateRel { src: i64, dst: i64, class: String },
+    CreateRel {
+        src: i64,
+        dst: i64,
+        class: String,
+    },
     CreateRels(Value),
-    UpdateNode { id: i64, pid: i32, cmdline: String },
+    UpdateNode {
+        id: i64,
+        pid: i32,
+        cmdline: String,
+    },
     UpdateNodes(Value),
 }
 
@@ -34,7 +42,12 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     for tr in recv {
         let mut props = HashMap::new();
         match tr {
-            DBTr::CreateNode { id, uuid, pid, cmdline } => {
+            DBTr::CreateNode {
+                id,
+                uuid,
+                pid,
+                cmdline,
+            } => {
                 props.insert("db_id", id.into());
                 props.insert("uuid", uuid.into());
                 props.insert("pid", pid.into());
@@ -68,19 +81,17 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
             update.clear();
         }
         trs += 1;
-   }
+    }
     execute(&mut db, DBTr::CreateNodes(nodes.into())).unwrap();
     execute(&mut db, DBTr::CreateRels(edges.into())).unwrap();
     execute(&mut db, DBTr::UpdateNodes(update.into())).unwrap();
     println!("Final Commit");
     match db.commit_transaction() {
-        Some(s) => {
-            match s {
-                BoltSummary::Failure(m) => println!("Error: Commit failed due to {:?}", m),
-                BoltSummary::Ignored(_) => unreachable!(),
-                BoltSummary::Success(_) => {}
-            }
-        }
+        Some(s) => match s {
+            BoltSummary::Failure(m) => println!("Error: Commit failed due to {:?}", m),
+            BoltSummary::Ignored(_) => unreachable!(),
+            BoltSummary::Success(_) => {}
+        },
         None => println!("Error: Database commit failed to produce a summary."),
     };
     println!("Neo4J Queries Issued: {}", trs);

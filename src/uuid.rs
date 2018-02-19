@@ -5,7 +5,7 @@ use std::str::FromStr;
 use std::string::ToString;
 
 use packstream::values::Value;
-use serde::de::{self, Visitor, Deserialize, Deserializer};
+use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 pub enum Uuid5 {
@@ -82,9 +82,10 @@ impl FromStr for Uuid5 {
                     u128::from_str_radix(&uuid_numstr[32..], 16)?,
                 ]))
             }
-            _ => Err(Uuid5Error::Formatting(
-                format!("{} is an invalid UUID v5 format", s),
-            )),
+            _ => Err(Uuid5Error::Formatting(format!(
+                "{} is an invalid UUID v5 format",
+                s
+            ))),
         }
     }
 }
@@ -104,25 +105,21 @@ impl Display for Uuid5 {
                     &vf[20..]
                 )
             }
-            Uuid5::Double([v, v1]) => {
-                write!(
-                    f,
-                    "{}:{}",
-                    Uuid5::Single(v).to_string(),
-                    Uuid5::Single(v1).to_string()
-                )
-            }
+            Uuid5::Double([v, v1]) => write!(
+                f,
+                "{}:{}",
+                Uuid5::Single(v).to_string(),
+                Uuid5::Single(v1).to_string()
+            ),
         }
     }
 }
-
 
 impl From<Uuid5> for Value {
     fn from(val: Uuid5) -> Self {
         Value::String(val.to_string())
     }
 }
-
 
 struct Uuid5Visitor;
 
@@ -155,7 +152,6 @@ impl<'de> Visitor<'de> for Uuid5Visitor {
         }
     }
 }
-
 
 impl<'de> Deserialize<'de> for Uuid5 {
     fn deserialize<D>(deserializer: D) -> Result<Uuid5, D::Error>
