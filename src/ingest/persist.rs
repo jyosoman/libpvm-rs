@@ -6,85 +6,53 @@ use neo4j::cypher::CypherStream;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
-use uuid::Uuid5;
-
 pub enum DBTr {
-    CreateNode {
-        id: i64,
-        uuid: Uuid5,
-        pid: i32,
-        cmdline: String,
-    },
+    CreateNode(Vec<&'static str>, Value),
     CreateNodes(Value),
-    CreateRel {
-        src: i64,
-        dst: i64,
-        class: String,
-    },
+    CreateRel(Value),
     CreateRels(Value),
-    UpdateNode {
-        id: i64,
-        pid: i32,
-        cmdline: String,
-    },
+    UpdateNode(Value),
     UpdateNodes(Value),
 }
 
 pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     let mut trs = 0;
-    let mut nodes: Vec<HashMap<&str, Value>> = Vec::new();
-    let mut edges: Vec<HashMap<&str, Value>> = Vec::new();
-    let mut update: Vec<HashMap<&str, Value>> = Vec::new();
+    let mut nodes: Vec<Value> = Vec::new();
+    let mut edges: Vec<Value> = Vec::new();
+    let mut update: Vec<Value> = Vec::new();
 
     const BATCH_SIZE: usize = 1000;
 
     db.begin_transaction(None);
     for tr in recv {
-        let mut props = HashMap::new();
         match tr {
-            DBTr::CreateNode {
-                id,
-                uuid,
-                pid,
-                cmdline,
-            } => {
-                props.insert("db_id", id.into());
-                props.insert("uuid", uuid.into());
-                props.insert("pid", pid.into());
-                props.insert("cmdline", cmdline.into());
-                nodes.push(props.into());
+            DBTr::CreateNode(labs, props) => {
+                let mut prs: HashMap<&'static str, Value> = HashMap::new();
+                prs.insert("labels", labs.into());
+                prs.insert("props", props);
+                nodes.push(prs.into());
             }
-            DBTr::CreateRel { src, dst, class } => {
-                props.insert("src", src.into());
-                props.insert("dst", dst.into());
-                props.insert("class", class.into());
-                edges.push(props.into());
+            DBTr::CreateRel(props) => {
+                edges.push(props);
             }
-            DBTr::UpdateNode { id, pid, cmdline } => {
-                props.insert("db_id", id.into());
-                props.insert("pid", pid.into());
-                props.insert("cmdline", cmdline.into());
-                update.push(props.into());
+            DBTr::UpdateNode(props) => {
+                update.push(props);
             }
             _ => {}
         }
-        if nodes.len() >= BATCH_SIZE {
-            execute(&mut db, DBTr::CreateNodes(nodes.clone().into())).unwrap();
+        if nodes.len() >= BATCH_SIZE || edges.len() >= BATCH_SIZE || update.len() >= BATCH_SIZE {
+            execute(&mut db, DBTr::CreateNodes(nodes.clone().into()));
             nodes.clear();
-        }
-        if edges.len() >= BATCH_SIZE {
-            execute(&mut db, DBTr::CreateRels(edges.clone().into())).unwrap();
+            execute(&mut db, DBTr::CreateRels(edges.clone().into()));
             edges.clear();
-        }
-        if update.len() >= BATCH_SIZE {
-            execute(&mut db, DBTr::UpdateNodes(update.clone().into())).unwrap();
+            execute(&mut db, DBTr::UpdateNodes(update.clone().into()));
             update.clear();
         }
         trs += 1;
     }
-    execute(&mut db, DBTr::CreateNodes(nodes.into())).unwrap();
-    execute(&mut db, DBTr::CreateRels(edges.into())).unwrap();
-    execute(&mut db, DBTr::UpdateNodes(update.into())).unwrap();
+    execute(&mut db, DBTr::CreateNodes(nodes.into()));
+    execute(&mut db, DBTr::CreateRels(edges.into()));
+    execute(&mut db, DBTr::UpdateNodes(update.into()));
     println!("Final Commit");
     match db.commit_transaction() {
         Some(s) => match s {
@@ -97,75 +65,37 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     println!("Neo4J Queries Issued: {}", trs);
 }
 
-fn execute(cypher: &mut CypherStream, tr: DBTr) -> Result<(), String> {
+fn execute(cypher: &mut CypherStream, tr: DBTr) {
     let mut props = HashMap::new();
     match tr {
-        DBTr::CreateNode {
-            id,
-            uuid,
-            pid,
-            cmdline,
-        } => {
-            props.insert("db_id", id.into());
-            props.insert("uuid", uuid.into());
-            props.insert("pid", pid.into());
-            props.insert("cmdline", cmdline.into());
-            Ok(cypher.run_unchecked(
-                "CREATE (p:Process {db_id: $db_id,
-                                    uuid: $uuid,
-                                    pid: $pid,
-                                    cmdline: $cmdline})",
-                props,
-            ))
-        }
         DBTr::CreateNodes(val) => {
             props.insert("nodes", val);
-            Ok(cypher.run_unchecked(
+            cypher.run_unchecked(
                 "UNWIND $nodes AS props
-                 CREATE (n: Process) SET n = props",
+                 CALL apoc.create.node(props.labels, props.props) YIELD node
+                 RETURN 0",
                 props,
-            ))
-        }
-        DBTr::CreateRel { src, dst, class } => {
-            props.insert("src", src.into());
-            props.insert("dst", dst.into());
-            props.insert("class", class.into());
-            Ok(cypher.run_unchecked(
-                "MATCH (s:Process {db_id: $src}),
-                       (d:Process {db_id: $dst})
-                 CREATE (s)-[:INF {class: $class}]->(d)",
-                props,
-            ))
+            );
         }
         DBTr::CreateRels(val) => {
             props.insert("rels", val);
-            Ok(cypher.run_unchecked(
+            cypher.run_unchecked(
                 "UNWIND $rels AS props
-                 MATCH (s:Process {db_id: props.src}),
-                       (d:Process {db_id: props.dst})
+                 MATCH (s:Node {db_id: props.src}),
+                       (d:Node {db_id: props.dst})
                  CREATE (s)-[:INF {class: props.class}]->(d)",
                 props,
-            ))
-        }
-        DBTr::UpdateNode { id, pid, cmdline } => {
-            props.insert("db_id", id.into());
-            props.insert("pid", pid.into());
-            props.insert("cmdline", cmdline.into());
-            Ok(cypher.run_unchecked(
-                "MATCH (p:Process {db_id: $db_id})
-                 SET p.pid = $pid
-                 SET p.cmdline = $cmdline",
-                props,
-            ))
+            );
         }
         DBTr::UpdateNodes(val) => {
             props.insert("upds", val);
-            Ok(cypher.run_unchecked(
+            cypher.run_unchecked(
                 "UNWIND $upds AS props
-                 MATCH (p:Process {db_id: props.db_id})
+                 MATCH (p:Node {db_id: props.db_id})
                  SET p += props",
                 props,
-            ))
+            );
         }
+        _ => unreachable!(),
     }
 }

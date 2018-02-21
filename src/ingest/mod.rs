@@ -40,7 +40,7 @@ where
     R: BufRead,
 {
     let tmr = Instant::now();
-    db.run_unchecked("CREATE INDEX ON :Process(db_id)", HashMap::new());
+    db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
 
     const BATCH_SIZE: usize = 0x80000;
 
