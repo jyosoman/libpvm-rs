@@ -4,12 +4,9 @@ use std::cmp::Eq;
 use std::thread;
 use std::ops::{Deref, DerefMut};
 
-use std::fmt::Debug;
-
 pub struct CheckingStore<K, V>
 where
     K: Hash + Eq + Clone,
-    V: Debug,
 {
     store: HashMap<K, Option<Box<V>>>,
 }
@@ -17,7 +14,6 @@ where
 impl<K, V> CheckingStore<K, V>
 where
     K: Hash + Eq + Clone,
-    V: Debug,
 {
     pub fn new() -> CheckingStore<K, V> {
         CheckingStore {
@@ -51,11 +47,9 @@ where
     pub fn checkin(&mut self, guard: DropGuard<K, V>) {
         let (key, val) = DropGuard::unwrap(guard);
         if !self.store.contains_key(&key) {
-            eprintln!("{:?}", &val);
             panic!("Returning item not borrowed from store");
         }
         if self.store[&key].is_some() {
-            eprintln!("{:?}", &val);
             panic!("Returning replaced item");
         }
         self.store.get_mut(&key).unwrap().get_or_insert(val);
