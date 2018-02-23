@@ -4,15 +4,15 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use uuid::Uuid5;
 
-use super::Node;
+use data::{ProcessNode, NodeID};
 
 use checking_store::{CheckingStore, DropGuard};
 
-pub type NodeGuard = DropGuard<i64, Node>;
+pub type NodeGuard = DropGuard<NodeID, ProcessNode>;
 
 pub struct PVMCache {
-    uuid_cache: HashMap<Uuid5, i64>,
-    node_cache: CheckingStore<i64, Node>,
+    uuid_cache: HashMap<Uuid5, NodeID>,
+    node_cache: CheckingStore<NodeID, ProcessNode>,
     id_counter: AtomicUsize,
 }
 
@@ -26,8 +26,8 @@ impl PVMCache {
     }
 
     pub fn add(&mut self, uuid: Uuid5, pid: i32, cmdline: &str, thin: bool) -> NodeGuard {
-        let id = self.id_counter.fetch_add(1, Ordering::SeqCst) as i64;
-        let node = Node {
+        let id = NodeID::new(self.id_counter.fetch_add(1, Ordering::SeqCst) as i64);
+        let node = ProcessNode {
             db_id: id,
             uuid,
             pid,

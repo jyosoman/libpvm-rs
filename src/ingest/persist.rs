@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
 pub enum DBTr {
-    CreateNode(Vec<&'static str>, Value),
+    CreateNode(Value, Value),
     CreateNodes(Value),
     CreateRel(Value),
     CreateRels(Value),
@@ -28,7 +28,7 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
         match tr {
             DBTr::CreateNode(labs, props) => {
                 let mut prs: HashMap<&'static str, Value> = HashMap::new();
-                prs.insert("labels", labs.into());
+                prs.insert("labels", labs);
                 prs.insert("props", props);
                 nodes.push(prs.into());
             }

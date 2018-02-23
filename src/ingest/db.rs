@@ -1,7 +1,7 @@
 use std::sync::mpsc::SyncSender;
 
 use super::persist::DBTr;
-use super::Node;
+use data::Node;
 
 use std::collections::HashMap;
 use packstream::values::Value;
@@ -16,20 +16,15 @@ impl DB {
     }
 
     pub fn create_node(&mut self, node: &Node) {
-        let mut props: HashMap<&'static str, Value> = HashMap::new();
-        props.insert("db_id", node.db_id.into());
-        props.insert("uuid", node.uuid.into());
-        props.insert("pid", node.pid.into());
-        props.insert("cmdline", node.cmdline.clone().into());
         self.persist_pipe
-            .send(DBTr::CreateNode(vec!["Node", "Process"], props.into()))
+            .send(DBTr::CreateNode(node.get_labels(), node.to_db()))
             .expect("Database worker closed queue unexpectadly")
     }
 
     pub fn create_rel(&mut self, src: &Node, dst: &Node, class: String) {
         let mut props: HashMap<&'static str, Value> = HashMap::new();
-        props.insert("src", src.db_id.into());
-        props.insert("dst", dst.db_id.into());
+        props.insert("src", src.get_db_id().into());
+        props.insert("dst", dst.get_db_id().into());
         props.insert("class", class.into());
         self.persist_pipe
             .send(DBTr::CreateRel(props.into()))
@@ -37,12 +32,8 @@ impl DB {
     }
 
     pub fn update_node(&mut self, node: &Node) {
-        let mut props: HashMap<&'static str, Value> = HashMap::new();
-        props.insert("db_id", node.db_id.into());
-        props.insert("pid", node.pid.into());
-        props.insert("cmdline", node.cmdline.clone().into());
         self.persist_pipe
-            .send(DBTr::UpdateNode(props.into()))
+            .send(DBTr::UpdateNode(node.to_db()))
             .expect("Database worker closed queue unexpectadly")
     }
 }

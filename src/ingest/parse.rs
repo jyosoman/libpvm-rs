@@ -6,7 +6,7 @@ fn proc_check(tr: &TraceEvent, db: &mut DB, pvm_cache: &mut PVMCache) -> NodeGua
     let exec = tr.exec.clone().expect("event missing exec");
     let (chk, pro) = pvm_cache.check(tr.subjprocuuid, tr.pid, &exec[..]);
     if chk {
-        db.create_node(&pro);
+        db.create_node(&(*pro));
     }
     pro
 }
@@ -16,11 +16,11 @@ fn proc_exec(tr: &TraceEvent, mut pro: NodeGuard, db: &mut DB, pvm_cache: &mut P
     if pro.thin {
         pro.cmdline = cmdline;
         pro.thin = false;
-        db.update_node(&pro);
+        db.update_node(&(*pro));
     } else {
         let next = pvm_cache.add(tr.subjprocuuid, tr.pid, &cmdline[..], false);
-        db.create_node(&next);
-        db.create_rel(&pro, &next, String::from("next"));
+        db.create_node(&(*next));
+        db.create_rel(&(*pro), &(*next), String::from("next"));
         pvm_cache.checkin(next);
     }
     pvm_cache.checkin(pro);
@@ -30,13 +30,13 @@ fn proc_fork(tr: &TraceEvent, pro: NodeGuard, db: &mut DB, pvm_cache: &mut PVMCa
     let ret_objuuid1 = tr.ret_objuuid1.expect("fork missing ret_objuuid1");
     let (chk, mut ch) = pvm_cache.check(ret_objuuid1, tr.retval, &pro.cmdline[..]);
     if chk {
-        db.create_node(&ch);
+        db.create_node(&(*ch));
     } else {
         ch.cmdline = pro.cmdline.clone();
         ch.thin = false;
-        db.update_node(&ch);
+        db.update_node(&(*ch));
     }
-    db.create_rel(&pro, &ch, String::from("child"));
+    db.create_rel(&(*pro), &(*ch), String::from("child"));
     pvm_cache.checkin(ch);
     pvm_cache.checkin(pro);
 }
