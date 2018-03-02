@@ -101,7 +101,7 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     let mut update = UpdateNodes::new();
 
     const BATCH_SIZE: usize = 1000;
-    const TR_SIZE: usize = 100000;
+    const TR_SIZE: usize = 100_000;
 
     db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
     db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());

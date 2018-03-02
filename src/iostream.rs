@@ -67,14 +67,14 @@ impl Read for IOStream {
     }
 }
 
-const S_IFMT: u32 = 0o170000;
-const S_IFSOCK: u32 = 0o140000;
+const S_IFMT: u32 = 0o170_000;
+const S_IFSOCK: u32 = 0o140_000;
 /*const S_IFLNK : u32 = 0o120000;*/
-const S_IFREG: u32 = 0o100000;
+const S_IFREG: u32 = 0o100_000;
 /*const S_IFBLK : u32 = 0o60000;*/
 /*const S_IFDIR : u32 = 0o40000;*/
-const S_IFCHR: u32 = 0o20000;
-const S_IFIFO: u32 = 0o10000;
+const S_IFCHR: u32 = 0o20_000;
+const S_IFIFO: u32 = 0o10_000;
 
 fn err_str(err: self::nix::Error) -> String {
     err.description().to_owned()

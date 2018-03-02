@@ -64,8 +64,7 @@ fn posix_open(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.ret_objuuid1 {
         let fname = tr.upath1.clone().expect("open missing upath1");
 
-        let mut f =
-            pvm.declare::<File>(fuuid, Some(hashmap!("name" => Value::from(fname.clone()))));
+        let mut f = pvm.declare::<File>(fuuid, None);
         pvm.name(&mut **f, fname);
         pvm.checkin(f);
     }
@@ -84,16 +83,16 @@ fn posix_read(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
 fn posix_write(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
 
-    let mut f = pvm.declare::<File>(fuuid, None);
-    pvm.sinkstart(&**pro, &mut **f, "write");
+    let f = pvm.declare::<File>(fuuid, None);
+    pvm.sinkstart(&**pro, &**f, "write");
     pvm.checkin(f);
     pvm.checkin(pro);
 }
 
 fn posix_close(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.arg_objuuid1 {
-        let mut f = pvm.declare::<File>(fuuid, None);
-        pvm.sinkend(&**pro, &mut **f, "close");
+        let f = pvm.declare::<File>(fuuid, None);
+        pvm.sinkend(&**pro, &**f, "close");
         pvm.checkin(f);
     }
     pvm.checkin(pro);

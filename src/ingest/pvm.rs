@@ -139,28 +139,22 @@ impl PVM {
     }
 
     pub fn sinkend(&mut self, act: &EnumNode, ent: &EnumNode, tag: &'static str) {
-        match *ent {
-            EnumNode::File(ref fref) => {
-                //panic!("Calling sinkend on a File, should not occur.")
+        if let EnumNode::EditSession(ref eref) = *ent {
+            if !self.open_cache
+                .get_mut(&eref.get_uuid())
+                .unwrap()
+                .remove(&act.get_uuid())
+            {
+                self._inf(act, eref, tag);
             }
-            EnumNode::EditSession(ref eref) => {
-                if !self.open_cache
-                    .get_mut(&eref.get_uuid())
-                    .unwrap()
-                    .remove(&act.get_uuid())
-                {
-                    self._inf(act, eref, tag);
-                }
-                if self.open_cache[&eref.get_uuid()].len() == 0 {
-                    let f = self.add::<File>(
-                        eref.get_uuid(),
-                        Some(hashmap!("name" => Value::from(eref.name.clone()))),
-                    );
-                    self.db.create_rel(eref, &**f, "INF", "");
-                    self.checkin(f);
-                }
+            if self.open_cache[&eref.get_uuid()].is_empty() {
+                let f = self.add::<File>(
+                    eref.get_uuid(),
+                    Some(hashmap!("name" => Value::from(eref.name.clone()))),
+                );
+                self.db.create_rel(eref, &**f, "INF", "");
+                self.checkin(f);
             }
-            _ => {}
         }
     }
 

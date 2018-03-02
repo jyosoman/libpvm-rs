@@ -3,7 +3,6 @@ mod persist;
 mod pvm;
 mod db;
 
-use std::collections::HashMap;
 use std::io::BufRead;
 use std::sync::mpsc;
 use std::thread;
@@ -16,21 +15,21 @@ use serde_json;
 use self::pvm::PVM;
 use trace::TraceEvent;
 
-fn print_time(ref tmr: Instant) {
+fn print_time(tmr: Instant) {
     let dur = tmr.elapsed();
     println!(
         "{:.3} Seconds elapsed",
-        dur.as_secs() as f64 + dur.subsec_nanos() as f64 * 1e-9
+        dur.as_secs() as f64 + f64::from(dur.subsec_nanos()) * 1e-9
     );
 }
 
-pub fn ingest<R>(stream: R, mut db: CypherStream)
+pub fn ingest<R>(stream: R, db: CypherStream)
 where
     R: BufRead,
 {
     let tmr = Instant::now();
 
-    const BATCH_SIZE: usize = 0x80000;
+    const BATCH_SIZE: usize = 0x80_000;
 
     let (send, recv) = mpsc::sync_channel(BATCH_SIZE * 2);
 
