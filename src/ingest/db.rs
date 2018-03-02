@@ -19,7 +19,11 @@ impl DB {
         T: ToDB + HasID,
     {
         self.persist_pipe
-            .send(DBTr::CreateNode(node.get_labels(), node.to_db()))
+            .send(DBTr::CreateNode(
+                node.get_db_id(),
+                node.get_labels(),
+                node.to_db(),
+            ))
             .expect("Database worker closed queue unexpectadly")
     }
 
@@ -39,10 +43,10 @@ impl DB {
 
     pub fn update_node<T>(&mut self, node: &T)
     where
-        T: ToDB,
+        T: ToDB + HasID,
     {
         self.persist_pipe
-            .send(DBTr::UpdateNode(node.to_db()))
+            .send(DBTr::UpdateNode(node.get_db_id(), node.to_db()))
             .expect("Database worker closed queue unexpectadly")
     }
 }
