@@ -4,11 +4,12 @@ use std::cmp::Eq;
 use std::thread;
 use std::ops::{Deref, DerefMut};
 
+#[derive(Default)]
 pub struct CheckingStore<K, V>
 where
     K: Hash + Eq + Clone,
 {
-    store: HashMap<K, Option<Box<V>>>,
+    store: HashMap<K, Option<V>>,
 }
 
 impl<K, V> CheckingStore<K, V>
@@ -27,22 +28,25 @@ where
         if self.store.contains_key(&key) {
             panic!("Cannot overwrite store entry");
         }
-        self.store.insert(key, Some(Box::new(val)));
+        self.store.insert(key, Some(val));
     }
-    pub fn remove(&mut self, key: &K) {
-        if self.store.contains_key(key) && self.store[key].is_none() {
-            panic!("Removing checked out item from store")
+    pub fn remove(&mut self, guard: DropGuard<K, V>) {
+        let (key, _) = DropGuard::unwrap(guard);
+        if !self.store.contains_key(&key) {
+            panic!("Returning item not borrowed from store");
         }
-        self.store.remove(key);
+        if self.store[&key].is_some() {
+            panic!("Returning replaced item");
+        }
+        self.store.remove(&key);
     }
     pub fn checkout(&mut self, key: &K) -> Option<DropGuard<K, V>> {
-        match self.store.get_mut(key) {
-            Some(v) => Some(DropGuard::new(
+        self.store.get_mut(key).map(|v| {
+            DropGuard::new(
                 key.clone(),
                 v.take().expect("Checking out already checked out value"),
-            )),
-            None => None,
-        }
+            )
+        })
     }
     pub fn checkin(&mut self, guard: DropGuard<K, V>) {
         let (key, val) = DropGuard::unwrap(guard);
@@ -58,19 +62,30 @@ where
 
 pub struct DropGuard<K, V> {
     key: Option<K>,
-    inner: Option<Box<V>>,
+    inner: Option<V>,
 }
 
 impl<K, V> DropGuard<K, V> {
-    fn new(key: K, val: Box<V>) -> DropGuard<K, V> {
+    fn new(key: K, val: V) -> DropGuard<K, V> {
         DropGuard {
             key: Some(key),
             inner: Some(val),
         }
     }
 
-    fn unwrap(mut guard: DropGuard<K, V>) -> (K, Box<V>) {
+    fn unwrap(mut guard: DropGuard<K, V>) -> (K, V) {
         (guard.key.take().unwrap(), guard.inner.take().unwrap())
+    }
+
+    pub fn map<T, F>(guard: DropGuard<K, V>, f: F) -> DropGuard<K, T>
+    where
+        F: FnOnce(V) -> T,
+    {
+        let (key, val) = DropGuard::unwrap(guard);
+        DropGuard {
+            key: Some(key),
+            inner: Some(f(val)),
+        }
     }
 }
 

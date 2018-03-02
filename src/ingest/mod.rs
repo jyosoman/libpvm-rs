@@ -1,6 +1,6 @@
 mod parse;
 mod persist;
-mod pvm_cache;
+mod pvm;
 mod db;
 
 use std::collections::HashMap;
@@ -13,19 +13,8 @@ use rayon::prelude::*;
 use neo4j::cypher::CypherStream;
 use serde_json;
 
-use self::pvm_cache::{NodeGuard, PVMCache};
-use self::db::DB;
+use self::pvm::PVM;
 use trace::TraceEvent;
-use uuid::Uuid5;
-
-#[derive(Debug)]
-pub struct Node {
-    pub db_id: i64,
-    pub uuid: Uuid5,
-    pub cmdline: String,
-    pub pid: i32,
-    pub thin: bool,
-}
 
 fn print_time(ref tmr: Instant) {
     let dur = tmr.elapsed();
@@ -40,15 +29,17 @@ where
     R: BufRead,
 {
     let tmr = Instant::now();
+
     db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
+    db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
+    db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
+    db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
 
     const BATCH_SIZE: usize = 0x80000;
 
-    let mut cache = PVMCache::new();
-
     let (send, recv) = mpsc::sync_channel(BATCH_SIZE * 2);
 
-    let mut db_inf = DB::create(send);
+    let mut pvm = PVM::new(send);
 
     let db_worker = thread::spawn(move || {
         persist::execute_loop(db, recv);
@@ -94,7 +85,7 @@ where
         for tr in post_vec.drain(..) {
             match tr {
                 Some(tr) => {
-                    parse::parse_trace(&tr, &mut db_inf, &mut cache);
+                    parse::parse_trace(&tr, &mut pvm);
                 }
                 None => continue,
             }
@@ -103,7 +94,11 @@ where
             break;
         }
     }
-    drop(db_inf);
+    println!("Missing Events:");
+    for evt in pvm.unparsed_events.drain() {
+        println!("{}", evt);
+    }
+    drop(pvm);
     println!("Parse Complete");
     print_time(tmr);
     if let Err(e) = db_worker.join() {

@@ -100,7 +100,8 @@ fn execute(cypher: &mut CypherStream, tr: DBTr) {
                 "UNWIND $rels AS props
                  MATCH (s:Node {db_id: props.src}),
                        (d:Node {db_id: props.dst})
-                 CREATE (s)-[:INF {class: props.class}]->(d)",
+                 CALL apoc.create.relationship(s, props.type, {class: props.class}, d) YIELD rel
+                 RETURN 0",
                 hashmap!("rels" => val),
             );
         }
