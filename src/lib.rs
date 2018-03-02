@@ -4,6 +4,8 @@
 
 extern crate futures_cpupool;
 extern crate libc;
+#[macro_use]
+extern crate maplit;
 extern crate neo4j;
 extern crate num_cpus;
 extern crate packstream;
