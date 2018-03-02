@@ -3,7 +3,6 @@ use packstream::values::Value;
 use neo4j::bolt::BoltSummary;
 use neo4j::cypher::CypherStream;
 
-use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
 pub enum DBTr {
@@ -30,10 +29,11 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     for tr in recv {
         match tr {
             DBTr::CreateNode(labs, props) => {
-                let mut prs: HashMap<&'static str, Value> = HashMap::new();
-                prs.insert("labels", labs);
-                prs.insert("props", props);
-                nodes.push(prs.into());
+                nodes.push(
+                    hashmap!("labels" => labs,
+                             "props"  => props)
+                        .into(),
+                );
             }
             DBTr::CreateRel(props) => {
                 edges.push(props);
@@ -86,34 +86,30 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
 }
 
 fn execute(cypher: &mut CypherStream, tr: DBTr) {
-    let mut props = HashMap::new();
     match tr {
         DBTr::CreateNodes(val) => {
-            props.insert("nodes", val);
             cypher.run_unchecked(
                 "UNWIND $nodes AS props
                  CALL apoc.create.node(props.labels, props.props) YIELD node
                  RETURN 0",
-                props,
+                hashmap!("nodes" => val),
             );
         }
         DBTr::CreateRels(val) => {
-            props.insert("rels", val);
             cypher.run_unchecked(
                 "UNWIND $rels AS props
                  MATCH (s:Node {db_id: props.src}),
                        (d:Node {db_id: props.dst})
                  CREATE (s)-[:INF {class: props.class}]->(d)",
-                props,
+                hashmap!("rels" => val),
             );
         }
         DBTr::UpdateNodes(val) => {
-            props.insert("upds", val);
             cypher.run_unchecked(
                 "UNWIND $upds AS props
                  MATCH (p:Node {db_id: props.db_id})
                  SET p += props",
-                props,
+                hashmap!("upds" => val),
             );
         }
         _ => unreachable!(),
