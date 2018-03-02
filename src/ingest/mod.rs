@@ -30,11 +30,6 @@ where
 {
     let tmr = Instant::now();
 
-    db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
-    db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
-    db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
-    db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
-
     const BATCH_SIZE: usize = 0x80000;
 
     let (send, recv) = mpsc::sync_channel(BATCH_SIZE * 2);

@@ -103,6 +103,11 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     const BATCH_SIZE: usize = 1000;
     const TR_SIZE: usize = 100000;
 
+    db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
+    db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
+    db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
+    db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
+
     db.begin_transaction(None);
     for tr in recv {
         match tr {
