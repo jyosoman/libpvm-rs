@@ -16,12 +16,15 @@ pub enum DBTr {
 }
 
 pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
+    let mut ups = 0;
+    let mut qrs = 0;
     let mut trs = 0;
     let mut nodes: Vec<Value> = Vec::new();
     let mut edges: Vec<Value> = Vec::new();
     let mut update: Vec<Value> = Vec::new();
 
     const BATCH_SIZE: usize = 1000;
+    const TR_SIZE: usize = 100000;
 
     db.begin_transaction(None);
     for tr in recv {
@@ -40,19 +43,33 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
             }
             _ => {}
         }
-        if nodes.len() >= BATCH_SIZE || edges.len() >= BATCH_SIZE || update.len() >= BATCH_SIZE {
+        ups += 1;
+        if ups >= qrs * BATCH_SIZE {
             execute(&mut db, DBTr::CreateNodes(nodes.clone().into()));
             nodes.clear();
             execute(&mut db, DBTr::CreateRels(edges.clone().into()));
             edges.clear();
             execute(&mut db, DBTr::UpdateNodes(update.clone().into()));
             update.clear();
+            qrs += 1;
         }
-        trs += 1;
+        if ups > trs * TR_SIZE {
+            match db.commit_transaction() {
+                Some(s) => match s {
+                    BoltSummary::Failure(m) => println!("Error: Commit failed due to {:?}", m),
+                    BoltSummary::Ignored(_) => unreachable!(),
+                    BoltSummary::Success(_) => {}
+                },
+                None => println!("Error: Database commit failed to produce a summary."),
+            };
+            db.begin_transaction(None);
+            trs += 1;
+        }
     }
     execute(&mut db, DBTr::CreateNodes(nodes.into()));
     execute(&mut db, DBTr::CreateRels(edges.into()));
     execute(&mut db, DBTr::UpdateNodes(update.into()));
+    qrs += 1;
     println!("Final Commit");
     match db.commit_transaction() {
         Some(s) => match s {
@@ -62,7 +79,10 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
         },
         None => println!("Error: Database commit failed to produce a summary."),
     };
-    println!("Neo4J Queries Issued: {}", trs);
+    trs += 1;
+    println!("Neo4J Updates Issued: {}", ups);
+    println!("Neo4J Queries Issued: {}", qrs * 3);
+    println!("Neo4J Transactions Issued: {}", trs);
 }
 
 fn execute(cypher: &mut CypherStream, tr: DBTr) {
