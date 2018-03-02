@@ -108,6 +108,8 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
     db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
     db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
 
+    db.run_unchecked("MERGE (:DBInfo {pvm_version: 2})", hashmap!());
+
     db.begin_transaction(None);
     for tr in recv {
         match tr {
