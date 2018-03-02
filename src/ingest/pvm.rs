@@ -95,7 +95,22 @@ impl PVM {
         self._inf(ent, act, tag);
     }
 
-    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode, tag: &'static str) {}
+    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode, tag: &'static str) {
+        match *ent {
+            EnumNode::File(ref fref) => {
+                let f = self.add::<File>(
+                    fref.get_uuid(),
+                    Some(hashmap!("name" => Value::from(fref.name.clone()))),
+                );
+                self.db.create_rel(fref, &**f, "INF", "");
+                self._inf(act, &**f, tag);
+                self.checkin(f);
+            }
+            _ => {
+                self._inf(act, ent, tag);
+            }
+        }
+    }
 
     pub fn sinkstart(&mut self, act: &EnumNode, ent: &EnumNode, tag: &'static str) {
         match *ent {
@@ -149,9 +164,23 @@ impl PVM {
         }
     }
 
-    pub fn name(&mut self, obj: &mut EnumNode, name: String) {}
-
-    pub fn unname(&mut self, act: &EnumNode, obj: &EnumNode, name: String) {}
+    pub fn name(&mut self, obj: &mut EnumNode, name: String) {
+        match *obj {
+            EnumNode::File(ref mut fref) => {
+                if fref.name == "" {
+                    fref.name = name;
+                    self.db.update_node(fref);
+                }
+            }
+            EnumNode::EditSession(ref mut eref) => {
+                if eref.name == "" {
+                    eref.name = name;
+                    self.db.update_node(eref);
+                }
+            }
+            _ => {}
+        }
+    }
 
     pub fn prop(&mut self, ent: &EnumNode) {
         self.db.update_node(ent)
