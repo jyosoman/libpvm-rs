@@ -13,6 +13,10 @@ pub struct EditSession {
     pub name: String,
 }
 
+pub struct EditInit {
+    pub name: String,
+}
+
 impl EditSession {
     pub fn from_props(mut props: HashMap<String, Value>) -> Result<Self, &'static str> {
         Ok(EditSession {
@@ -67,7 +71,9 @@ impl Enumerable for EditSession {
 }
 
 impl Generable for EditSession {
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<HashMap<&'static str, Value>>) -> Self
+    type Additional = EditInit;
+
+    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
     where
         Self: Sized,
     {
@@ -76,10 +82,8 @@ impl Generable for EditSession {
             uuid,
             name: String::new(),
         };
-        if let Some(map) = additional {
-            if let Some(val) = map.get("name") {
-                e.name = val.as_string().unwrap();
-            }
+        if let Some(add) = additional {
+            e.name = add.name;
         }
         e
     }

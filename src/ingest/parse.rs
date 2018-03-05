@@ -1,7 +1,6 @@
 use trace::TraceEvent;
 use super::pvm::{NodeGuard, PVM};
-use data::node_types::{EnumNode, File, Process};
-use packstream::values::Value;
+use data::node_types::{EnumNode, File, Process, ProcessInit};
 
 fn proc_exec(tr: &TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let cmdline = tr.cmdline.clone().expect("exec missing cmdline");
@@ -22,10 +21,10 @@ fn proc_exec(tr: &TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     } else {
         let next = pvm.add::<Process>(
             tr.subjprocuuid,
-            Some(hashmap!{
-            "pid"     => Value::from(tr.pid),
-            "cmdline" => Value::from(cmdline.clone()),
-            "thin"    => Value::from(false),
+            Some(ProcessInit {
+                pid: tr.pid,
+                cmdline: cmdline.clone(),
+                thin: false,
             }),
         );
         pvm.source(&**next, &**pro, "next");
@@ -101,10 +100,10 @@ fn posix_close(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
 pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) {
     let pro = pvm.declare::<Process>(
         tr.subjprocuuid,
-        Some(hashmap!{
-        "pid"     => Value::from(tr.pid),
-        "cmdline" => Value::from(tr.exec.clone().expect("Event missing exec")),
-        "thin"    => Value::from(true),
+        Some(ProcessInit {
+            pid: tr.pid,
+            cmdline: tr.exec.clone().expect("Event missing exec"),
+            thin: true,
         }),
     );
     match &tr.event[..] {

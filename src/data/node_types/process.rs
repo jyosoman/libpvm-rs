@@ -15,6 +15,12 @@ pub struct Process {
     pub thin: bool,
 }
 
+pub struct ProcessInit {
+    pub pid: i32,
+    pub cmdline: String,
+    pub thin: bool,
+}
+
 impl Process {
     pub fn from_props(mut props: HashMap<String, Value>) -> Result<Self, &'static str> {
         Ok(Process {
@@ -79,7 +85,9 @@ impl Enumerable for Process {
 }
 
 impl Generable for Process {
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<HashMap<&'static str, Value>>) -> Self
+    type Additional = ProcessInit;
+
+    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
     where
         Self: Sized,
     {
@@ -90,16 +98,10 @@ impl Generable for Process {
             pid: 0,
             thin: true,
         };
-        if let Some(map) = additional {
-            if let Some(v) = map.get("pid") {
-                p.pid = v.as_int().unwrap();
-            }
-            if let Some(v) = map.get("cmdline") {
-                p.cmdline = v.as_string().unwrap();
-            }
-            if let Some(v) = map.get("thin") {
-                p.thin = v.as_bool().unwrap();
-            }
+        if let Some(add) = additional {
+            p.pid = add.pid;
+            p.cmdline = add.cmdline;
+            p.thin = add.thin;
         }
         p
     }

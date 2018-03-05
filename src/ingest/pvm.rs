@@ -2,11 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::mpsc::SyncSender;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use packstream::values::Value;
-
 use uuid::Uuid5;
 use data::{Enumerable, Generable, HasID, HasUUID, NodeID};
-use data::node_types::{EditSession, EnumNode, File};
+use data::node_types::{EditInit, EditSession, EnumNode, File, FileInit};
 use checking_store::{CheckingStore, DropGuard};
 
 use super::db::DB;
@@ -59,11 +57,7 @@ impl PVM {
         self.node_cache.checkin(guard)
     }
 
-    pub fn add<T>(
-        &mut self,
-        uuid: Uuid5,
-        additional: Option<HashMap<&'static str, Value>>,
-    ) -> NodeGuard
+    pub fn add<T>(&mut self, uuid: Uuid5, additional: Option<T::Additional>) -> NodeGuard
     where
         T: Generable + Enumerable,
     {
@@ -76,11 +70,7 @@ impl PVM {
         n
     }
 
-    pub fn declare<T>(
-        &mut self,
-        uuid: Uuid5,
-        additional: Option<HashMap<&'static str, Value>>,
-    ) -> NodeGuard
+    pub fn declare<T>(&mut self, uuid: Uuid5, additional: Option<T::Additional>) -> NodeGuard
     where
         T: Generable + Enumerable,
     {
@@ -100,7 +90,9 @@ impl PVM {
             EnumNode::File(ref fref) => {
                 let f = self.add::<File>(
                     fref.get_uuid(),
-                    Some(hashmap!("name" => Value::from(fref.name.clone()))),
+                    Some(FileInit {
+                        name: fref.name.clone(),
+                    }),
                 );
                 self.db.create_rel(fref, &**f, "INF", "");
                 self._inf(act, &**f, tag);
@@ -117,7 +109,9 @@ impl PVM {
             EnumNode::File(ref fref) => {
                 let es = self.add::<EditSession>(
                     fref.get_uuid(),
-                    Some(hashmap!("name" => Value::from(fref.name.clone()))),
+                    Some(EditInit {
+                        name: fref.name.clone(),
+                    }),
                 );
                 self.open_cache
                     .insert(fref.get_uuid(), hashset!(act.get_uuid()));
@@ -150,7 +144,9 @@ impl PVM {
             if self.open_cache[&eref.get_uuid()].is_empty() {
                 let f = self.add::<File>(
                     eref.get_uuid(),
-                    Some(hashmap!("name" => Value::from(eref.name.clone()))),
+                    Some(FileInit {
+                        name: eref.name.clone(),
+                    }),
                 );
                 self.db.create_rel(eref, &**f, "INF", "");
                 self.checkin(f);

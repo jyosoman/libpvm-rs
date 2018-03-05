@@ -6,6 +6,10 @@ use super::super::{Enumerable, Generable, HasID, HasUUID, NodeID, ToDB};
 use super::EnumNode;
 use uuid::Uuid5;
 
+pub struct FileInit {
+    pub name: String,
+}
+
 #[derive(Debug)]
 pub struct File {
     pub db_id: NodeID,
@@ -67,7 +71,9 @@ impl Enumerable for File {
 }
 
 impl Generable for File {
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<HashMap<&'static str, Value>>) -> Self
+    type Additional = FileInit;
+
+    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
     where
         Self: Sized,
     {
@@ -76,10 +82,8 @@ impl Generable for File {
             uuid,
             name: String::new(),
         };
-        if let Some(map) = additional {
-            if let Some(val) = map.get("name") {
-                f.name = val.as_string().unwrap();
-            }
+        if let Some(add) = additional {
+            f.name = add.name;
         }
         f
     }

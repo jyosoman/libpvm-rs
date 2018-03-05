@@ -33,7 +33,9 @@ pub trait ToDB: HasID {
 }
 
 pub trait Generable: HasID + HasUUID {
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<HashMap<&'static str, Value>>) -> Self
+    type Additional;
+
+    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
     where
         Self: Sized;
 }

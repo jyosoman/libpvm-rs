@@ -4,9 +4,9 @@ mod editsession;
 
 use packstream::values::Value;
 
-pub use self::process::Process;
-pub use self::file::File;
-pub use self::editsession::EditSession;
+pub use self::process::{Process, ProcessInit};
+pub use self::file::{File, FileInit};
+pub use self::editsession::{EditInit, EditSession};
 
 use super::gen_node::GenNode;
 use super::{HasID, HasUUID, NodeID, ToDB};
