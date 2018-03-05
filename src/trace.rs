@@ -23,4 +23,5 @@ pub struct TraceEvent {
     pub ret_objuuid1: Option<Uuid5>,
     pub ret_objuuid2: Option<Uuid5>,
     pub retval: i32,
+    pub arg_mem_flags: Option<Vec<String>>,
 }

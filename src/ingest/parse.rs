@@ -135,6 +135,24 @@ fn posix_connect(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
+fn posix_mmap(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
+    let mut f = pvm.declare::<File>(fuuid, None);
+    if let Some(fdpath) = tr.fdpath {
+        pvm.name(&mut **f, fdpath.clone());
+    }
+    if let Some(flags) = tr.arg_mem_flags {
+        if flags.contains(&String::from("PROT_WRITE")) {
+            pvm.sinkstart(&**pro, &**f, "mmap");
+        }
+        if flags.contains(&String::from("PROT_READ")) {
+            pvm.source(&**pro, &**f, "mmap");
+        }
+    }
+    pvm.checkin(f);
+    pvm.checkin(pro);
+}
+
 pub fn parse_trace(mut tr: TraceEvent, pvm: &mut PVM) {
     let pro = pvm.declare::<Process>(
         tr.subjprocuuid,
@@ -159,6 +177,7 @@ pub fn parse_trace(mut tr: TraceEvent, pvm: &mut PVM) {
         "audit:event:aue_bind:" => posix_bind(tr, pro, pvm),
         "audit:event:aue_accept:" => posix_accept(tr, pro, pvm),
         "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
+        "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
         _ => {
             pvm.unparsed_events.insert(tr.event.clone());
             pvm.checkin(pro)
