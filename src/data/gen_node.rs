@@ -28,10 +28,10 @@ impl GenNode {
                 let labs = fields
                     .remove(0)
                     .as_vec()
-                    .ok_or("labels field is not a list")?
-                    .iter()
-                    .map(|i| i.as_string().unwrap())
-                    .collect();
+                    .map(Vec::into_iter)
+                    .map(|d| d.map(|i| i.as_string().unwrap()))
+                    .map(|i| i.collect())
+                    .ok_or("labels field is not a list")?;
                 let props = fields
                     .remove(0)
                     .as_map()

@@ -16,26 +16,26 @@ pub struct Process {
 }
 
 impl Process {
-    pub fn from_props(props: &HashMap<String, Value>) -> Result<Self, &'static str> {
+    pub fn from_props(mut props: HashMap<String, Value>) -> Result<Self, &'static str> {
         Ok(Process {
             db_id: NodeID::new(props
-                .get("db_id")
+                .remove("db_id")
                 .and_then(Value::as_int)
                 .ok_or("db_id property is missing or not an Integer")?),
             uuid: props
-                .get("uuid")
+                .remove("uuid")
                 .and_then(Value::as_uuid5)
                 .ok_or("uuid property is missing or not a UUID5")?,
             cmdline: props
-                .get("cmdline")
+                .remove("cmdline")
                 .and_then(Value::as_string)
                 .ok_or("cmdline property is missing or not a String")?,
             pid: props
-                .get("pid")
+                .remove("pid")
                 .and_then(Value::as_int)
                 .ok_or("pid property is missing or not an Integer")?,
             thin: props
-                .get("thin")
+                .remove("thin")
                 .and_then(Value::as_bool)
                 .ok_or("thin property is missing or not a bool")?,
         })

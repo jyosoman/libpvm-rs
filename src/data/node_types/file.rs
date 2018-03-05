@@ -14,18 +14,18 @@ pub struct File {
 }
 
 impl File {
-    pub fn from_props(props: &HashMap<String, Value>) -> Result<Self, &'static str> {
+    pub fn from_props(mut props: HashMap<String, Value>) -> Result<Self, &'static str> {
         Ok(File {
             db_id: NodeID::new(props
-                .get("db_id")
+                .remove("db_id")
                 .and_then(Value::as_int)
                 .ok_or("db_id property is missing or not an Integer")?),
             uuid: props
-                .get("uuid")
+                .remove("uuid")
                 .and_then(Value::as_uuid5)
                 .ok_or("uuid property is missing or not a UUID5")?,
             name: props
-                .get("name")
+                .remove("name")
                 .and_then(Value::as_string)
                 .ok_or("name property is missing or not a string")?,
         })

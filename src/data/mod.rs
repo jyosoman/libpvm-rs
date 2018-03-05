@@ -75,7 +75,7 @@ impl Edge {
                     .remove(3)
                     .as_map()
                     .and_then(|mut i| i.remove("class"))
-                    .and_then(|i| (&i).as_string())
+                    .and_then(Value::as_string)
                     .ok_or(
                         "Edge class property missing, not a string or properties field not a map",
                     )?;
