@@ -1,6 +1,6 @@
 use trace::TraceEvent;
 use super::pvm::{NodeGuard, PVM};
-use data::node_types::{EnumNode, File, Process, ProcessInit};
+use data::node_types::{EnumNode, File, Process, ProcessInit, Socket};
 
 fn proc_exec(tr: &TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let cmdline = tr.cmdline.clone().expect("exec missing cmdline");
@@ -97,6 +97,44 @@ fn posix_close(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
+fn posix_socket(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let suuid = tr.ret_objuuid1.expect("socket missing ret_objuuid1");
+    let s = pvm.declare::<Socket>(suuid, None);
+    pvm.checkin(s);
+    pvm.checkin(pro);
+}
+
+fn posix_listen(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let suuid = tr.arg_objuuid1.expect("listen missing arg_objuuid1");
+    let s = pvm.declare::<Socket>(suuid, None);
+    pvm.checkin(s);
+    pvm.checkin(pro);
+}
+
+fn posix_bind(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let suuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
+    let s = pvm.declare::<Socket>(suuid, None);
+    pvm.checkin(s);
+    pvm.checkin(pro);
+}
+
+fn posix_accept(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let luuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
+    let ruuid = tr.ret_objuuid1.expect("bind missing ret_objuuid1");
+    let ls = pvm.declare::<Socket>(luuid, None);
+    let rs = pvm.declare::<Socket>(ruuid, None);
+    pvm.checkin(rs);
+    pvm.checkin(ls);
+    pvm.checkin(pro);
+}
+
+fn posix_connect(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let suuid = tr.arg_objuuid1.expect("connect missing arg_objuuid1");
+    let s = pvm.declare::<Socket>(suuid, None);
+    pvm.checkin(s);
+    pvm.checkin(pro);
+}
+
 pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) {
     let pro = pvm.declare::<Process>(
         tr.subjprocuuid,
@@ -114,6 +152,11 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) {
         "audit:event:aue_read:" => posix_read(tr, pro, pvm),
         "audit:event:aue_write:" => posix_write(tr, pro, pvm),
         "audit:event:aue_close:" => posix_close(tr, pro, pvm),
+        "audit:event:aue_socket:" => posix_socket(tr, pro, pvm),
+        "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
+        "audit:event:aue_bind:" => posix_bind(tr, pro, pvm),
+        "audit:event:aue_accept:" => posix_accept(tr, pro, pvm),
+        "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
         _ => {
             pvm.unparsed_events.insert(tr.event.clone());
             pvm.checkin(pro)
