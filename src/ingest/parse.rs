@@ -2,8 +2,8 @@ use trace::TraceEvent;
 use super::pvm::{NodeGuard, PVM};
 use data::node_types::{EnumNode, File, Process, ProcessInit, Socket};
 
-fn proc_exec(tr: &TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
-    let cmdline = tr.cmdline.clone().expect("exec missing cmdline");
+fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
+    let cmdline = tr.cmdline.take().expect("exec missing cmdline");
     let thin = if let EnumNode::Proc(ref pref) = **pro {
         pref.thin
     } else {
@@ -23,7 +23,7 @@ fn proc_exec(tr: &TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
             tr.subjprocuuid,
             Some(ProcessInit {
                 pid: tr.pid,
-                cmdline: cmdline.clone(),
+                cmdline: cmdline,
                 thin: false,
             }),
         );
@@ -33,7 +33,7 @@ fn proc_exec(tr: &TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     }
 }
 
-fn proc_fork(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn proc_fork(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let ret_objuuid1 = tr.ret_objuuid1.expect("fork missing ret_objuuid1");
 
     let mut ch = pvm.declare::<Process>(ret_objuuid1, None);
@@ -54,14 +54,14 @@ fn proc_fork(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn proc_exit(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn proc_exit(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.release(&tr.subjprocuuid);
     pvm.remove(pro);
 }
 
-fn posix_open(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_open(mut tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.ret_objuuid1 {
-        let fname = tr.upath1.clone().expect("open missing upath1");
+        let fname = tr.upath1.take().expect("open missing upath1");
 
         let mut f = pvm.declare::<File>(fuuid, None);
         pvm.name(&mut **f, fname);
@@ -70,7 +70,7 @@ fn posix_open(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_read(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_read(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("read missing arg_objuuid1");
 
     let f = pvm.declare::<File>(fuuid, None);
@@ -79,7 +79,7 @@ fn posix_read(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_write(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_write(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
 
     let f = pvm.declare::<File>(fuuid, None);
@@ -88,7 +88,7 @@ fn posix_write(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_close(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_close(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.arg_objuuid1 {
         let f = pvm.declare::<File>(fuuid, None);
         pvm.sinkend(&**pro, &**f, "close");
@@ -97,28 +97,28 @@ fn posix_close(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_socket(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_socket(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.ret_objuuid1.expect("socket missing ret_objuuid1");
     let s = pvm.declare::<Socket>(suuid, None);
     pvm.checkin(s);
     pvm.checkin(pro);
 }
 
-fn posix_listen(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_listen(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("listen missing arg_objuuid1");
     let s = pvm.declare::<Socket>(suuid, None);
     pvm.checkin(s);
     pvm.checkin(pro);
 }
 
-fn posix_bind(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_bind(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
     let s = pvm.declare::<Socket>(suuid, None);
     pvm.checkin(s);
     pvm.checkin(pro);
 }
 
-fn posix_accept(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_accept(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let luuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
     let ruuid = tr.ret_objuuid1.expect("bind missing ret_objuuid1");
     let ls = pvm.declare::<Socket>(luuid, None);
@@ -128,19 +128,19 @@ fn posix_accept(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_connect(tr: &TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_connect(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("connect missing arg_objuuid1");
     let s = pvm.declare::<Socket>(suuid, None);
     pvm.checkin(s);
     pvm.checkin(pro);
 }
 
-pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) {
+pub fn parse_trace(mut tr: TraceEvent, pvm: &mut PVM) {
     let pro = pvm.declare::<Process>(
         tr.subjprocuuid,
         Some(ProcessInit {
             pid: tr.pid,
-            cmdline: tr.exec.clone().expect("Event missing exec"),
+            cmdline: tr.exec.take().expect("Event missing exec"),
             thin: true,
         }),
     );

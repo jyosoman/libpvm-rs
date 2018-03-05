@@ -77,11 +77,8 @@ where
             .collect_into(&mut post_vec);
 
         for tr in post_vec.drain(..) {
-            match tr {
-                Some(tr) => {
-                    parse::parse_trace(&tr, &mut pvm);
-                }
-                None => continue,
+            if let Some(tr) = tr {
+                parse::parse_trace(tr, &mut pvm);
             }
         }
         if pre_vec.len() < BATCH_SIZE {
