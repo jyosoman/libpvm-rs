@@ -149,8 +149,10 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) {
         "audit:event:aue_fork:" | "audit:event:aue_vfork:" => proc_fork(tr, pro, pvm),
         "audit:event:aue_exit:" => proc_exit(tr, pro, pvm),
         "audit:event:aue_open_rwtc:" | "audit:event:aue_openat_rwtc:" => posix_open(tr, pro, pvm),
-        "audit:event:aue_read:" => posix_read(tr, pro, pvm),
-        "audit:event:aue_write:" => posix_write(tr, pro, pvm),
+        "audit:event:aue_read:" | "audit:event:aue_pread:" => posix_read(tr, pro, pvm),
+        "audit:event:aue_write:" | "audit:event:aue_pwrite:" | "audit:event:aue_writev:" => {
+            posix_write(tr, pro, pvm)
+        }
         "audit:event:aue_close:" => posix_close(tr, pro, pvm),
         "audit:event:aue_socket:" => posix_socket(tr, pro, pvm),
         "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
