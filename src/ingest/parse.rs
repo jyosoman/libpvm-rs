@@ -10,10 +10,10 @@ fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let ldname = tr.upath2.take().expect("exec missing upath2");
 
     let mut bin = pvm.declare::<File>(binuuid, None);
-    pvm.name(&mut **bin, binname);
+    pvm.name(&mut bin, binname);
 
     let mut ld = pvm.declare::<File>(lduuid, None);
-    pvm.name(&mut **ld, ldname);
+    pvm.name(&mut ld, ldname);
 
     let thin = if let EnumNode::Proc(ref pref) = **pro {
         pref.thin
@@ -27,9 +27,9 @@ fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
         } else {
             panic!()
         }
-        pvm.prop(&**pro);
-        pvm.source(&**pro, &**bin, "binary");
-        pvm.source(&**pro, &**ld, "linker");
+        pvm.prop(&pro);
+        pvm.source(&pro, &bin, "binary");
+        pvm.source(&pro, &ld, "linker");
     } else {
         let next = pvm.add::<Process>(
             tr.subjprocuuid,
@@ -39,9 +39,9 @@ fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
                 thin: false,
             }),
         );
-        pvm.source(&**next, &**pro, "next");
-        pvm.source(&**next, &**bin, "binary");
-        pvm.source(&**next, &**ld, "linker");
+        pvm.source(&next, &pro, "next");
+        pvm.source(&next, &bin, "binary");
+        pvm.source(&next, &ld, "linker");
         pvm.checkin(next);
     }
     pvm.checkin(ld);
@@ -64,8 +64,8 @@ fn proc_fork(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     } else {
         panic!()
     }
-    pvm.prop(&**ch);
-    pvm.source(&**ch, &**pro, "child");
+    pvm.prop(&ch);
+    pvm.source(&ch, &pro, "child");
     pvm.checkin(ch);
     pvm.checkin(pro);
 }
@@ -80,7 +80,7 @@ fn posix_open(mut tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
         let fname = tr.upath1.take().expect("open missing upath1");
 
         let mut f = pvm.declare::<File>(fuuid, None);
-        pvm.name(&mut **f, fname);
+        pvm.name(&mut f, fname);
         pvm.checkin(f);
     }
     pvm.checkin(pro);
@@ -90,7 +90,7 @@ fn posix_read(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("read missing arg_objuuid1");
 
     let f = pvm.declare::<File>(fuuid, None);
-    pvm.source(&**pro, &**f, "read");
+    pvm.source(&pro, &f, "read");
     pvm.checkin(f);
     pvm.checkin(pro);
 }
@@ -99,7 +99,7 @@ fn posix_write(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
 
     let f = pvm.declare::<File>(fuuid, None);
-    pvm.sinkstart(&**pro, &**f, "write");
+    pvm.sinkstart(&pro, &f, "write");
     pvm.checkin(f);
     pvm.checkin(pro);
 }
@@ -107,7 +107,7 @@ fn posix_write(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
 fn posix_close(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.arg_objuuid1 {
         let f = pvm.declare::<File>(fuuid, None);
-        pvm.sinkend(&**pro, &**f, "close");
+        pvm.sinkend(&pro, &f, "close");
         pvm.checkin(f);
     }
     pvm.checkin(pro);
@@ -155,14 +155,14 @@ fn posix_mmap(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
     let mut f = pvm.declare::<File>(fuuid, None);
     if let Some(fdpath) = tr.fdpath {
-        pvm.name(&mut **f, fdpath.clone());
+        pvm.name(&mut f, fdpath.clone());
     }
     if let Some(flags) = tr.arg_mem_flags {
         if flags.contains(&String::from("PROT_WRITE")) {
-            pvm.sinkstart(&**pro, &**f, "mmap");
+            pvm.sinkstart(&pro, &f, "mmap");
         }
         if flags.contains(&String::from("PROT_READ")) {
-            pvm.source(&**pro, &**f, "mmap");
+            pvm.source(&pro, &f, "mmap");
         }
     }
     pvm.checkin(f);
