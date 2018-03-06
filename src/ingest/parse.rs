@@ -4,6 +4,17 @@ use data::node_types::{EnumNode, File, Process, ProcessInit, Socket};
 
 fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let cmdline = tr.cmdline.take().expect("exec missing cmdline");
+    let binuuid = tr.arg_objuuid1.expect("exec missing arg_objuuid1");
+    let binname = tr.upath1.take().expect("exec missing upath1");
+    let lduuid = tr.arg_objuuid2.expect("exec missing arg_objuuid2");
+    let ldname = tr.upath2.take().expect("exec missing upath2");
+
+    let mut bin = pvm.declare::<File>(binuuid, None);
+    pvm.name(&mut **bin, binname);
+
+    let mut ld = pvm.declare::<File>(lduuid, None);
+    pvm.name(&mut **ld, ldname);
+
     let thin = if let EnumNode::Proc(ref pref) = **pro {
         pref.thin
     } else {
@@ -17,7 +28,8 @@ fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
             panic!()
         }
         pvm.prop(&**pro);
-        pvm.checkin(pro);
+        pvm.source(&**pro, &**bin, "binary");
+        pvm.source(&**pro, &**ld, "linker");
     } else {
         let next = pvm.add::<Process>(
             tr.subjprocuuid,
@@ -28,9 +40,13 @@ fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
             }),
         );
         pvm.source(&**next, &**pro, "next");
+        pvm.source(&**next, &**bin, "binary");
+        pvm.source(&**next, &**ld, "linker");
         pvm.checkin(next);
-        pvm.remove(pro);
     }
+    pvm.checkin(ld);
+    pvm.checkin(bin);
+    pvm.checkin(pro);
 }
 
 fn proc_fork(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
