@@ -132,10 +132,6 @@ mod tests {
         let first = s.checkout(&1).unwrap();
         assert_eq!(*first, "test-even more");
         s.checkin(first);
-
-        assert!(s.contains_key(&2));
-        s.remove(&2);
-        assert!(!s.contains_key(&2));
     }
 
     #[test]
@@ -152,7 +148,7 @@ mod tests {
         let mut s: CheckingStore<i64, String> = CheckingStore::new();
         s.insert(1, String::from("test"));
         let first = s.checkout(&1).unwrap();
-        s.checkin(DropGuard::new(1, Box::new(String::from("boo"))));
+        s.checkin(DropGuard::new(1,String::from("boo")));
         s.checkin(first);
     }
 
@@ -160,7 +156,7 @@ mod tests {
     #[should_panic(expected = "Returning item not borrowed from store")]
     fn returning_none_store() {
         let mut s: CheckingStore<i64, String> = CheckingStore::new();
-        s.checkin(DropGuard::new(1, Box::new(String::from("boo"))))
+        s.checkin(DropGuard::new(1,String::from("boo")))
     }
 
     #[test]
