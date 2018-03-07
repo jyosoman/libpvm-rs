@@ -28,3 +28,4 @@ pub mod value_as;
 pub mod invbloom;
 pub mod uuid;
 pub mod checking_store;
+pub mod bi_store;
