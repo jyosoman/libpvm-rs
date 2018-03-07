@@ -1,8 +1,8 @@
-use trace::TraceEvent;
+use trace::{AuditEvent, TraceEvent};
 use super::pvm::{NodeGuard, PVM};
 use data::node_types::{EnumNode, File, Process, ProcessInit, Socket};
 
-fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
+fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let cmdline = tr.cmdline.take().expect("exec missing cmdline");
     let binuuid = tr.arg_objuuid1.expect("exec missing arg_objuuid1");
     let binname = tr.upath1.take().expect("exec missing upath1");
@@ -49,7 +49,7 @@ fn proc_exec(mut tr: TraceEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn proc_fork(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn proc_fork(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let ret_objuuid1 = tr.ret_objuuid1.expect("fork missing ret_objuuid1");
 
     let mut ch = pvm.declare::<Process>(ret_objuuid1, None);
@@ -70,12 +70,12 @@ fn proc_fork(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn proc_exit(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn proc_exit(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.release(&tr.subjprocuuid);
     pvm.remove(pro);
 }
 
-fn posix_open(mut tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_open(mut tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.ret_objuuid1 {
         let fname = tr.upath1.take().expect("open missing upath1");
 
@@ -86,7 +86,7 @@ fn posix_open(mut tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_read(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_read(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("read missing arg_objuuid1");
 
     let f = pvm.declare::<File>(fuuid, None);
@@ -95,7 +95,7 @@ fn posix_read(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_write(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_write(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
 
     let f = pvm.declare::<File>(fuuid, None);
@@ -104,7 +104,7 @@ fn posix_write(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_close(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_close(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.arg_objuuid1 {
         let f = pvm.declare::<File>(fuuid, None);
         pvm.sinkend(&pro, &f, "close");
@@ -113,28 +113,28 @@ fn posix_close(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_socket(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_socket(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.ret_objuuid1.expect("socket missing ret_objuuid1");
     let s = pvm.declare::<Socket>(suuid, None);
     pvm.checkin(s);
     pvm.checkin(pro);
 }
 
-fn posix_listen(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_listen(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("listen missing arg_objuuid1");
     let s = pvm.declare::<Socket>(suuid, None);
     pvm.checkin(s);
     pvm.checkin(pro);
 }
 
-fn posix_bind(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_bind(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
     let s = pvm.declare::<Socket>(suuid, None);
     pvm.checkin(s);
     pvm.checkin(pro);
 }
 
-fn posix_accept(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_accept(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let luuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
     let ruuid = tr.ret_objuuid1.expect("bind missing ret_objuuid1");
     let ls = pvm.declare::<Socket>(luuid, None);
@@ -144,14 +144,14 @@ fn posix_accept(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-fn posix_connect(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_connect(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("connect missing arg_objuuid1");
     let s = pvm.declare::<Socket>(suuid, None);
     pvm.checkin(s);
     pvm.checkin(pro);
 }
 
-fn posix_mmap(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
     let mut f = pvm.declare::<File>(fuuid, None);
     if let Some(fdpath) = tr.fdpath {
@@ -169,34 +169,41 @@ fn posix_mmap(tr: TraceEvent, pro: NodeGuard, pvm: &mut PVM) {
     pvm.checkin(pro);
 }
 
-pub fn parse_trace(mut tr: TraceEvent, pvm: &mut PVM) {
-    let pro = pvm.declare::<Process>(
-        tr.subjprocuuid,
-        Some(ProcessInit {
-            pid: tr.pid,
-            cmdline: tr.exec.take().expect("Event missing exec"),
-            thin: true,
-        }),
-    );
-    match &tr.event[..] {
-        "audit:event:aue_execve:" => proc_exec(tr, pro, pvm),
-        "audit:event:aue_fork:" | "audit:event:aue_vfork:" => proc_fork(tr, pro, pvm),
-        "audit:event:aue_exit:" => proc_exit(tr, pro, pvm),
-        "audit:event:aue_open_rwtc:" | "audit:event:aue_openat_rwtc:" => posix_open(tr, pro, pvm),
-        "audit:event:aue_read:" | "audit:event:aue_pread:" => posix_read(tr, pro, pvm),
-        "audit:event:aue_write:" | "audit:event:aue_pwrite:" | "audit:event:aue_writev:" => {
-            posix_write(tr, pro, pvm)
+pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
+    match tr {
+        TraceEvent::Audit(mut tr) => {
+            let pro = pvm.declare::<Process>(
+                tr.subjprocuuid,
+                Some(ProcessInit {
+                    pid: tr.pid,
+                    cmdline: tr.exec.take().expect("Event missing exec"),
+                    thin: true,
+                }),
+            );
+            match &tr.event[..] {
+                "audit:event:aue_execve:" => proc_exec(tr, pro, pvm),
+                "audit:event:aue_fork:" | "audit:event:aue_vfork:" => proc_fork(tr, pro, pvm),
+                "audit:event:aue_exit:" => proc_exit(tr, pro, pvm),
+                "audit:event:aue_open_rwtc:" | "audit:event:aue_openat_rwtc:" => {
+                    posix_open(tr, pro, pvm)
+                }
+                "audit:event:aue_read:" | "audit:event:aue_pread:" => posix_read(tr, pro, pvm),
+                "audit:event:aue_write:"
+                | "audit:event:aue_pwrite:"
+                | "audit:event:aue_writev:" => posix_write(tr, pro, pvm),
+                "audit:event:aue_close:" => posix_close(tr, pro, pvm),
+                "audit:event:aue_socket:" => posix_socket(tr, pro, pvm),
+                "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
+                "audit:event:aue_bind:" => posix_bind(tr, pro, pvm),
+                "audit:event:aue_accept:" => posix_accept(tr, pro, pvm),
+                "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
+                "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
+                _ => {
+                    pvm.unparsed_events.insert(tr.event.clone());
+                    pvm.checkin(pro)
+                }
+            }
         }
-        "audit:event:aue_close:" => posix_close(tr, pro, pvm),
-        "audit:event:aue_socket:" => posix_socket(tr, pro, pvm),
-        "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
-        "audit:event:aue_bind:" => posix_bind(tr, pro, pvm),
-        "audit:event:aue_accept:" => posix_accept(tr, pro, pvm),
-        "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
-        "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
-        _ => {
-            pvm.unparsed_events.insert(tr.event.clone());
-            pvm.checkin(pro)
-        }
-    };
+        TraceEvent::FBT(_) => {}
+    }
 }
