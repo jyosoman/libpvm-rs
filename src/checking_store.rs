@@ -148,7 +148,7 @@ mod tests {
         let mut s: CheckingStore<i64, String> = CheckingStore::new();
         s.insert(1, String::from("test"));
         let first = s.checkout(&1).unwrap();
-        s.checkin(DropGuard::new(1,String::from("boo")));
+        s.checkin(DropGuard::new(1, String::from("boo")));
         s.checkin(first);
     }
 
@@ -156,7 +156,7 @@ mod tests {
     #[should_panic(expected = "Returning item not borrowed from store")]
     fn returning_none_store() {
         let mut s: CheckingStore<i64, String> = CheckingStore::new();
-        s.checkin(DropGuard::new(1,String::from("boo")))
+        s.checkin(DropGuard::new(1, String::from("boo")))
     }
 
     #[test]
