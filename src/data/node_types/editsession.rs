@@ -22,15 +22,15 @@ impl EditSession {
         Ok(EditSession {
             db_id: NodeID::new(props
                 .remove("db_id")
-                .and_then(Value::as_int)
+                .and_then(Value::into_int)
                 .ok_or("db_id property is missing or not an Integer")?),
             uuid: props
                 .remove("uuid")
-                .and_then(Value::as_uuid5)
+                .and_then(Value::into_uuid5)
                 .ok_or("uuid property is missing or not a UUID5")?,
             name: props
                 .remove("name")
-                .and_then(Value::as_string)
+                .and_then(Value::into_string)
                 .ok_or("name property is missing or not a string")?,
         })
     }

@@ -26,23 +26,23 @@ impl Process {
         Ok(Process {
             db_id: NodeID::new(props
                 .remove("db_id")
-                .and_then(Value::as_int)
+                .and_then(Value::into_int)
                 .ok_or("db_id property is missing or not an Integer")?),
             uuid: props
                 .remove("uuid")
-                .and_then(Value::as_uuid5)
+                .and_then(Value::into_uuid5)
                 .ok_or("uuid property is missing or not a UUID5")?,
             cmdline: props
                 .remove("cmdline")
-                .and_then(Value::as_string)
+                .and_then(Value::into_string)
                 .ok_or("cmdline property is missing or not a String")?,
             pid: props
                 .remove("pid")
-                .and_then(Value::as_int)
+                .and_then(Value::into_int)
                 .ok_or("pid property is missing or not an Integer")?,
             thin: props
                 .remove("thin")
-                .and_then(Value::as_bool)
+                .and_then(Value::into_bool)
                 .ok_or("thin property is missing or not a bool")?,
         })
     }

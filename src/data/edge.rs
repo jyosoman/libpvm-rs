@@ -30,13 +30,13 @@ impl Edge {
                 assert_eq!(fields.len(), 5);
                 let dest_id = NodeID::new(fields
                     .remove(2)
-                    .as_int()
+                    .into_int()
                     .ok_or("DestID field is not an Integer")?);
                 let class = fields
                     .remove(3)
-                    .as_map()
+                    .into_map()
                     .and_then(|mut i| i.remove("class"))
-                    .and_then(Value::as_string)
+                    .and_then(Value::into_string)
                     .ok_or(
                         "Edge class property missing, not a string or properties field not a map",
                     )?;

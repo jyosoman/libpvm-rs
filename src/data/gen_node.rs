@@ -23,18 +23,18 @@ impl GenNode {
                 }
                 let id = fields
                     .remove(0)
-                    .as_int()
+                    .into_int()
                     .ok_or("id field is not an integer")?;
                 let labs = fields
                     .remove(0)
-                    .as_vec()
+                    .into_vec()
                     .map(Vec::into_iter)
-                    .map(|d| d.map(|i| i.as_string().unwrap()))
+                    .map(|d| d.map(|i| i.into_string().unwrap()))
                     .map(|i| i.collect())
                     .ok_or("labels field is not a list")?;
                 let props = fields
                     .remove(0)
-                    .as_map()
+                    .into_map()
                     .ok_or("properties field is not a map")?;
                 Ok(GenNode { id, labs, props })
             }
