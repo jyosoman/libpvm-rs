@@ -132,7 +132,9 @@ fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
         pvm.name(&mut f, fdpath.clone());
     }
     if let Some(flags) = tr.arg_mem_flags {
-        if flags.contains(&String::from("PROT_WRITE")) {
+        if flags.contains(&String::from("PROT_WRITE"))
+            && !flags.contains(&String::from("MAP_PRIVATE"))
+        {
             pvm.sinkstart(&pro, &f, "mmap");
         }
         if flags.contains(&String::from("PROT_READ")) {
