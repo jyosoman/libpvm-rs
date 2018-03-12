@@ -119,21 +119,24 @@ impl Generable for Socket {
     where
         Self: Sized,
     {
-        let mut s = Socket {
-            db_id: id,
-            uuid,
-            class: SocketClass::Unknown,
-            path: String::new(),
-            ip: String::new(),
-            port: 0,
-        };
-        if let Some(add) = additional {
-            s.class = add.class;
-            s.path = add.path;
-            s.ip = add.ip;
-            s.port = add.port;
+        match additional {
+            Some(add) => Socket {
+                db_id: id,
+                uuid,
+                class: add.class,
+                path: add.path,
+                ip: add.ip,
+                port: add.port,
+            },
+            None => Socket {
+                db_id: id,
+                uuid,
+                class: SocketClass::Unknown,
+                path: String::new(),
+                ip: String::new(),
+                port: 0,
+            },
         }
-        s
     }
 }
 

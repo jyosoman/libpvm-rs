@@ -95,19 +95,22 @@ impl Generable for Process {
     where
         Self: Sized,
     {
-        let mut p = Process {
-            db_id: id,
-            uuid,
-            cmdline: String::new(),
-            pid: 0,
-            thin: true,
-        };
-        if let Some(add) = additional {
-            p.pid = add.pid;
-            p.cmdline = add.cmdline;
-            p.thin = add.thin;
+        match additional {
+            Some(add) => Process {
+                db_id: id,
+                uuid,
+                cmdline: add.cmdline,
+                pid: add.pid,
+                thin: add.thin,
+            },
+            None => Process {
+                db_id: id,
+                uuid,
+                cmdline: String::new(),
+                pid: 0,
+                thin: true,
+            },
         }
-        p
     }
 }
 

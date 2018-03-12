@@ -81,15 +81,18 @@ impl Generable for File {
     where
         Self: Sized,
     {
-        let mut f = File {
-            db_id: id,
-            uuid,
-            name: String::new(),
-        };
-        if let Some(add) = additional {
-            f.name = add.name;
+        match additional {
+            Some(add) => File {
+                db_id: id,
+                uuid,
+                name: add.name,
+            },
+            None => File {
+                db_id: id,
+                uuid,
+                name: String::new(),
+            },
         }
-        f
     }
 }
 

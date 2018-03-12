@@ -81,15 +81,18 @@ impl Generable for EditSession {
     where
         Self: Sized,
     {
-        let mut e = EditSession {
-            db_id: id,
-            uuid,
-            name: String::new(),
-        };
-        if let Some(add) = additional {
-            e.name = add.name;
+        match additional {
+            Some(add) => EditSession {
+                db_id: id,
+                uuid,
+                name: add.name,
+            },
+            None => EditSession {
+                db_id: id,
+                uuid,
+                name: String::new(),
+            },
         }
-        e
     }
 }
 
