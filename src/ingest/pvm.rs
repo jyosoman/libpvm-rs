@@ -35,6 +35,12 @@ impl PVM {
         }
     }
 
+    pub fn release(&mut self, uuid: &Uuid5) {
+        if let Some(nid) = self.uuid_cache.remove(uuid) {
+            self.node_cache.remove(nid);
+        }
+    }
+
     fn _inf<T, U>(&mut self, src: &T, dst: &U, class: &'static str)
     where
         T: HasID,
@@ -45,27 +51,17 @@ impl PVM {
         }
     }
 
-    pub fn release(&mut self, uuid: &Uuid5) {
-        self.uuid_cache.remove(uuid);
-    }
-
-    pub fn remove(&mut self, guard: NodeGuard) {
-        self.node_cache.remove(guard)
-    }
-
-    pub fn checkin(&mut self, guard: NodeGuard) {
-        self.node_cache.checkin(guard)
-    }
-
     pub fn add<T>(&mut self, uuid: Uuid5, additional: Option<T::Additional>) -> NodeGuard
     where
         T: Generable + Enumerable,
     {
         let id = NodeID::new(self.id_counter.fetch_add(1, Ordering::SeqCst) as i64);
         let node = Box::new(T::new(id, uuid, additional).enumerate());
-        self.uuid_cache.insert(uuid, id);
+        if let Some(nid) = self.uuid_cache.insert(uuid, id) {
+            self.node_cache.remove(nid);
+        }
         self.node_cache.insert(id, node);
-        let n = self.node_cache.checkout(&id).unwrap();
+        let n = self.node_cache.checkout(id).unwrap();
         self.db.create_node(&**n);
         n
     }
@@ -77,7 +73,7 @@ impl PVM {
         if !self.uuid_cache.contains_key(&uuid) {
             self.add::<T>(uuid, additional)
         } else {
-            self.node_cache.checkout(&self.uuid_cache[&uuid]).unwrap()
+            self.node_cache.checkout(self.uuid_cache[&uuid]).unwrap()
         }
     }
 
@@ -96,7 +92,6 @@ impl PVM {
                 );
                 self.db.create_rel(fref, &**f, "INF", "");
                 self._inf(act, &**f, tag);
-                self.checkin(f);
             }
             _ => {
                 self._inf(act, ent, tag);
@@ -117,7 +112,6 @@ impl PVM {
                     .insert(fref.get_uuid(), hashset!(act.get_uuid()));
                 self.db.create_rel(fref, &**es, "INF", "");
                 self._inf(act, &**es, tag);
-                self.checkin(es);
             }
             EnumNode::EditSession(ref eref) => {
                 if self.open_cache
@@ -149,7 +143,6 @@ impl PVM {
                     }),
                 );
                 self.db.create_rel(eref, &**f, "INF", "");
-                self.checkin(f);
             }
         }
     }

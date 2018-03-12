@@ -42,11 +42,7 @@ fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
         pvm.source(&next, &pro, "next");
         pvm.source(&next, &bin, "binary");
         pvm.source(&next, &ld, "linker");
-        pvm.checkin(next);
     }
-    pvm.checkin(ld);
-    pvm.checkin(bin);
-    pvm.checkin(pro);
 }
 
 fn proc_fork(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
@@ -66,24 +62,19 @@ fn proc_fork(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     }
     pvm.prop(&ch);
     pvm.source(&ch, &pro, "child");
-    pvm.checkin(ch);
-    pvm.checkin(pro);
 }
 
-fn proc_exit(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn proc_exit(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     pvm.release(&tr.subjprocuuid);
-    pvm.remove(pro);
 }
 
-fn posix_open(mut tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_open(mut tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.ret_objuuid1 {
         let fname = tr.upath1.take().expect("open missing upath1");
 
         let mut f = pvm.declare::<File>(fuuid, None);
         pvm.name(&mut f, fname);
-        pvm.checkin(f);
     }
-    pvm.checkin(pro);
 }
 
 fn posix_read(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
@@ -91,8 +82,6 @@ fn posix_read(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
 
     let f = pvm.declare::<File>(fuuid, None);
     pvm.source(&pro, &f, "read");
-    pvm.checkin(f);
-    pvm.checkin(pro);
 }
 
 fn posix_write(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
@@ -100,55 +89,40 @@ fn posix_write(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
 
     let f = pvm.declare::<File>(fuuid, None);
     pvm.sinkstart(&pro, &f, "write");
-    pvm.checkin(f);
-    pvm.checkin(pro);
 }
 
 fn posix_close(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.arg_objuuid1 {
         let f = pvm.declare::<File>(fuuid, None);
         pvm.sinkend(&pro, &f, "close");
-        pvm.checkin(f);
     }
-    pvm.checkin(pro);
 }
 
-fn posix_socket(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_socket(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.ret_objuuid1.expect("socket missing ret_objuuid1");
-    let s = pvm.declare::<Socket>(suuid, None);
-    pvm.checkin(s);
-    pvm.checkin(pro);
+    pvm.declare::<Socket>(suuid, None);
 }
 
-fn posix_listen(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_listen(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("listen missing arg_objuuid1");
-    let s = pvm.declare::<Socket>(suuid, None);
-    pvm.checkin(s);
-    pvm.checkin(pro);
+    pvm.declare::<Socket>(suuid, None);
 }
 
-fn posix_bind(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_bind(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
-    let s = pvm.declare::<Socket>(suuid, None);
-    pvm.checkin(s);
-    pvm.checkin(pro);
+    pvm.declare::<Socket>(suuid, None);
 }
 
-fn posix_accept(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_accept(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let luuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
     let ruuid = tr.ret_objuuid1.expect("bind missing ret_objuuid1");
-    let ls = pvm.declare::<Socket>(luuid, None);
-    let rs = pvm.declare::<Socket>(ruuid, None);
-    pvm.checkin(rs);
-    pvm.checkin(ls);
-    pvm.checkin(pro);
+    pvm.declare::<Socket>(luuid, None);
+    pvm.declare::<Socket>(ruuid, None);
 }
 
-fn posix_connect(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+fn posix_connect(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("connect missing arg_objuuid1");
-    let s = pvm.declare::<Socket>(suuid, None);
-    pvm.checkin(s);
-    pvm.checkin(pro);
+    pvm.declare::<Socket>(suuid, None);
 }
 
 fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
@@ -165,8 +139,6 @@ fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
             pvm.source(&pro, &f, "mmap");
         }
     }
-    pvm.checkin(f);
-    pvm.checkin(pro);
 }
 
 pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
@@ -200,7 +172,6 @@ pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
                 "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
                 _ => {
                     pvm.unparsed_events.insert(tr.event.clone());
-                    pvm.checkin(pro)
                 }
             }
         }
