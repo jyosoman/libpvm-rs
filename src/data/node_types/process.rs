@@ -8,8 +8,8 @@ use uuid::Uuid5;
 
 #[derive(Debug)]
 pub struct Process {
-    pub db_id: NodeID,
-    pub uuid: Uuid5,
+    db_id: NodeID,
+    uuid: Uuid5,
     pub pid: i32,
     pub cmdline: String,
     pub thin: bool,

@@ -8,8 +8,8 @@ use uuid::Uuid5;
 
 #[derive(Debug)]
 pub struct EditSession {
-    pub db_id: NodeID,
-    pub uuid: Uuid5,
+    db_id: NodeID,
+    uuid: Uuid5,
     pub name: String,
 }
 

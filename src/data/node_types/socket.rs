@@ -15,8 +15,8 @@ pub enum SocketClass {
 
 #[derive(Debug)]
 pub struct Socket {
-    pub db_id: NodeID,
-    pub uuid: Uuid5,
+    db_id: NodeID,
+    uuid: Uuid5,
     pub class: SocketClass,
     pub path: String,
     pub ip: String,
