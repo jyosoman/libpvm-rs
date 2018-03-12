@@ -1,6 +1,7 @@
 use trace::{AuditEvent, TraceEvent};
 use super::pvm::{NodeGuard, PVM};
-use data::node_types::{EnumNode, File, Process, ProcessInit, Socket};
+use data::Enumerable;
+use data::node_types::{File, Process, ProcessInit, Socket};
 
 fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let cmdline = tr.cmdline.take().expect("exec missing cmdline");
@@ -15,17 +16,11 @@ fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let mut ld = pvm.declare::<File>(lduuid, None);
     pvm.name(&mut ld, ldname);
 
-    let thin = if let EnumNode::Proc(ref pref) = **pro {
-        pref.thin
-    } else {
-        panic!()
-    };
-    if thin {
-        if let EnumNode::Proc(ref mut pref) = **pro {
+    if Process::denumerate(&pro).thin {
+        {
+            let pref = Process::denumerate_mut(&mut pro);
             pref.cmdline = cmdline;
             pref.thin = false;
-        } else {
-            panic!()
         }
         pvm.prop(&pro);
         pvm.source(&pro, &bin, "binary");
@@ -49,16 +44,12 @@ fn proc_fork(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let ret_objuuid1 = tr.ret_objuuid1.expect("fork missing ret_objuuid1");
 
     let mut ch = pvm.declare::<Process>(ret_objuuid1, None);
-    if let EnumNode::Proc(ref pref) = **pro {
-        if let EnumNode::Proc(ref mut chref) = **ch {
-            chref.pid = tr.retval;
-            chref.cmdline = pref.cmdline.clone();
-            chref.thin = true;
-        } else {
-            panic!()
-        }
-    } else {
-        panic!()
+    {
+        let pref = Process::denumerate(&pro);
+        let chref = Process::denumerate_mut(&mut ch);
+        chref.pid = tr.retval;
+        chref.cmdline = pref.cmdline.clone();
+        chref.thin = true;
     }
     pvm.prop(&ch);
     pvm.source(&ch, &pro, "child");

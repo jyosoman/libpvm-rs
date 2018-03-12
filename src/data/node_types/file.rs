@@ -58,11 +58,15 @@ impl Enumerable for File {
     fn enumerate(self) -> EnumNode {
         EnumNode::File(self)
     }
-    fn denumerate(val: EnumNode) -> Self
-    where
-        Self: Sized,
-    {
-        if let EnumNode::File(f) = val {
+    fn denumerate(val: &EnumNode) -> &Self {
+        if let EnumNode::File(ref f) = *val {
+            f
+        } else {
+            panic!()
+        }
+    }
+    fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
+        if let EnumNode::File(ref mut f) = *val {
             f
         } else {
             panic!()

@@ -58,11 +58,15 @@ impl Enumerable for EditSession {
     fn enumerate(self) -> EnumNode {
         EnumNode::EditSession(self)
     }
-    fn denumerate(val: EnumNode) -> Self
-    where
-        Self: Sized,
-    {
-        if let EnumNode::EditSession(ed) = val {
+    fn denumerate(val: &EnumNode) -> &Self{
+        if let EnumNode::EditSession(ref ed) = *val {
+            ed
+        } else {
+            panic!()
+        }
+    }
+    fn denumerate_mut(val: &mut EnumNode) -> &mut Self{
+        if let EnumNode::EditSession(ref mut ed) = *val {
             ed
         } else {
             panic!()

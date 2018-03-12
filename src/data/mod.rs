@@ -14,9 +14,8 @@ use self::node_types::EnumNode;
 
 pub trait Enumerable {
     fn enumerate(self) -> EnumNode;
-    fn denumerate(val: EnumNode) -> Self
-    where
-        Self: Sized;
+    fn denumerate(val: &EnumNode) -> &Self;
+    fn denumerate_mut(val: &mut EnumNode) -> &mut Self;
 }
 
 pub trait HasID {
