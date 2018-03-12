@@ -16,7 +16,6 @@ pub trait CastValue {
     fn into_uuid5(self) -> Option<Uuid5>;
 }
 
-
 impl CastValue for Value {
     fn into_bool(self) -> Option<bool> {
         match self {

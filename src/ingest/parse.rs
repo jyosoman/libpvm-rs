@@ -35,7 +35,7 @@ fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
             tr.subjprocuuid,
             Some(ProcessInit {
                 pid: tr.pid,
-                cmdline: cmdline,
+                cmdline,
                 thin: false,
             }),
         );

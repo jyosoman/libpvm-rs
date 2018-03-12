@@ -2,12 +2,10 @@ use futures::executor::Executor;
 use futures::future::Future;
 use futures_cpupool::Builder;
 
-struct StreamHashSplitter {
-}
+struct StreamHashSplitter {}
 
 impl Executor for ProcessingPool {
-    fn execute(&self, r: Run) {
-    }
+    fn execute(&self, r: Run) {}
 }
 
 fn cpu_pool_init() {
