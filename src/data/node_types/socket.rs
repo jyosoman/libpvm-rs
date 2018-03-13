@@ -96,14 +96,14 @@ impl Enumerable for Socket {
     fn enumerate(self) -> EnumNode {
         EnumNode::Socket(self)
     }
-    fn denumerate(val: &EnumNode) -> &Self{
+    fn denumerate(val: &EnumNode) -> &Self {
         if let EnumNode::Socket(ref s) = *val {
             s
         } else {
             panic!()
         }
     }
-    fn denumerate_mut(val: &mut EnumNode) -> &mut Self{
+    fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
         if let EnumNode::Socket(ref mut s) = *val {
             s
         } else {

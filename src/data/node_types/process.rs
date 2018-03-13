@@ -72,14 +72,14 @@ impl Enumerable for Process {
     fn enumerate(self) -> EnumNode {
         EnumNode::Proc(self)
     }
-    fn denumerate(val: &EnumNode) -> &Self{
+    fn denumerate(val: &EnumNode) -> &Self {
         if let EnumNode::Proc(ref pro) = *val {
             pro
         } else {
             panic!()
         }
     }
-    fn denumerate_mut(val: &mut EnumNode) -> &mut Self{
+    fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
         if let EnumNode::Proc(ref mut pro) = *val {
             pro
         } else {
