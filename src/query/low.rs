@@ -1,31 +1,34 @@
-use std::collections::{HashMap, VecDeque};
-
-use packstream::values::Data;
-use neo4j::cypher::CypherStream;
-
 use data::node_types::EnumNode;
 
-pub fn nodes_by_uuid(cypher: &mut CypherStream, uuid: &str) -> Vec<EnumNode> {
-    let mut props = HashMap::new();
-    props.insert("uuid", uuid.into());
-    let result = cypher
+use neo_wrap::{Neo4j, Neo4jOperations};
+
+use uuid::Uuid5;
+
+use value_as::CastValue;
+
+pub fn nodes_by_uuid(cypher: &mut Neo4j, uuid: Uuid5) -> Vec<EnumNode> {
+    cypher
         .run(
             "MATCH (n {uuid: {uuid}})
               RETURN n",
-            props,
+            hashmap!("uuid" => uuid.into()),
         )
-        .unwrap();
-    let mut records: VecDeque<Data> = VecDeque::new();
-    while cypher.fetch(&result, &mut records) > 0 {}
-    let _ = cypher.fetch_summary(&result);
+        .unwrap()
+        .first()
+        .map(|data| EnumNode::from_db(data).unwrap())
+        .collect()
+}
 
-    let mut ret = Vec::with_capacity(records.len());
-    for rec in records.drain(..) {
-        match rec {
-            Data::Record(mut v) => {
-                ret.push(EnumNode::from_db(v.remove(0)).unwrap());
-            }
-        }
-    }
-    ret
+pub fn count_processes(cypher: &mut Neo4j) -> i64 {
+    cypher
+        .run(
+            "MATCH (n:Process)
+              RETURN count(n)",
+            hashmap!(),
+        )
+        .unwrap()
+        .first()
+        .map(|data| data.into_int().unwrap())
+        .next()
+        .unwrap()
 }

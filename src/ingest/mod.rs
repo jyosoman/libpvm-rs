@@ -9,11 +9,11 @@ use std::thread;
 use std::time::Instant;
 
 use rayon::prelude::*;
-use neo4j::cypher::CypherStream;
 use serde_json;
 
 use self::pvm::PVM;
 use trace::TraceEvent;
+use neo_wrap::Neo4j;
 
 fn print_time(tmr: Instant) {
     let dur = tmr.elapsed();
@@ -23,7 +23,7 @@ fn print_time(tmr: Instant) {
     );
 }
 
-pub fn ingest<R>(stream: R, db: CypherStream)
+pub fn ingest<R>(stream: R, db: Neo4j)
 where
     R: BufRead,
 {

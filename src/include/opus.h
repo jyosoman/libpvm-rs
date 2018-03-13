@@ -40,7 +40,7 @@ void process_events(OpusHdl* hdl, int fd);
 
 void opus_cleanup(OpusHdl* hdl);
 
-
+int64_t count_processes(OpusHdl* hdl);
 
 #ifdef __cplusplus
 }

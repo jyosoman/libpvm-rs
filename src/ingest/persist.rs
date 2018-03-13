@@ -1,7 +1,6 @@
 use packstream::values::Value;
 
-use neo4j::bolt::BoltSummary;
-use neo4j::cypher::CypherStream;
+use neo_wrap::{Neo4j, Neo4jOperations};
 
 use std::sync::mpsc::Receiver;
 use std::collections::HashMap;
@@ -25,7 +24,7 @@ impl CreateNodes {
             nodes: HashMap::new(),
         }
     }
-    fn execute(&mut self, db: &mut CypherStream) {
+    fn execute(&mut self, db: &mut Neo4jOperations) {
         let nodes: Value = self.nodes.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
             "UNWIND $nodes AS props
@@ -56,7 +55,7 @@ impl CreateRels {
     fn new() -> Self {
         CreateRels { rels: Vec::new() }
     }
-    fn execute(&mut self, db: &mut CypherStream) {
+    fn execute(&mut self, db: &mut Neo4jOperations) {
         db.run_unchecked(
             "UNWIND $rels AS props
                  MATCH (s:Node {db_id: props.src}),
@@ -79,7 +78,7 @@ impl UpdateNodes {
     fn new() -> Self {
         UpdateNodes { props: Vec::new() }
     }
-    fn execute(&mut self, db: &mut CypherStream) {
+    fn execute(&mut self, db: &mut Neo4jOperations) {
         db.run_unchecked(
             "UNWIND $upds AS props
                  MATCH (p:Node {db_id: props.db_id})
@@ -92,7 +91,7 @@ impl UpdateNodes {
     }
 }
 
-pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
+pub fn execute_loop(mut db: Neo4j, recv: Receiver<DBTr>) {
     let mut ups = 0;
     let mut qrs = 0;
     let mut trs = 0;
@@ -110,7 +109,7 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
 
     db.run_unchecked("MERGE (:DBInfo {pvm_version: 2})", hashmap!());
 
-    db.begin_transaction(None);
+    let mut transaction = db.transaction();
     for tr in recv {
         match tr {
             DBTr::CreateNode(id, labs, props) => {
@@ -129,37 +128,22 @@ pub fn execute_loop(mut db: CypherStream, recv: Receiver<DBTr>) {
             }
         }
         if ups >= qrs * BATCH_SIZE {
-            nodes.execute(&mut db);
-            edges.execute(&mut db);
-            update.execute(&mut db);
+            nodes.execute(&mut transaction);
+            edges.execute(&mut transaction);
+            update.execute(&mut transaction);
             qrs += 1;
         }
         if ups > trs * TR_SIZE {
-            match db.commit_transaction() {
-                Some(s) => match s {
-                    BoltSummary::Failure(m) => println!("Error: Commit failed due to {:?}", m),
-                    BoltSummary::Ignored(_) => unreachable!(),
-                    BoltSummary::Success(_) => {}
-                },
-                None => println!("Error: Database commit failed to produce a summary."),
-            };
-            db.begin_transaction(None);
+            transaction.commit_and_refresh().unwrap();
             trs += 1;
         }
     }
-    nodes.execute(&mut db);
-    edges.execute(&mut db);
-    update.execute(&mut db);
+    nodes.execute(&mut transaction);
+    edges.execute(&mut transaction);
+    update.execute(&mut transaction);
     qrs += 1;
     println!("Final Commit");
-    match db.commit_transaction() {
-        Some(s) => match s {
-            BoltSummary::Failure(m) => println!("Error: Commit failed due to {:?}", m),
-            BoltSummary::Ignored(_) => unreachable!(),
-            BoltSummary::Success(_) => {}
-        },
-        None => println!("Error: Database commit failed to produce a summary."),
-    };
+    transaction.commit().unwrap();
     trs += 1;
     println!("Neo4J Updates Issued: {}", ups);
     println!("Neo4J Queries Issued: {}", qrs * 3);

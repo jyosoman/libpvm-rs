@@ -7,9 +7,9 @@ use std::os::unix::io::{FromRawFd, RawFd};
 use std::ptr;
 use std;
 
-use neo4j::cypher::CypherStream;
-
 use ingest;
+use query;
+use neo_wrap::Neo4j;
 
 #[repr(C)]
 #[derive(Debug, PartialEq)]
@@ -88,11 +88,10 @@ pub unsafe extern "C" fn print_cfg(hdl: *const OpusHdl) {
 pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
     let hdl = &mut (&mut (*hdl).0);
     let stream = BufReader::new(IOStream::from_raw_fd(fd));
-    let db = match CypherStream::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password)
-    {
+    let db = match Neo4j::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
         Ok(conn) => conn,
         Err(ref s) => {
-            println!("Database connection error: {}", s);
+            println!("Database connection error: {:?}", s);
             return;
         }
     };
@@ -103,4 +102,17 @@ pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
 pub unsafe extern "C" fn opus_cleanup(hdl: *mut OpusHdl) {
     drop(Box::from_raw(hdl));
     println!("Cleaning up..");
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn count_processes(hdl: *const OpusHdl) -> i64 {
+    let hdl = &(*hdl).0;
+    let mut db = match Neo4j::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
+        Ok(conn) => conn,
+        Err(ref s) => {
+            println!("Database connection error: {:?}", s);
+            return -1;
+        }
+    };
+    query::low::count_processes(&mut db)
 }

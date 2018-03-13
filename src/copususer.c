@@ -25,6 +25,8 @@ int main(int argc, char** argv) {
   printf("File fd: %d\n", in);
   process_events(hdl, in);
 
+  printf("Number of processes: %lld\n", count_processes(hdl));
+
   opus_cleanup(hdl);
 
   return 0;
