@@ -12,9 +12,11 @@ use std::net;
 use std::io;
 
 pub struct UdpSocketR(pub net::UdpSocket);
+pub struct UnixPipe(fs::File);
 
 pub enum IOType {
     File,
+    Pipe,
     TcpStream,
     UdpSocket,
     UnixStream,
@@ -39,6 +41,18 @@ impl Read for UdpSocketR {
     }
 }
 
+impl Read for UnixPipe {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.read(buf)
+    }
+}
+
+impl FromRawFd for UnixPipe {
+    unsafe fn from_raw_fd(fd: RawFd) -> Self {
+        UnixPipe(fs::File::from_raw_fd(fd))
+    }
+}
+
 impl FromRawFd for IOStream {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         let iotype = match get_fd_type(fd) {
@@ -47,6 +61,7 @@ impl FromRawFd for IOStream {
         };
         let fd_obj = match iotype {
             IOType::File => Box::new(fs::File::from_raw_fd(fd)) as Box<Read>,
+            IOType::Pipe => Box::new(UnixPipe::from_raw_fd(fd)) as Box<Read>,
             IOType::TcpStream => Box::new(net::TcpStream::from_raw_fd(fd)) as Box<Read>,
             IOType::UdpSocket => Box::new(UdpSocketR(net::UdpSocket::from_raw_fd(fd))) as Box<Read>,
             IOType::UnixStream => Box::new(unix::net::UnixStream::from_raw_fd(fd)) as Box<Read>,
@@ -107,7 +122,7 @@ fn get_fd_type(fd: RawFd) -> Result<IOType, String> {
                 _ => Err(String::from("unsupported socket family")),
             }
         }
-        FdClass::Fifo => Err(String::from("fifo input not supported")),
+        FdClass::Fifo => Ok(IOType::Pipe),
         FdClass::Terminal => Err(String::from("stdin input not supported")),
         _ => Err(String::from("unknown fd type")),
     }
