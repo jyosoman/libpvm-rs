@@ -130,7 +130,7 @@ fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
     let mut f = pvm.declare::<File>(fuuid, None);
     if let Some(fdpath) = tr.fdpath {
-        pvm.name(&mut f, fdpath.clone());
+        pvm.name(&mut f, fdpath);
     }
     if let Some(flags) = tr.arg_mem_flags {
         if flags.contains(&String::from("PROT_WRITE"))
