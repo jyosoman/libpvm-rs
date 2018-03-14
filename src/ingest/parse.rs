@@ -1,5 +1,5 @@
 use trace::{AuditEvent, TraceEvent};
-use super::pvm::{NodeGuard, PVM};
+use super::pvm::{ConnectDir, NodeGuard, PVM};
 use data::Enumerable;
 use data::node_types::{File, Process, ProcessInit, Socket};
 
@@ -134,6 +134,14 @@ fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     }
 }
 
+fn posix_socketpair(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
+    let ruuid1 = tr.ret_objuuid1.expect("socketpair missing ret_objuuid1");
+    let ruuid2 = tr.ret_objuuid2.expect("socketpair missing ret_objuuid2");
+    let s1 = pvm.declare::<Socket>(ruuid1, None);
+    let s2 = pvm.declare::<Socket>(ruuid2, None);
+    pvm.connect(&s1, &s2, ConnectDir::BiDirectional, "socketpair");
+}
+
 pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
     match tr {
         TraceEvent::Audit(box mut tr) => {
@@ -163,6 +171,7 @@ pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
                 "audit:event:aue_accept:" => posix_accept(tr, pro, pvm),
                 "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
                 "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
+                "audit:event:aue_socketpair:" => posix_socketpair(tr, pro, pvm),
                 _ => {
                     pvm.unparsed_events.insert(tr.event.clone());
                 }
