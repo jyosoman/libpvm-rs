@@ -41,7 +41,7 @@ impl PVM {
         }
     }
 
-    fn _inf<T, U>(&mut self, src: &T, dst: &U, class: &'static str)
+    fn _inf<T, U>(&mut self, src: &T, dst: &U, class: &str)
     where
         T: HasID,
         U: HasID,
@@ -77,11 +77,11 @@ impl PVM {
         }
     }
 
-    pub fn source(&mut self, act: &EnumNode, ent: &EnumNode, tag: &'static str) {
+    pub fn source(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) {
         self._inf(ent, act, tag);
     }
 
-    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode, tag: &'static str) {
+    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) {
         match *ent {
             EnumNode::File(ref fref) => {
                 let f = self.add::<File>(
@@ -99,7 +99,7 @@ impl PVM {
         }
     }
 
-    pub fn sinkstart(&mut self, act: &EnumNode, ent: &EnumNode, tag: &'static str) {
+    pub fn sinkstart(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) {
         match *ent {
             EnumNode::File(ref fref) => {
                 let es = self.add::<EditSession>(
@@ -126,7 +126,7 @@ impl PVM {
         }
     }
 
-    pub fn sinkend(&mut self, act: &EnumNode, ent: &EnumNode, tag: &'static str) {
+    pub fn sinkend(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) {
         if let EnumNode::EditSession(ref eref) = *ent {
             if !self.open_cache
                 .get_mut(&eref.get_uuid())

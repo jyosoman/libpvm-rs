@@ -27,7 +27,7 @@ impl DB {
             .expect("Database worker closed queue unexpectadly")
     }
 
-    pub fn create_rel<T, U>(&mut self, src: &T, dst: &U, rtype: &'static str, class: &'static str)
+    pub fn create_rel<T, U>(&mut self, src: &T, dst: &U, rtype: &str, class: &str)
     where
         T: HasID,
         U: HasID,
