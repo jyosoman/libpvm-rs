@@ -10,6 +10,11 @@ use checking_store::{CheckingStore, DropGuard};
 use super::db::DB;
 use super::persist::DBTr;
 
+pub enum ConnectDir {
+    Mono,
+    BiDirectional,
+}
+
 pub type NodeGuard = DropGuard<NodeID, Box<EnumNode>>;
 
 pub struct PVM {
@@ -167,5 +172,12 @@ impl PVM {
 
     pub fn prop(&mut self, ent: &EnumNode) {
         self.db.update_node(ent)
+    }
+
+    pub fn connect(&mut self, first: &EnumNode, second: &EnumNode, dir: ConnectDir, tag: &str) {
+        self._inf(first, second, tag);
+        if let ConnectDir::BiDirectional = dir {
+            self._inf(second, first, tag);
+        }
     }
 }
