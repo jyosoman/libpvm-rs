@@ -189,6 +189,7 @@ impl<'a> Iterator for Neo4jIter<'a> {
 
 impl<'a> Drop for Neo4jIter<'a> {
     fn drop(&mut self) {
+        while self.conn.fetch(&self.src, &mut self.buf) > 0 {}
         self.conn.fetch_summary(&self.src);
     }
 }
