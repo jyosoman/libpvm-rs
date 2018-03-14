@@ -199,9 +199,7 @@ impl<'a> Iterator for Neo4jSingleIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|mut v| {
-            if v.len() != 1 {
-                panic!("Using single iterator on multi result query")
-            }
+            assert_eq!(v.len(), 1);
             v.remove(0)
         })
     }
