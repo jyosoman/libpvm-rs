@@ -71,14 +71,24 @@ fn posix_open(mut tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
 fn posix_read(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("read missing arg_objuuid1");
 
-    let f = pvm.declare::<File>(fuuid, None);
+    let mut f = pvm.declare::<File>(fuuid, None);
+    if let Some(pth) = tr.fdpath {
+        if pth != "<unknown>" {
+            pvm.name(&mut f, pth);
+        }
+    }
     pvm.source(&pro, &f, "read");
 }
 
 fn posix_write(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let fuuid = tr.arg_objuuid1.expect("write missing arg_objuuid1");
 
-    let f = pvm.declare::<File>(fuuid, None);
+    let mut f = pvm.declare::<File>(fuuid, None);
+    if let Some(pth) = tr.fdpath {
+        if pth != "<unknown>" {
+            pvm.name(&mut f, pth);
+        }
+    }
     pvm.sinkstart(&pro, &f, "write");
 }
 
