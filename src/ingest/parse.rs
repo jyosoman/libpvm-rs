@@ -1,7 +1,7 @@
 use trace::{AuditEvent, TraceEvent};
 use super::pvm::{ConnectDir, NodeGuard, PVM};
 use data::Enumerable;
-use data::node_types::{File, Process, ProcessInit, Socket};
+use data::node_types::{File, Pipe, PipeInit, Process, ProcessInit, Socket};
 
 fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let cmdline = tr.cmdline.take().expect("exec missing cmdline");
@@ -142,6 +142,16 @@ fn posix_socketpair(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     pvm.connect(&s1, &s2, ConnectDir::BiDirectional, "socketpair");
 }
 
+fn posix_pipe(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
+    let ruuid1 = tr.ret_objuuid1.expect("pipe missing ret_objuuid1");
+    let rfd1 = tr.ret_fd1.expect("pipe missing ret_fd1");
+    let ruuid2 = tr.ret_objuuid2.expect("pipe missing ret_objuuid2");
+    let rfd2 = tr.ret_fd2.expect("pipe missing ret_fd2");
+    let p1 = pvm.declare::<Pipe>(ruuid1, Some(PipeInit{fd: rfd1}));
+    let p2 = pvm.declare::<Pipe>(ruuid2, Some(PipeInit{fd: rfd2}));
+    pvm.connect(&p1, &p2, ConnectDir::BiDirectional, "pipe");
+}
+
 pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
     match tr {
         TraceEvent::Audit(box mut tr) => {
@@ -172,6 +182,7 @@ pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
                 "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
                 "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
                 "audit:event:aue_socketpair:" => posix_socketpair(tr, pro, pvm),
+                "audit:event:aue_pipe:" => posix_pipe(tr, pro, pvm),
                 _ => {
                     pvm.unparsed_events.insert(tr.event.clone());
                 }
