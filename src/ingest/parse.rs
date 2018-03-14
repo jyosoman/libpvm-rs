@@ -136,7 +136,7 @@ fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
 
 pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
     match tr {
-        TraceEvent::Audit(mut tr) => {
+        TraceEvent::Audit(box mut tr) => {
             let pro = pvm.declare::<Process>(
                 tr.subjprocuuid,
                 Some(ProcessInit {

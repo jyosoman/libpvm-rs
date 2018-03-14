@@ -36,8 +36,7 @@ where
     pub fn contains_key(&self, key: K) -> bool {
         match self.store.get(&key) {
             Some(v) => match *v {
-                Present(_) => true,
-                Loaned => true,
+                Present(_) | Loaned => true,
                 AwaitingDrop => false,
             },
             None => false,

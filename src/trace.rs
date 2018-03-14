@@ -41,6 +41,6 @@ pub struct FBTEvent {
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum TraceEvent {
-    Audit(AuditEvent),
+    Audit(Box<AuditEvent>),
     FBT(FBTEvent),
 }

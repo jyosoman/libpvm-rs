@@ -119,7 +119,7 @@ impl Neo4jOperations for Neo4j {
     fn run(&mut self, statement: &str, parameters: HashMap<&str, Value>) -> NeoResult<Neo4jIter> {
         let result = self.conn
             .run(statement, parameters)
-            .map_err(|e| Neo4jError::RunFailure(e))?;
+            .map_err(Neo4jError::RunFailure)?;
         Ok(Neo4jIter::new(result, &mut self.conn))
     }
 
@@ -173,8 +173,7 @@ impl<'a> Iterator for Neo4jIter<'a> {
     type Item = Vec<Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let i = self.buf.pop_front();
-        match i {
+        match self.buf.pop_front() {
             Some(Data::Record(i)) => Some(i),
             None => match self.conn.fetch(&self.src, &mut self.buf) {
                 0 => None,
