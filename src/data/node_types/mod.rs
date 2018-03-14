@@ -39,43 +39,29 @@ impl EnumNode {
     }
 }
 
-impl HasID for EnumNode {
-    fn get_db_id(&self) -> NodeID {
-        match *self {
-            EnumNode::Proc(ref p) => p.get_db_id(),
-            EnumNode::File(ref f) => f.get_db_id(),
-            EnumNode::EditSession(ref e) => e.get_db_id(),
-            EnumNode::Socket(ref s) => s.get_db_id(),
+macro_rules! enumnode_trait {
+    ($TR: ty,
+     $($F:ident() -> $T: ty),*) => {
+        impl $TR for EnumNode {
+            $(fn $F(&self) -> $T {
+                match *self {
+                    EnumNode::Proc(ref p) => p.$F(),
+                    EnumNode::EditSession(ref e) => e.$F(),
+                    EnumNode::File(ref f) => f.$F(),
+                    EnumNode::Socket(ref s) => s.$F(),
+                }
+            })*
         }
     }
 }
 
-impl HasUUID for EnumNode {
-    fn get_uuid(&self) -> Uuid5 {
-        match *self {
-            EnumNode::Proc(ref p) => p.get_uuid(),
-            EnumNode::File(ref f) => f.get_uuid(),
-            EnumNode::EditSession(ref e) => e.get_uuid(),
-            EnumNode::Socket(ref s) => s.get_uuid(),
-        }
-    }
-}
+enumnode_trait!(HasID,
+                get_db_id() -> NodeID);
 
-impl ToDB for EnumNode {
-    fn to_db(&self) -> Value {
-        match *self {
-            EnumNode::Proc(ref p) => p.to_db(),
-            EnumNode::File(ref f) => f.to_db(),
-            EnumNode::EditSession(ref e) => e.to_db(),
-            EnumNode::Socket(ref s) => s.to_db(),
-        }
-    }
-    fn get_labels(&self) -> Value {
-        match *self {
-            EnumNode::Proc(ref p) => p.get_labels(),
-            EnumNode::File(ref f) => f.get_labels(),
-            EnumNode::EditSession(ref e) => e.get_labels(),
-            EnumNode::Socket(ref s) => s.get_labels(),
-        }
-    }
-}
+enumnode_trait!(HasUUID,
+                get_uuid() -> Uuid5);
+
+enumnode_trait!(ToDB,
+                to_db() -> Value,
+                get_labels() -> Value);
+
