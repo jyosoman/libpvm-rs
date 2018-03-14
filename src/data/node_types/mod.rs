@@ -2,6 +2,7 @@ mod process;
 mod file;
 mod editsession;
 mod socket;
+mod pipe;
 
 use packstream::values::Value;
 
@@ -9,6 +10,7 @@ pub use self::process::{Process, ProcessInit};
 pub use self::file::{File, FileInit};
 pub use self::editsession::{EditInit, EditSession};
 pub use self::socket::{Socket, SocketClass, SocketInit};
+pub use self::pipe::{Pipe, PipeInit};
 
 use super::gen_node::GenNode;
 use super::{HasID, HasUUID, NodeID, ToDB};
@@ -18,6 +20,7 @@ use uuid::Uuid5;
 pub enum EnumNode {
     Proc(Process),
     File(File),
+    Pipe(Pipe),
     EditSession(EditSession),
     Socket(Socket),
 }
@@ -33,7 +36,9 @@ impl EnumNode {
             Ok(EnumNode::EditSession(EditSession::from_props(g.props)?))
         } else if g.labs.contains(&String::from("Socket")) {
             Ok(EnumNode::Socket(Socket::from_props(g.props)?))
-        } else {
+        } else if g.labs.contains(&String::from("Pipe")) {
+            Ok(EnumNode::Pipe(Pipe::from_props(g.props)?))
+        }  else {
             Err("Node doesn't match any known type.")
         }
     }
@@ -46,6 +51,7 @@ macro_rules! enumnode_trait {
             $(fn $F(&self) -> $T {
                 match *self {
                     EnumNode::Proc(ref p) => p.$F(),
+                    EnumNode::Pipe(ref p) => p.$F(),
                     EnumNode::EditSession(ref e) => e.$F(),
                     EnumNode::File(ref f) => f.$F(),
                     EnumNode::Socket(ref s) => s.$F(),
