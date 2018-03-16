@@ -1,7 +1,26 @@
 use trace::{AuditEvent, TraceEvent};
 use super::pvm::{ConnectDir, NodeGuard, PVM};
 use data::Enumerable;
-use data::node_types::{File, Pipe, PipeInit, Process, ProcessInit, Socket};
+use data::node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Socket, SocketClass, SocketInit};
+
+fn socket_addr(tr: AuditEvent, s: &mut EnumNode) -> bool {
+    if let EnumNode::Socket(ref mut s) = *s {
+        if let SocketClass::Unknown = s.class {
+            if let Some(pth) = tr.upath1 {
+                s.class = SocketClass::AfUnix;
+                s.path = pth;
+                return true;
+            } else if let Some(prt) = tr.port {
+                let addr = tr.address.expect("record with port missing address");
+                s.class = SocketClass::AfInet;
+                s.port = prt;
+                s.ip = addr;
+                return true;
+            }
+        }
+    }
+    false
+}
 
 fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
     let cmdline = tr.cmdline.take().expect("exec missing cmdline");
@@ -111,19 +130,42 @@ fn posix_listen(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
 
 fn posix_bind(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
-    pvm.declare::<Socket>(suuid, None);
+    let mut s = pvm.declare::<Socket>(suuid, None);
+    if socket_addr(tr, &mut s) {
+        pvm.prop(&s);
+    }
 }
 
 fn posix_accept(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
-    let luuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
-    let ruuid = tr.ret_objuuid1.expect("bind missing ret_objuuid1");
+    let luuid = tr.arg_objuuid1.expect("accept missing arg_objuuid1");
+    let ruuid = tr.ret_objuuid1.expect("accept missing ret_objuuid1");
     pvm.declare::<Socket>(luuid, None);
-    pvm.declare::<Socket>(ruuid, None);
+    if let Some(pth) = tr.upath1 {
+        pvm.declare::<Socket>(ruuid, Some(SocketInit{
+            class: SocketClass::AfUnix,
+            path: pth,
+            port: 0,
+            ip: String::new(),
+        }));
+    } else if let Some(prt) = tr.port {
+        let addr = tr.address.expect("accept with port missing address");
+        pvm.declare::<Socket>(ruuid, Some(SocketInit{
+            class: SocketClass::AfInet,
+            path: String::new(),
+            port: prt,
+            ip: addr,
+        }));
+    } else {
+        pvm.declare::<Socket>(ruuid, None);
+    }
 }
 
 fn posix_connect(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("connect missing arg_objuuid1");
-    pvm.declare::<Socket>(suuid, None);
+    let mut s = pvm.declare::<Socket>(suuid, None);
+    if socket_addr(tr, &mut s) {
+        pvm.prop(&s);
+    }
 }
 
 fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
