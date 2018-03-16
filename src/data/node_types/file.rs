@@ -13,7 +13,7 @@ pub struct FileInit {
 #[derive(Debug)]
 pub struct File {
     db_id: NodeID,
-    pub uuid: Uuid5,
+    uuid: Uuid5,
     pub name: String,
 }
 
