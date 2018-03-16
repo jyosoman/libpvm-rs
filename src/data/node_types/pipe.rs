@@ -62,14 +62,14 @@ impl Enumerable for Pipe {
         if let EnumNode::Pipe(ref p) = *val {
             p
         } else {
-            panic!()
+            panic!("{:?} is not a pipe", val)
         }
     }
     fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
         if let EnumNode::Pipe(ref mut p) = *val {
             p
         } else {
-            panic!()
+            panic!("{:?} is not a pipe", val)
         }
     }
 }

@@ -62,14 +62,14 @@ impl Enumerable for File {
         if let EnumNode::File(ref f) = *val {
             f
         } else {
-            panic!()
+            panic!("{:?} is not a file", val)
         }
     }
     fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
         if let EnumNode::File(ref mut f) = *val {
             f
         } else {
-            panic!()
+            panic!("{:?} is not a file", val)
         }
     }
 }

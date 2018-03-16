@@ -100,14 +100,14 @@ impl Enumerable for Socket {
         if let EnumNode::Socket(ref s) = *val {
             s
         } else {
-            panic!()
+            panic!("{:?} is not a socket", val)
         }
     }
     fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
         if let EnumNode::Socket(ref mut s) = *val {
             s
         } else {
-            panic!()
+            panic!("{:?} is not a socket", val)
         }
     }
 }

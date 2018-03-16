@@ -76,14 +76,14 @@ impl Enumerable for Process {
         if let EnumNode::Proc(ref pro) = *val {
             pro
         } else {
-            panic!()
+            panic!("{:?} is not a process", val)
         }
     }
     fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
         if let EnumNode::Proc(ref mut pro) = *val {
             pro
         } else {
-            panic!()
+            panic!("{:?} is not a process", val)
         }
     }
 }

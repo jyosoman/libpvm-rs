@@ -62,14 +62,14 @@ impl Enumerable for EditSession {
         if let EnumNode::EditSession(ref ed) = *val {
             ed
         } else {
-            panic!()
+            panic!("{:?} is not an editsession", val)
         }
     }
     fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
         if let EnumNode::EditSession(ref mut ed) = *val {
             ed
         } else {
-            panic!()
+            panic!("{:?} is not an editsession", val)
         }
     }
 }
