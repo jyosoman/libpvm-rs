@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::fmt::{self, Display};
+use std::fmt::{self, Debug, Display};
 use std::num::ParseIntError;
 use std::str::FromStr;
 use std::string::ToString;
@@ -7,7 +7,7 @@ use std::string::ToString;
 use packstream::values::Value;
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub enum Uuid5 {
     Single(u128),
     Double([u128; 2]),
@@ -112,6 +112,12 @@ impl Display for Uuid5 {
                 Uuid5::Single(v1).to_string()
             ),
         }
+    }
+}
+
+impl Debug for Uuid5 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        <Self as Display>::fmt(self, f)
     }
 }
 
