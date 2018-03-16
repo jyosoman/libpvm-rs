@@ -204,6 +204,42 @@ fn posix_pipe(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     pvm.connect(&p1, &p2, ConnectDir::BiDirectional, "pipe");
 }
 
+fn posix_sendmsg(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let suuid = tr.arg_objuuid1.expect("sendmsg missing arg_objuuid1");
+    let mut s = pvm.declare::<Socket>(suuid, None);
+    if socket_addr(tr, &mut s) {
+        pvm.prop(&s);
+    }
+    pvm.sinkstart(&pro, &s, "sendmsg");
+}
+
+fn posix_sendto(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let suuid = tr.arg_objuuid1.expect("sendto missing arg_objuuid1");
+    let mut s = pvm.declare::<Socket>(suuid, None);
+    if socket_addr(tr, &mut s) {
+        pvm.prop(&s);
+    }
+    pvm.sinkstart(&pro, &s, "sendto");
+}
+
+fn posix_recvmsg(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let suuid = tr.arg_objuuid1.expect("recvmsg missing arg_objuuid1");
+    let mut s = pvm.declare::<Socket>(suuid, None);
+    if socket_addr(tr, &mut s) {
+        pvm.prop(&s);
+    }
+    pvm.source(&pro, &s, "recvmsg");
+}
+
+fn posix_recvfrom(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
+    let suuid = tr.arg_objuuid1.expect("recvfrom missing arg_objuuid1");
+    let mut s = pvm.declare::<Socket>(suuid, None);
+    if socket_addr(tr, &mut s) {
+        pvm.prop(&s);
+    }
+    pvm.source(&pro, &s, "recvfrom");
+}
+
 pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
     match tr {
         TraceEvent::Audit(box mut tr) => {
@@ -226,6 +262,10 @@ pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {
                 "audit:event:aue_write:"
                 | "audit:event:aue_pwrite:"
                 | "audit:event:aue_writev:" => posix_write(tr, pro, pvm),
+                "audit:event:aue_sendmsg:" => posix_sendmsg(tr, pro, pvm),
+                "audit:event:aue_sendto:" => posix_sendto(tr, pro, pvm),
+                "audit:event:aue_recvmsg:" => posix_recvmsg(tr, pro, pvm),
+                "audit:event:aue_recvfrom:" => posix_recvfrom(tr, pro, pvm),
                 "audit:event:aue_close:" => posix_close(tr, pro, pvm),
                 "audit:event:aue_socket:" => posix_socket(tr, pro, pvm),
                 "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
