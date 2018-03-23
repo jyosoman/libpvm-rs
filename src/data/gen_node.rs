@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use packstream::values::Value;
-use value_as::CastValue;
+use neo4j::Value;
 
 pub struct GenNode {
     pub id: u64,

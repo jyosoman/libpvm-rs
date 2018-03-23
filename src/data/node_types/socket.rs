@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use packstream::values::Value;
-use value_as::CastValue;
+use neo4j::Value;
 
 use super::super::{Enumerable, Generable, HasID, HasUUID, NodeID, ToDB};
 use super::EnumNode;
-use uuid::Uuid5;
+use uuid::{Uuid5, IntoUUID};
 
 #[derive(Clone, Copy, Debug)]
 pub enum SocketClass {

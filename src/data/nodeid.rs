@@ -1,4 +1,4 @@
-use packstream::values::Value;
+use neo4j::Value;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct NodeID(i64);

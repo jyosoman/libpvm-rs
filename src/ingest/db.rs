@@ -3,7 +3,7 @@ use std::sync::mpsc::SyncSender;
 use super::persist::DBTr;
 use data::{HasID, ToDB};
 
-use packstream::values::Value;
+use neo4j::Value;
 
 pub struct DB {
     persist_pipe: SyncSender<DBTr>,

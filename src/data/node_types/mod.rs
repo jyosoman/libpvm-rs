@@ -4,7 +4,7 @@ mod editsession;
 mod socket;
 mod pipe;
 
-use packstream::values::Value;
+use neo4j::Value;
 
 pub use self::process::{Process, ProcessInit};
 pub use self::file::{File, FileInit};

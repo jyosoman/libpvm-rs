@@ -3,7 +3,7 @@ mod gen_node;
 pub mod node_types;
 mod edge;
 
-use packstream::values::Value;
+use neo4j::Value;
 use uuid::Uuid5;
 
 pub use self::nodeid::NodeID;

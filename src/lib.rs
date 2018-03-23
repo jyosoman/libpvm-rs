@@ -9,7 +9,6 @@ extern crate libc;
 extern crate maplit;
 extern crate neo4j;
 extern crate num_cpus;
-extern crate packstream;
 extern crate rayon;
 extern crate serde;
 #[macro_use]
@@ -25,8 +24,6 @@ pub mod c_api;
 pub mod trace;
 pub mod data;
 pub mod query;
-pub mod value_as;
 pub mod invbloom;
 pub mod uuid;
 pub mod checking_store;
-pub mod neo_wrap;

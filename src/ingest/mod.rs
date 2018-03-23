@@ -13,7 +13,7 @@ use serde_json;
 
 use self::pvm::PVM;
 use trace::TraceEvent;
-use neo_wrap::Neo4j;
+use neo4j::Neo4jDB;
 
 fn print_time(tmr: Instant) {
     let dur = tmr.elapsed();
@@ -23,7 +23,7 @@ fn print_time(tmr: Instant) {
     );
 }
 
-pub fn ingest<R>(stream: R, db: Neo4j)
+pub fn ingest<R>(stream: R, db: Neo4jDB)
 where
     R: BufRead,
 {

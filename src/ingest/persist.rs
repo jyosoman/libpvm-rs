@@ -1,6 +1,4 @@
-use packstream::values::Value;
-
-use neo_wrap::{Neo4j, Neo4jOperations};
+use neo4j::{Neo4jDB, Neo4jOperations, Value};
 
 use std::sync::mpsc::Receiver;
 use std::collections::HashMap;
@@ -91,7 +89,7 @@ impl UpdateNodes {
     }
 }
 
-pub fn execute_loop(mut db: Neo4j, recv: Receiver<DBTr>) {
+pub fn execute_loop(mut db: Neo4jDB, recv: Receiver<DBTr>) {
     let mut ups = 0;
     let mut qrs = 0;
     let mut trs = 0;

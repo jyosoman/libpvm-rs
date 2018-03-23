@@ -1,12 +1,10 @@
 use data::node_types::EnumNode;
 
-use neo_wrap::{Neo4j, Neo4jOperations};
+use neo4j::{Neo4jDB, Neo4jOperations};
 
 use uuid::Uuid5;
 
-use value_as::CastValue;
-
-pub fn nodes_by_uuid(cypher: &mut Neo4j, uuid: Uuid5) -> Vec<EnumNode> {
+pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid5) -> Vec<EnumNode> {
     cypher
         .run(
             "MATCH (n {uuid: {uuid}})
@@ -19,7 +17,7 @@ pub fn nodes_by_uuid(cypher: &mut Neo4j, uuid: Uuid5) -> Vec<EnumNode> {
         .collect()
 }
 
-pub fn count_processes(cypher: &mut Neo4j) -> i64 {
+pub fn count_processes(cypher: &mut Neo4jDB) -> i64 {
     cypher
         .run(
             "MATCH (n:Process)

@@ -4,7 +4,7 @@ use std::num::ParseIntError;
 use std::str::FromStr;
 use std::string::ToString;
 
-use packstream::values::Value;
+use neo4j::Value;
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -124,6 +124,19 @@ impl Debug for Uuid5 {
 impl From<Uuid5> for Value {
     fn from(val: Uuid5) -> Self {
         Value::String(val.to_string())
+    }
+}
+
+pub trait IntoUUID {
+    fn into_uuid5(self) -> Option<Uuid5>;
+}
+
+impl IntoUUID for Value {
+    fn into_uuid5(self) -> Option<Uuid5> {
+        match self {
+            Value::String(s) => Uuid5::from_str(&s).ok(),
+            _ => None,
+        }
     }
 }
 
