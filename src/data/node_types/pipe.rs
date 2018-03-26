@@ -36,14 +36,12 @@ impl Pipe {
 }
 
 impl ToDB for Pipe {
-    fn to_db(&self) -> Value {
-        hashmap!("db_id" => Value::from(self.db_id),
-                 "uuid"  => Value::from(self.uuid),
-                 "fd"    => Value::from(self.fd))
-            .into()
+    fn get_labels(&self) -> Vec<&'static str> {
+        vec!["Node", "Pipe"]
     }
-    fn get_labels(&self) -> Value {
-        vec!["Node", "Pipe"].into()
+    fn get_props(&self) -> HashMap<&'static str, Value> {
+        hashmap!("uuid"  => Value::from(self.uuid),
+                 "fd"    => Value::from(self.fd))
     }
 }
 

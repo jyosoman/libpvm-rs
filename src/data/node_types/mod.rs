@@ -4,6 +4,8 @@ mod editsession;
 mod socket;
 mod pipe;
 
+use std::collections::HashMap;
+
 use neo4j::Value;
 
 pub use self::process::{Process, ProcessInit};
@@ -68,6 +70,6 @@ enumnode_trait!(HasUUID,
                 get_uuid() -> Uuid5);
 
 enumnode_trait!(ToDB,
-                to_db() -> Value,
-                get_labels() -> Value);
+                get_labels() -> Vec<&'static str>,
+                get_props() -> HashMap<&'static str, Value>);
 

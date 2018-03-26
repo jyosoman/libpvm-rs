@@ -7,9 +7,21 @@ use std::collections::hash_map::Entry;
 use data::NodeID;
 
 pub enum DBTr {
-    CreateNode(NodeID, Value, Value),
-    CreateRel(Value),
-    UpdateNode(NodeID, Value),
+    CreateNode{
+        id: NodeID,
+        labs: Vec<&'static str>,
+        props: HashMap<&'static str, Value>,
+    },
+    CreateRel{
+        src: NodeID,
+        dst: NodeID,
+        ty: &'static str,
+        props: HashMap<&'static str, Value>,
+    },
+    UpdateNode{
+        id: NodeID,
+        props: HashMap<&'static str, Value>,
+    },
 }
 
 struct CreateNodes {
@@ -110,16 +122,21 @@ pub fn execute_loop(mut db: Neo4jDB, recv: Receiver<DBTr>) {
     let mut transaction = db.transaction();
     for tr in recv {
         match tr {
-            DBTr::CreateNode(id, labs, props) => {
-                nodes.add(id, hashmap!("labels" => labs, "props"  => props));
+            DBTr::CreateNode{
+                id, labs, props
+            } => {
+                nodes.add(id, hashmap!("labels" => labs.into(), "props"  => props.into()));
                 ups += 1;
             }
-            DBTr::CreateRel(props) => {
-                edges.add(props);
+            DBTr::CreateRel{src, dst, ty, mut props} => {
+                props.insert("src", src.into());
+                props.insert("dst", dst.into());
+                props.insert("type", ty.into());
+                edges.add(props.into());
                 ups += 1;
             }
-            DBTr::UpdateNode(id, props) => {
-                if let Some(props) = nodes.update(id, props) {
+            DBTr::UpdateNode{id, props} => {
+                if let Some(props) = nodes.update(id, props.into()) {
                     update.add(props);
                     ups += 1;
                 }

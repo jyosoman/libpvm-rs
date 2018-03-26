@@ -18,26 +18,28 @@ impl DB {
     where
         T: ToDB + HasID,
     {
+        let (id, labs, props) = node.to_db();
         self.persist_pipe
-            .send(DBTr::CreateNode(
-                node.get_db_id(),
-                node.get_labels(),
-                node.to_db(),
-            ))
+            .send(DBTr::CreateNode {
+                id,
+                labs,
+                props,
+            })
             .expect("Database worker closed queue unexpectadly")
     }
 
-    pub fn create_rel<T, U>(&mut self, src: &T, dst: &U, rtype: &str, class: &str)
+    pub fn create_rel<T, U>(&mut self, src: &T, dst: &U, rtype: &'static str, class: &str)
     where
         T: HasID,
         U: HasID,
     {
-        let props = hashmap!("src"   => Value::from(src.get_db_id()),
-                             "dst"   => Value::from(dst.get_db_id()),
-                             "type"  => Value::from(rtype),
-                             "class" => Value::from(class));
         self.persist_pipe
-            .send(DBTr::CreateRel(props.into()))
+            .send(DBTr::CreateRel{
+                src: src.get_db_id(),
+                dst: dst.get_db_id(),
+                ty: rtype,
+                props: hashmap!("class" => Value::from(class)),
+            })
             .expect("Database worker closed queue unexpectadly");
     }
 
@@ -45,8 +47,12 @@ impl DB {
     where
         T: ToDB + HasID,
     {
+        let (id, _, props) = node.to_db();
         self.persist_pipe
-            .send(DBTr::UpdateNode(node.get_db_id(), node.to_db()))
+            .send(DBTr::UpdateNode{
+                id,
+                props,
+            })
             .expect("Database worker closed queue unexpectadly")
     }
 }

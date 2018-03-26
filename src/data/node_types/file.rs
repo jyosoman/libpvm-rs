@@ -36,14 +36,12 @@ impl File {
 }
 
 impl ToDB for File {
-    fn to_db(&self) -> Value {
-        hashmap!("db_id" => Value::from(self.db_id),
-                 "uuid"  => Value::from(self.uuid),
-                 "name"  => Value::from(self.name.clone()))
-            .into()
+    fn get_labels(&self) -> Vec<&'static str> {
+        vec!["Node", "File"]
     }
-    fn get_labels(&self) -> Value {
-        vec!["Node", "File"].into()
+    fn get_props(&self) -> HashMap<&'static str, Value> {
+        hashmap!("uuid"  => Value::from(self.uuid),
+                 "name"  => Value::from(self.name.clone()))
     }
 }
 
