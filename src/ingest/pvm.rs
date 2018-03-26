@@ -60,7 +60,7 @@ impl PVM {
     where
         T: Generable + Enumerable,
     {
-        let id = NodeID::new(self.id_counter.fetch_add(1, Ordering::SeqCst) as i64);
+        let id = NodeID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as i64);
         let node = Box::new(T::new(id, uuid, additional).enumerate());
         if let Some(nid) = self.uuid_cache.insert(uuid, id) {
             self.node_cache.remove(nid);

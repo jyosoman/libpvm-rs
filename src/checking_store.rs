@@ -80,7 +80,7 @@ where
                 let v = e.insert(Loaned);
                 match v {
                     Present(val) => {
-                        self.outstanding.fetch_add(1, Ordering::SeqCst);
+                        self.outstanding.fetch_add(1, Ordering::Relaxed);
                         Some(DropGuard {
                             owner: ptr,
                             key: Some(key),
@@ -97,7 +97,7 @@ where
     fn checkin(&mut self, key: K, val: V) {
         match self.store.entry(key) {
             Entry::Occupied(mut e) => {
-                self.outstanding.fetch_sub(1, Ordering::SeqCst);
+                self.outstanding.fetch_sub(1, Ordering::Relaxed);
                 let v = e.insert(Present(val));
                 match v {
                     Present(_) => panic!("Returning replaced item"),
