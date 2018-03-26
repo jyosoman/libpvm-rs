@@ -16,6 +16,20 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio_core;
 
+macro_rules! timeit {
+    ($E:expr) => {
+        {
+            use std::time::Instant;
+            let now = Instant::now();
+            $E;
+            let dur = now.elapsed();
+            eprintln!("{} took {:.3}",
+                stringify!($E),
+                dur.as_secs() as f64 + f64::from(dur.subsec_nanos()) * 1e-9);
+        }
+    }
+}
+
 pub use c_api::*;
 
 pub mod ingest;
