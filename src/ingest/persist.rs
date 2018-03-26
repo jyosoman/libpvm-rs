@@ -34,7 +34,7 @@ impl CreateNodes {
             nodes: HashMap::new(),
         }
     }
-    fn execute(&mut self, db: &mut Neo4jOperations) {
+    fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
         let nodes: Value = self.nodes.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
             "UNWIND $nodes AS props
@@ -65,7 +65,7 @@ impl CreateRels {
     fn new() -> Self {
         CreateRels { rels: Vec::new() }
     }
-    fn execute(&mut self, db: &mut Neo4jOperations) {
+    fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
         db.run_unchecked(
             "UNWIND $rels AS props
                  MATCH (s:Node {db_id: props.src}),
@@ -88,7 +88,7 @@ impl UpdateNodes {
     fn new() -> Self {
         UpdateNodes { props: Vec::new() }
     }
-    fn execute(&mut self, db: &mut Neo4jOperations) {
+    fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
         db.run_unchecked(
             "UNWIND $upds AS props
                  MATCH (p:Node {db_id: props.db_id})
