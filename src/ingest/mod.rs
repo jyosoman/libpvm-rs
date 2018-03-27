@@ -14,6 +14,7 @@ use serde_json;
 use self::pvm::PVM;
 use trace::TraceEvent;
 use neo4j::Neo4jDB;
+use self::persist::{ViewCoordinator, Neo4JView};
 
 fn print_time(tmr: Instant) {
     let dur = tmr.elapsed();
@@ -36,7 +37,10 @@ where
     let mut pvm = PVM::new(send);
 
     let db_worker = thread::spawn(move || {
-        persist::execute_loop(db, recv);
+        let mut view_ctrl = ViewCoordinator::new();
+        let neo = Box::new(Neo4JView::new(db));
+        view_ctrl.register(neo);
+        view_ctrl.run(recv);
     });
 
     let mut pre_vec: Vec<String> = Vec::with_capacity(BATCH_SIZE);
