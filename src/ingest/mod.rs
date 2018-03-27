@@ -14,7 +14,7 @@ use serde_json;
 use self::pvm::PVM;
 use trace::TraceEvent;
 use neo4j::Neo4jDB;
-use self::persist::{ViewCoordinator, Neo4JView};
+use self::persist::{ViewCoordinator, Neo4JView, CypherFileView};
 
 fn print_time(tmr: Instant) {
     let dur = tmr.elapsed();
@@ -39,6 +39,7 @@ where
     let db_worker = thread::spawn(move || {
         let mut view_ctrl = ViewCoordinator::new();
         view_ctrl.register(Neo4JView::new(db));
+        view_ctrl.register(CypherFileView::new());
         view_ctrl.run(recv);
     });
 
