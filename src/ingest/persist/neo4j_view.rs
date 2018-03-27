@@ -17,17 +17,10 @@ pub struct Neo4JView {
 }
 
 impl Neo4JView {
-    pub fn new(mut db: Neo4jDB) -> Self {
-        db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
-        db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
-        db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
-        db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
-
-        db.run_unchecked("MERGE (:DBInfo {pvm_version: 2})", hashmap!());
-
-        Neo4JView{
+    pub fn new(db: Neo4jDB) -> Box<Self> {
+        Box::new(Neo4JView{
             db,
-        }
+        })
     }
 }
 
@@ -39,6 +32,14 @@ impl View for Neo4JView {
         let mut ups = 0;
         let mut btc = 0;
         let mut trs = 0;
+
+        self.db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
+        self.db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
+        self.db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
+        self.db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
+
+        self.db.run_unchecked("MERGE (:DBInfo {pvm_version: 2})", hashmap!());
+
         let mut tr = self.db.transaction();
         for evt in stream {
             match (*evt).clone() {

@@ -38,8 +38,7 @@ where
 
     let db_worker = thread::spawn(move || {
         let mut view_ctrl = ViewCoordinator::new();
-        let neo = Box::new(Neo4JView::new(db));
-        view_ctrl.register(neo);
+        view_ctrl.register(Neo4JView::new(db));
         view_ctrl.run(recv);
     });
 
