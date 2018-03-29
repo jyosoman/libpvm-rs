@@ -1,5 +1,4 @@
 #![feature(try_from)]
-#![feature(i128_type)]
 #![feature(slice_patterns)]
 #![feature(box_patterns)]
 
