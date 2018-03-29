@@ -20,11 +20,7 @@ impl DB {
     {
         let (id, labs, props) = node.to_db();
         self.persist_pipe
-            .send(DBTr::CreateNode {
-                id,
-                labs,
-                props,
-            })
+            .send(DBTr::CreateNode { id, labs, props })
             .expect("Database worker closed queue unexpectadly")
     }
 
@@ -34,7 +30,7 @@ impl DB {
         U: HasID,
     {
         self.persist_pipe
-            .send(DBTr::CreateRel{
+            .send(DBTr::CreateRel {
                 src: src.get_db_id(),
                 dst: dst.get_db_id(),
                 ty: rtype,
@@ -49,10 +45,7 @@ impl DB {
     {
         let (id, _, props) = node.to_db();
         self.persist_pipe
-            .send(DBTr::UpdateNode{
-                id,
-                props,
-            })
+            .send(DBTr::UpdateNode { id, props })
             .expect("Database worker closed queue unexpectadly")
     }
 }

@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use neo4j::Value;
+use std::collections::HashMap;
 
 pub struct GenNode {
     pub id: u64,

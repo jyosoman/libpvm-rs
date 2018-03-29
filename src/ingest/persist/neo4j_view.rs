@@ -1,13 +1,10 @@
 use neo4j::{Neo4jDB, Neo4jOperations, Value};
 
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-use std::sync::mpsc::Receiver;
-use std::sync::Arc;
+use std::{collections::{HashMap, hash_map::Entry}, sync::{Arc, mpsc::Receiver}};
 
 use data::NodeID;
 
-use super::{View, DBTr};
+use super::{DBTr, View};
 
 const BATCH_SIZE: usize = 1000;
 const TR_SIZE: usize = 100_000;
@@ -18,9 +15,7 @@ pub struct Neo4JView {
 
 impl Neo4JView {
     pub fn new(db: Neo4jDB) -> Box<Self> {
-        Box::new(Neo4JView{
-            db,
-        })
+        Box::new(Neo4JView { db })
     }
 }
 
@@ -33,20 +28,26 @@ impl View for Neo4JView {
         let mut btc = 0;
         let mut trs = 0;
 
-        self.db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
-        self.db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
-        self.db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
-        self.db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
+        self.db
+            .run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
+        self.db
+            .run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
+        self.db
+            .run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
+        self.db
+            .run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
 
-        self.db.run_unchecked("MERGE (:DBInfo {pvm_version: 2})", hashmap!());
+        self.db
+            .run_unchecked("MERGE (:DBInfo {pvm_version: 2})", hashmap!());
 
         let mut tr = self.db.transaction();
         for evt in stream {
             match (*evt).clone() {
-                DBTr::CreateNode {
-                    id, labs, props
-                } => {
-                    nodes.add(id, hashmap!("labels" => labs.into(), "props"  => props.into()));
+                DBTr::CreateNode { id, labs, props } => {
+                    nodes.add(
+                        id,
+                        hashmap!("labels" => labs.into(), "props"  => props.into()),
+                    );
                     ups += 1;
                 }
                 DBTr::CreateRel {
@@ -87,11 +88,10 @@ impl View for Neo4JView {
         tr.commit().unwrap();
         trs += 1;
         println!("Neo4J Updates Issued: {}", ups);
-        println!("Neo4J Batches Issued: {}", btc*3);
+        println!("Neo4J Batches Issued: {}", btc * 3);
         println!("Neo4J Transactions Issued: {}", trs);
     }
 }
-
 
 struct CreateNodes {
     nodes: HashMap<NodeID, HashMap<&'static str, Value>>,

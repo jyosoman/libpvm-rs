@@ -1,7 +1,8 @@
-use trace::{AuditEvent, TraceEvent};
 use super::pvm::{ConnectDir, NodeGuard, PVM};
-use data::Enumerable;
-use data::node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Socket, SocketClass, SocketInit};
+use data::{Enumerable,
+           node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Socket,
+                        SocketClass, SocketInit}};
+use trace::{AuditEvent, TraceEvent};
 
 fn socket_addr(tr: AuditEvent, s: &mut EnumNode) -> bool {
     if let EnumNode::Socket(ref mut s) = *s {
@@ -141,20 +142,26 @@ fn posix_accept(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let ruuid = tr.ret_objuuid1.expect("accept missing ret_objuuid1");
     pvm.declare::<Socket>(luuid, None);
     if let Some(pth) = tr.upath1 {
-        pvm.declare::<Socket>(ruuid, Some(SocketInit{
-            class: SocketClass::AfUnix,
-            path: pth,
-            port: 0,
-            ip: String::new(),
-        }));
+        pvm.declare::<Socket>(
+            ruuid,
+            Some(SocketInit {
+                class: SocketClass::AfUnix,
+                path: pth,
+                port: 0,
+                ip: String::new(),
+            }),
+        );
     } else if let Some(prt) = tr.port {
         let addr = tr.address.expect("accept with port missing address");
-        pvm.declare::<Socket>(ruuid, Some(SocketInit{
-            class: SocketClass::AfInet,
-            path: String::new(),
-            port: prt,
-            ip: addr,
-        }));
+        pvm.declare::<Socket>(
+            ruuid,
+            Some(SocketInit {
+                class: SocketClass::AfInet,
+                path: String::new(),
+                port: prt,
+                ip: addr,
+            }),
+        );
     } else {
         pvm.declare::<Socket>(ruuid, None);
     }
@@ -199,8 +206,8 @@ fn posix_pipe(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let rfd1 = tr.ret_fd1.expect("pipe missing ret_fd1");
     let ruuid2 = tr.ret_objuuid2.expect("pipe missing ret_objuuid2");
     let rfd2 = tr.ret_fd2.expect("pipe missing ret_fd2");
-    let p1 = pvm.declare::<Pipe>(ruuid1, Some(PipeInit{fd: rfd1}));
-    let p2 = pvm.declare::<Pipe>(ruuid2, Some(PipeInit{fd: rfd2}));
+    let p1 = pvm.declare::<Pipe>(ruuid1, Some(PipeInit { fd: rfd1 }));
+    let p2 = pvm.declare::<Pipe>(ruuid2, Some(PipeInit { fd: rfd2 }));
     pvm.connect(&p1, &p2, ConnectDir::BiDirectional, "pipe");
 }
 

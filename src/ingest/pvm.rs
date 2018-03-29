@@ -1,14 +1,12 @@
-use std::collections::{HashMap, HashSet};
-use std::sync::mpsc::SyncSender;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::{collections::{HashMap, HashSet},
+          sync::{atomic::{AtomicUsize, Ordering}, mpsc::SyncSender}};
 
-use uuid::Uuid5;
-use data::{Enumerable, Generable, HasID, HasUUID, NodeID};
-use data::node_types::{EditInit, EditSession, EnumNode, File, FileInit};
 use checking_store::{CheckingStore, DropGuard};
+use data::{Enumerable, Generable, HasID, HasUUID, NodeID,
+           node_types::{EditInit, EditSession, EnumNode, File, FileInit}};
+use uuid::Uuid5;
 
-use super::db::DB;
-use super::persist::DBTr;
+use super::{db::DB, persist::DBTr};
 
 pub enum ConnectDir {
     Mono,

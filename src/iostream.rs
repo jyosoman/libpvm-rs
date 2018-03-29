@@ -1,15 +1,5 @@
-extern crate futures;
-extern crate nix;
-
-use self::nix::sys::socket::{getsockname, getsockopt, sockopt, SockAddr, SockType};
-use self::nix::sys::stat::fstat;
-use std::os::unix::io::{FromRawFd, RawFd};
-use std::os::unix;
-use std::error::Error;
-use std::fs;
-use std::io::Read;
-use std::net;
-use std::io;
+use nix::{self, sys::{socket::{getsockname, getsockopt, sockopt, SockAddr, SockType}, stat::fstat}};
+use std::{fs, net, error::Error, io::{self, Read}, os::unix::{self, io::{FromRawFd, RawFd}}};
 
 pub struct UdpSocketR(pub net::UdpSocket);
 pub struct UnixPipe(fs::File);
@@ -91,7 +81,7 @@ const S_IFREG: u32 = 0o100_000;
 const S_IFCHR: u32 = 0o20_000;
 const S_IFIFO: u32 = 0o10_000;
 
-fn err_str(err: self::nix::Error) -> String {
+fn err_str(err: nix::Error) -> String {
     err.description().to_owned()
 }
 

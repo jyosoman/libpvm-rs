@@ -1,21 +1,18 @@
-mod process;
-mod file;
 mod editsession;
-mod socket;
+mod file;
 mod pipe;
+mod process;
+mod socket;
 
 use std::collections::HashMap;
 
 use neo4j::Value;
 
-pub use self::process::{Process, ProcessInit};
-pub use self::file::{File, FileInit};
-pub use self::editsession::{EditInit, EditSession};
-pub use self::socket::{Socket, SocketClass, SocketInit};
-pub use self::pipe::{Pipe, PipeInit};
+pub use self::{editsession::{EditInit, EditSession}, file::{File, FileInit},
+               pipe::{Pipe, PipeInit}, process::{Process, ProcessInit},
+               socket::{Socket, SocketClass, SocketInit}};
 
-use super::gen_node::GenNode;
-use super::{HasID, HasUUID, NodeID, ToDB};
+use super::{HasID, HasUUID, NodeID, ToDB, gen_node::GenNode};
 use uuid::Uuid5;
 
 #[derive(Debug)]
@@ -40,7 +37,7 @@ impl EnumNode {
             Ok(EnumNode::Socket(Socket::from_props(g.props)?))
         } else if g.labs.contains(&String::from("Pipe")) {
             Ok(EnumNode::Pipe(Pipe::from_props(g.props)?))
-        }  else {
+        } else {
             Err("Node doesn't match any known type.")
         }
     }
@@ -72,4 +69,3 @@ enumnode_trait!(HasUUID,
 enumnode_trait!(ToDB,
                 get_labels() -> Vec<&'static str>,
                 get_props() -> HashMap<&'static str, Value>);
-

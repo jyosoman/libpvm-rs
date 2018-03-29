@@ -1,19 +1,16 @@
+mod db;
 mod parse;
 mod persist;
 mod pvm;
-mod db;
 
-use std::io::{BufRead, Write};
-use std::sync::mpsc;
-use std::thread;
-use std::time::Instant;
+use std::{thread, io::{BufRead, Write}, sync::mpsc};
 
+use neo4j::Neo4jDB;
 use rayon::prelude::*;
 use serde_json;
 
-use self::persist::{CypherView, Neo4JView, ViewCoordinator};
-use self::pvm::PVM;
-use neo4j::Neo4jDB;
+use self::{persist::{CypherView, Neo4JView, ViewCoordinator}, pvm::PVM};
+
 use trace::TraceEvent;
 
 const BATCH_SIZE: usize = 0x80_000;

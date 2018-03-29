@@ -1,15 +1,11 @@
 use iostream::IOStream;
 use libc::c_char;
-use std::ffi::CStr;
-use std::io::BufReader;
-use std::ops::FnOnce;
-use std::os::unix::io::{FromRawFd, RawFd};
-use std::ptr;
-use std;
+use neo4j::Neo4jDB;
+
+use std::{self, ptr, ffi::CStr, io::BufReader, ops::FnOnce, os::unix::io::{FromRawFd, RawFd}};
 
 use ingest;
 use query;
-use neo4j::Neo4jDB;
 
 #[repr(C)]
 #[derive(Debug, PartialEq)]
@@ -131,7 +127,8 @@ pub unsafe extern "C" fn opus_cleanup(hdl: *mut OpusHdl) {
 #[no_mangle]
 pub unsafe extern "C" fn count_processes(hdl: *const OpusHdl) -> i64 {
     let hdl = &(*hdl).0;
-    let mut db = match Neo4jDB::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
+    let mut db = match Neo4jDB::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password)
+    {
         Ok(conn) => conn,
         Err(ref s) => {
             println!("Database connection error: {:?}", s);

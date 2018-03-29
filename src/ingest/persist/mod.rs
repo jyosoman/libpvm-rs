@@ -5,27 +5,24 @@ pub use self::{cypher_view::CypherView, neo4j_view::Neo4JView};
 
 use neo4j::Value;
 
-use std::sync::mpsc;
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::thread::{spawn, JoinHandle};
+use std::{collections::HashMap, sync::{mpsc, Arc}, thread::{spawn, JoinHandle}};
 
 use data::NodeID;
 
 #[derive(Clone, Debug)]
 pub enum DBTr {
-    CreateNode{
+    CreateNode {
         id: NodeID,
         labs: Vec<&'static str>,
         props: HashMap<&'static str, Value>,
     },
-    CreateRel{
+    CreateRel {
         src: NodeID,
         dst: NodeID,
         ty: &'static str,
         props: HashMap<&'static str, Value>,
     },
-    UpdateNode{
+    UpdateNode {
         id: NodeID,
         props: HashMap<&'static str, Value>,
     },
@@ -60,15 +57,14 @@ impl ViewCoordinator {
         for evt in recv {
             {
                 let v = Arc::new(evt);
-                for stream in self.streams.iter_mut() {
+                for stream in &mut self.streams {
                     stream.send(v.clone()).unwrap();
                 }
             }
         }
         self.streams.clear();
-        for thr in self.threads.into_iter() {
+        for thr in self.threads {
             thr.join().unwrap();
         }
     }
 }
-

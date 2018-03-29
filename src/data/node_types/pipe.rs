@@ -1,12 +1,12 @@
-use std::collections::HashMap;
 use neo4j::Value;
+use std::collections::HashMap;
 
 use super::super::{Enumerable, Generable, HasID, HasUUID, NodeID, ToDB};
 use super::EnumNode;
-use uuid::{Uuid5, IntoUUID};
+use uuid::{IntoUUID, Uuid5};
 
 pub struct PipeInit {
-    pub fd: i32
+    pub fd: i32,
 }
 
 #[derive(Debug)]
