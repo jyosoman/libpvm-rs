@@ -49,11 +49,17 @@ impl View for Neo4JView {
                     nodes.add(id, hashmap!("labels" => labs.into(), "props"  => props.into()));
                     ups += 1;
                 }
-                DBTr::CreateRel { src, dst, ty, mut props } => {
-                    props.insert("src", src.into());
-                    props.insert("dst", dst.into());
-                    props.insert("type", ty.into());
-                    edges.add(props.into());
+                DBTr::CreateRel {
+                    src,
+                    dst,
+                    ty,
+                    props,
+                } => {
+                    let rel: HashMap<&str, Value> = hashmap!("src" => src.into(),
+                                                             "dst" => dst.into(),
+                                                             "type" => ty.into(),
+                                                             "props" => props.into());
+                    edges.add(rel.into());
                     ups += 1;
                 }
                 DBTr::UpdateNode { id, props } => {
@@ -100,8 +106,8 @@ impl CreateNodes {
     fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
         let nodes: Value = self.nodes.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
-            "UNWIND $nodes AS props
-             CALL apoc.create.node(props.labels, props.props) YIELD node
+            "UNWIND $nodes AS n
+             CALL apoc.create.node(n.labels, n.props) YIELD node
              RETURN 0",
             hashmap!("nodes" => nodes),
         );
@@ -130,10 +136,10 @@ impl CreateRels {
     }
     fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
         db.run_unchecked(
-            "UNWIND $rels AS props
-             MATCH (s:Node {db_id: props.src}),
-                   (d:Node {db_id: props.dst})
-             CALL apoc.create.relationship(s, props.type, {class: props.class}, d) YIELD rel
+            "UNWIND $rels AS r
+             MATCH (s:Node {db_id: r.src}),
+                   (d:Node {db_id: r.dst})
+             CALL apoc.create.relationship(s, r.type, r.props, d) YIELD rel
              RETURN 0",
             hashmap!("rels" => self.rels.drain(..).collect()),
         );
