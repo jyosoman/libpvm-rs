@@ -31,6 +31,7 @@ pub struct Config {
     db_server: *mut c_char,
     db_user: *mut c_char,
     db_password: *mut c_char,
+    cypher_file: *mut c_char,
     cfg_detail: *const AdvancedConfig,
 }
 
@@ -40,6 +41,7 @@ pub struct RConfig {
     db_server: String,
     db_user: String,
     db_password: String,
+    cypher_file: String,
     cfg_detail: Option<AdvancedConfig>,
 }
 
@@ -68,6 +70,7 @@ pub unsafe extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
             db_server: string_from_c_char(cfg.db_server, |_| String::from("localhost:7687")),
             db_user: string_from_c_char(cfg.db_user, |_| String::from("neo4j")),
             db_password: string_from_c_char(cfg.db_password, |_| String::from("opus")),
+            cypher_file: string_from_c_char(cfg.cypher_file, |_| String::from("/tmp/cypher.db")),
             cfg_detail: if cfg.cfg_detail.is_null() {
                 Option::None
             } else {
@@ -85,17 +88,38 @@ pub unsafe extern "C" fn print_cfg(hdl: *const OpusHdl) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd) {
+pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd, db: bool, cypher: bool) {
     let hdl = &mut (&mut (*hdl).0);
     let stream = BufReader::new(IOStream::from_raw_fd(fd));
-    let db = match Neo4jDB::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
-        Ok(conn) => conn,
-        Err(ref s) => {
-            println!("Database connection error: {:?}", s);
-            return;
+    let db = {
+        if db {
+            Some(
+                match Neo4jDB::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
+                    Ok(conn) => conn,
+                    Err(ref s) => {
+                        println!("Database connection error: {:?}", s);
+                        return;
+                    }
+                },
+            )
+        } else {
+            None
         }
     };
-    ingest::ingest(stream, db);
+    let cy = {
+        if cypher {
+            Some(match std::fs::File::create(&hdl.cfg.cypher_file) {
+                Ok(f) => f,
+                Err(ref e) => {
+                    println!("Cypher File open error: {:?}", e);
+                    return;
+                }
+            })
+        } else {
+            None
+        }
+    };
+    timeit!(ingest::ingest(stream, db, cy));
 }
 
 #[no_mangle]

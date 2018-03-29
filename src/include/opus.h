@@ -27,6 +27,7 @@ typedef struct Config {
 	char* db_server;
 	char* db_user;
 	char* db_password;
+	char* cypher_file;
 	AdvancedConfig* cfg_detail;
 } Config;
 
@@ -36,7 +37,7 @@ OpusHdl* opus_init(Config cfg);
 
 void print_cfg(OpusHdl const* hdl);
 
-void process_events(OpusHdl* hdl, int fd);
+void process_events(OpusHdl* hdl, int fd, bool db, bool cypher);
 
 void opus_cleanup(OpusHdl* hdl);
 

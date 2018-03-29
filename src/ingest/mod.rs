@@ -3,7 +3,7 @@ mod persist;
 mod pvm;
 mod db;
 
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Instant;
@@ -11,38 +11,17 @@ use std::time::Instant;
 use rayon::prelude::*;
 use serde_json;
 
+use self::persist::{CypherView, Neo4JView, ViewCoordinator};
 use self::pvm::PVM;
-use trace::TraceEvent;
 use neo4j::Neo4jDB;
-use self::persist::{ViewCoordinator, Neo4JView, CypherFileView};
+use trace::TraceEvent;
 
-fn print_time(tmr: Instant) {
-    let dur = tmr.elapsed();
-    println!(
-        "{:.3} Seconds elapsed",
-        dur.as_secs() as f64 + f64::from(dur.subsec_nanos()) * 1e-9
-    );
-}
+const BATCH_SIZE: usize = 0x80_000;
 
-pub fn ingest<R>(stream: R, db: Neo4jDB)
+fn parse<R>(stream: R, mut pvm: PVM)
 where
     R: BufRead,
 {
-    let tmr = Instant::now();
-
-    const BATCH_SIZE: usize = 0x80_000;
-
-    let (send, recv) = mpsc::sync_channel(BATCH_SIZE * 2);
-
-    let mut pvm = PVM::new(send);
-
-    let db_worker = thread::spawn(move || {
-        let mut view_ctrl = ViewCoordinator::new();
-        view_ctrl.register(Neo4JView::new(db));
-        view_ctrl.register(CypherFileView::new());
-        view_ctrl.run(recv);
-    });
-
     let mut pre_vec: Vec<String> = Vec::with_capacity(BATCH_SIZE);
     let mut post_vec: Vec<Option<TraceEvent>> = Vec::with_capacity(BATCH_SIZE);
     let mut lines = stream.lines();
@@ -93,12 +72,31 @@ where
     for evt in pvm.unparsed_events.drain() {
         println!("{}", evt);
     }
-    drop(pvm);
-    println!("Parse Complete");
-    print_time(tmr);
+}
+
+pub fn ingest<R, S>(stream: R, db: Option<Neo4jDB>, cy: Option<S>)
+where
+    R: BufRead,
+    S: Write + Send + 'static,
+{
+    let (send, recv) = mpsc::sync_channel(BATCH_SIZE * 2);
+
+    let pvm = PVM::new(send);
+
+    let db_worker = thread::spawn(move || {
+        let mut view_ctrl = ViewCoordinator::new();
+        if let Some(db) = db {
+            view_ctrl.register(Neo4JView::new(db));
+        }
+        if let Some(cy) = cy {
+            view_ctrl.register(CypherView::new(cy));
+        }
+        view_ctrl.run(recv);
+    });
+
+    timeit!(parse(stream, pvm));
+
     if let Err(e) = db_worker.join() {
         println!("Database thread panicked: {:?}", e);
     }
-    println!("Ingestion Complete");
-    print_time(tmr);
 }

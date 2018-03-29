@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     in = open(argv[1], O_RDONLY);
   }
 
-  Config cfg = { Auto, "localhost:7687", user, "opus", 0 };
+  Config cfg = { Auto, "localhost:7687", user, "opus", "./cypher.db", 0 };
   OpusHdl* hdl = opus_init(cfg);
   printf("Rust C API handle ptr: hdl(%p) \n", hdl);
 
@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
   strcpy(user, "dummy_info");
 
   printf("File fd: %d\n", in);
-  process_events(hdl, in);
+  process_events(hdl, in, false, true);
 
   printf("Number of processes: %lld\n", count_processes(hdl));
 

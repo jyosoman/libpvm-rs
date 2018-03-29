@@ -1,8 +1,7 @@
+mod cypher_view;
 mod neo4j_view;
-mod cypher_file_view;
 
-pub use self::neo4j_view::Neo4JView;
-pub use self::cypher_file_view::CypherFileView;
+pub use self::{cypher_view::CypherView, neo4j_view::Neo4JView};
 
 use neo4j::Value;
 
