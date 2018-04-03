@@ -1,8 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use super::super::{Enumerable, Generable, HasID, HasUUID, NodeID, ToDB};
-use super::EnumNode;
+use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, ToDB, node_types::EnumNode};
 use uuid::{IntoUUID, Uuid5};
 
 pub struct PipeInit {
@@ -55,6 +54,9 @@ impl Enumerable for Pipe {
     fn enumerate(self) -> EnumNode {
         EnumNode::Pipe(self)
     }
+}
+
+impl Denumerate for Pipe {
     fn denumerate(val: &EnumNode) -> &Self {
         if let EnumNode::Pipe(ref p) = *val {
             p

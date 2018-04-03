@@ -1,8 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use super::super::{Enumerable, Generable, HasID, HasUUID, NodeID, ToDB};
-use super::EnumNode;
+use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, ToDB, node_types::EnumNode};
 use uuid::{IntoUUID, Uuid5};
 
 #[derive(Clone, Debug)]
@@ -69,6 +68,9 @@ impl Enumerable for Process {
     fn enumerate(self) -> EnumNode {
         EnumNode::Proc(self)
     }
+}
+
+impl Denumerate for Process {
     fn denumerate(val: &EnumNode) -> &Self {
         if let EnumNode::Proc(ref pro) = *val {
             pro

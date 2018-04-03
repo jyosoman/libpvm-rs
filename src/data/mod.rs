@@ -14,6 +14,9 @@ use self::node_types::EnumNode;
 
 pub trait Enumerable {
     fn enumerate(self) -> EnumNode;
+}
+
+pub trait Denumerate {
     fn denumerate(val: &EnumNode) -> &Self;
     fn denumerate_mut(val: &mut EnumNode) -> &mut Self;
 }
@@ -42,4 +45,28 @@ pub trait Generable: HasID + HasUUID {
     fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
     where
         Self: Sized;
+}
+
+impl<'a, T> Enumerable for &'a T
+where
+    T: Enumerable + Clone,
+{
+    fn enumerate(self) -> EnumNode {
+        <T as Enumerable>::enumerate((*self).clone())
+    }
+}
+
+impl<'a, T> Enumerable for &'a mut T
+where
+    T: Enumerable + Clone,
+{
+    fn enumerate(self) -> EnumNode {
+        <T as Enumerable>::enumerate((*self).clone())
+    }
+}
+
+impl Enumerable for EnumNode {
+    fn enumerate(self) -> EnumNode {
+        self
+    }
 }

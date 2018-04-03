@@ -1,5 +1,5 @@
 use super::pvm::{ConnectDir, NodeGuard, PVM};
-use data::{Enumerable,
+use data::{Denumerate,
            node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Socket,
                         SocketClass, SocketInit}};
 use trace::{AuditEvent, TraceEvent};
