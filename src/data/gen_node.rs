@@ -40,7 +40,4 @@ impl GenNode {
             _ => Err("Is not a node value."),
         }
     }
-    pub fn decompose(self) -> (u64, Vec<String>, HashMap<String, Value>) {
-        (self.id, self.labs, self.props)
-    }
 }
