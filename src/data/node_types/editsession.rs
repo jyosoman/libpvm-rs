@@ -74,17 +74,17 @@ impl Denumerate for EditSession {
 }
 
 impl Generable for EditSession {
-    type Additional = EditInit;
+    type Init = EditInit;
 
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
+    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
-        match additional {
-            Some(add) => EditSession {
+        match init {
+            Some(i) => EditSession {
                 db_id: id,
                 uuid,
-                name: add.name,
+                name: i.name,
             },
             None => EditSession {
                 db_id: id,

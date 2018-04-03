@@ -54,12 +54,12 @@ impl PVM {
         }
     }
 
-    pub fn add<T>(&mut self, uuid: Uuid5, additional: Option<T::Additional>) -> NodeGuard
+    pub fn add<T>(&mut self, uuid: Uuid5, init: Option<T::Init>) -> NodeGuard
     where
         T: Generable + Enumerable,
     {
         let id = NodeID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as i64);
-        let node = Box::new(T::new(id, uuid, additional).enumerate());
+        let node = Box::new(T::new(id, uuid, init).enumerate());
         if let Some(nid) = self.uuid_cache.insert(uuid, id) {
             self.node_cache.remove(nid);
         }
@@ -69,12 +69,12 @@ impl PVM {
         n
     }
 
-    pub fn declare<T>(&mut self, uuid: Uuid5, additional: Option<T::Additional>) -> NodeGuard
+    pub fn declare<T>(&mut self, uuid: Uuid5, init: Option<T::Init>) -> NodeGuard
     where
         T: Generable + Enumerable,
     {
         if !self.uuid_cache.contains_key(&uuid) {
-            self.add::<T>(uuid, additional)
+            self.add::<T>(uuid, init)
         } else {
             self.node_cache.checkout(self.uuid_cache[&uuid]).unwrap()
         }

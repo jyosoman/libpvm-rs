@@ -74,17 +74,17 @@ impl Denumerate for Pipe {
 }
 
 impl Generable for Pipe {
-    type Additional = PipeInit;
+    type Init = PipeInit;
 
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
+    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
-        match additional {
-            Some(add) => Pipe {
+        match init {
+            Some(i) => Pipe {
                 db_id: id,
                 uuid,
-                fd: add.fd,
+                fd: i.fd,
             },
             None => Pipe {
                 db_id: id,

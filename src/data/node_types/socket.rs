@@ -112,20 +112,20 @@ impl Denumerate for Socket {
 }
 
 impl Generable for Socket {
-    type Additional = SocketInit;
+    type Init = SocketInit;
 
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
+    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
-        match additional {
-            Some(add) => Socket {
+        match init {
+            Some(i) => Socket {
                 db_id: id,
                 uuid,
-                class: add.class,
-                path: add.path,
-                ip: add.ip,
-                port: add.port,
+                class: i.class,
+                path: i.path,
+                ip: i.ip,
+                port: i.port,
             },
             None => Socket {
                 db_id: id,

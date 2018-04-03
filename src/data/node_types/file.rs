@@ -74,17 +74,17 @@ impl Denumerate for File {
 }
 
 impl Generable for File {
-    type Additional = FileInit;
+    type Init = FileInit;
 
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
+    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
-        match additional {
-            Some(add) => File {
+        match init {
+            Some(i) => File {
                 db_id: id,
                 uuid,
-                name: add.name,
+                name: i.name,
             },
             None => File {
                 db_id: id,

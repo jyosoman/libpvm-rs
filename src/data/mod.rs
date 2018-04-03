@@ -40,9 +40,9 @@ pub trait ToDB: HasID {
 }
 
 pub trait Generable: HasID + HasUUID {
-    type Additional;
+    type Init;
 
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
+    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized;
 }

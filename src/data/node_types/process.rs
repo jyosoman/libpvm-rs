@@ -88,19 +88,19 @@ impl Denumerate for Process {
 }
 
 impl Generable for Process {
-    type Additional = ProcessInit;
+    type Init = ProcessInit;
 
-    fn new(id: NodeID, uuid: Uuid5, additional: Option<Self::Additional>) -> Self
+    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
-        match additional {
-            Some(add) => Process {
+        match init {
+            Some(i) => Process {
                 db_id: id,
                 uuid,
-                cmdline: add.cmdline,
-                pid: add.pid,
-                thin: add.thin,
+                cmdline: i.cmdline,
+                pid: i.pid,
+                thin: i.thin,
             },
             None => Process {
                 db_id: id,
