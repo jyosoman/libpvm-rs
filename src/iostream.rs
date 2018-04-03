@@ -87,8 +87,12 @@ fn err_str(err: nix::Error) -> String {
 
 fn get_fd_type(fd: RawFd) -> Result<IOType, String> {
     let fs = fstat(fd).map_err(err_str)?;
-    println!("Mode: {}, masked: {}", fs.st_mode, (fs.st_mode as u32) & S_IFMT);
-    let class = match (fs.st_mode as u32) & S_IFMT {
+    println!(
+        "Mode: {}, masked: {}",
+        fs.st_mode,
+        u32::from(fs.st_mode) & S_IFMT
+    );
+    let class = match u32::from(fs.st_mode) & S_IFMT {
         S_IFREG => FdClass::File,
         S_IFSOCK => FdClass::Socket,
         S_IFIFO => FdClass::Fifo,
