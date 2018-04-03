@@ -4,6 +4,8 @@ use neo4j::Value;
 
 use super::{DBTr, View};
 
+use data::ToDB;
+
 const TR_SIZE: usize = 10_000;
 
 pub struct CypherView<O: Write> {
@@ -24,12 +26,9 @@ impl<O: Write> View for CypherView<O> {
         let mut rels = Vec::new();
         for evt in stream {
             match *evt {
-                DBTr::CreateNode {
-                    id,
-                    ref labs,
-                    ref props,
-                } => {
-                    nodes.insert(id, (render_labs(labs), render_props(props)));
+                DBTr::CreateNode(ref node) => {
+                    let (id, labs, props) = node.to_db();
+                    nodes.insert(id, (render_labs(&labs), render_props(&props)));
                 }
                 DBTr::CreateRel {
                     src,
@@ -45,9 +44,10 @@ impl<O: Write> View for CypherView<O> {
                         render_props(props)
                     ));
                 }
-                DBTr::UpdateNode { id, ref props } => {
+                DBTr::UpdateNode(ref node) => {
+                    let (id, _, props) = node.to_db();
                     let (l, _) = nodes.remove(&id).unwrap();
-                    nodes.insert(id, (l, render_props(props)));
+                    nodes.insert(id, (l, render_props(&props)));
                 }
             }
         }

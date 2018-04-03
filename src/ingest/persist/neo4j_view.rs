@@ -2,7 +2,7 @@ use neo4j::{Neo4jDB, Neo4jOperations, Value};
 
 use std::{collections::{HashMap, hash_map::Entry}, sync::{Arc, mpsc::Receiver}};
 
-use data::NodeID;
+use data::{NodeID, ToDB};
 
 use super::{DBTr, View};
 
@@ -42,8 +42,9 @@ impl View for Neo4JView {
 
         let mut tr = self.db.transaction();
         for evt in stream {
-            match (*evt).clone() {
-                DBTr::CreateNode { id, labs, props } => {
+            match *evt {
+                DBTr::CreateNode(ref node) => {
+                    let (id, labs, props) = node.to_db();
                     nodes.add(
                         id,
                         hashmap!("labels" => labs.into(), "props"  => props.into()),
@@ -54,16 +55,17 @@ impl View for Neo4JView {
                     src,
                     dst,
                     ty,
-                    props,
+                    ref props,
                 } => {
                     let rel: HashMap<&str, Value> = hashmap!("src" => src.into(),
                                                              "dst" => dst.into(),
                                                              "type" => ty.into(),
-                                                             "props" => props.into());
+                                                             "props" => props.clone().into());
                     edges.add(rel.into());
                     ups += 1;
                 }
-                DBTr::UpdateNode { id, props } => {
+                DBTr::UpdateNode(ref node) => {
+                    let (id, _, props) = node.to_db();
                     if let Some(props) = nodes.update(id, props.into()) {
                         updates.add(props);
                         ups += 1;

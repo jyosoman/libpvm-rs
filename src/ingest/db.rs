@@ -1,7 +1,7 @@
 use std::sync::mpsc::SyncSender;
 
 use super::persist::DBTr;
-use data::{HasID, ToDB};
+use data::{Enumerable, HasID};
 
 use neo4j::Value;
 
@@ -14,13 +14,12 @@ impl DB {
         DB { persist_pipe: pipe }
     }
 
-    pub fn create_node<T>(&mut self, node: &T)
+    pub fn create_node<T>(&mut self, node: T)
     where
-        T: ToDB + HasID,
+        T: Enumerable,
     {
-        let (id, labs, props) = node.to_db();
         self.persist_pipe
-            .send(DBTr::CreateNode { id, labs, props })
+            .send(DBTr::CreateNode(node.enumerate()))
             .expect("Database worker closed queue unexpectadly")
     }
 
@@ -39,13 +38,12 @@ impl DB {
             .expect("Database worker closed queue unexpectadly");
     }
 
-    pub fn update_node<T>(&mut self, node: &T)
+    pub fn update_node<T>(&mut self, node: T)
     where
-        T: ToDB + HasID,
+        T: Enumerable,
     {
-        let (id, _, props) = node.to_db();
         self.persist_pipe
-            .send(DBTr::UpdateNode { id, props })
+            .send(DBTr::UpdateNode(node.enumerate()))
             .expect("Database worker closed queue unexpectadly")
     }
 }
