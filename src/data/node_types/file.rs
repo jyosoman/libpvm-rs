@@ -9,7 +9,7 @@ pub struct FileInit {
     pub name: String,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct File {
     db_id: NodeID,
     uuid: Uuid5,

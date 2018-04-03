@@ -5,7 +5,7 @@ use super::super::{Enumerable, Generable, HasID, HasUUID, NodeID, ToDB};
 use super::EnumNode;
 use uuid::{IntoUUID, Uuid5};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct EditSession {
     db_id: NodeID,
     uuid: Uuid5,

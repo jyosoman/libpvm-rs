@@ -9,7 +9,7 @@ pub struct PipeInit {
     pub fd: i32,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Pipe {
     db_id: NodeID,
     uuid: Uuid5,

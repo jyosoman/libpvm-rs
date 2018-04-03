@@ -12,7 +12,7 @@ pub enum SocketClass {
     AfUnix = 2,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Socket {
     db_id: NodeID,
     uuid: Uuid5,

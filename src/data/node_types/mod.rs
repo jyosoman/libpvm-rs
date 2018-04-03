@@ -15,7 +15,7 @@ pub use self::{editsession::{EditInit, EditSession}, file::{File, FileInit},
 use super::{HasID, HasUUID, NodeID, ToDB, gen_node::GenNode};
 use uuid::Uuid5;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum EnumNode {
     Proc(Process),
     File(File),
