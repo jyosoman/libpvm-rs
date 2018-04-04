@@ -1,7 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, node_types::EnumNode};
+use data::{Generable, HasID, HasUUID, NodeID};
 use uuid::{IntoUUID, Uuid5};
 
 #[derive(Clone, Debug)]
@@ -37,29 +37,6 @@ impl EditSession {
 impl HasID for EditSession {
     fn get_db_id(&self) -> NodeID {
         self.db_id
-    }
-}
-
-impl Enumerable for EditSession {
-    fn enumerate(self) -> EnumNode {
-        EnumNode::EditSession(self)
-    }
-}
-
-impl Denumerate for EditSession {
-    fn denumerate(val: &EnumNode) -> &Self {
-        if let EnumNode::EditSession(ref ed) = *val {
-            ed
-        } else {
-            panic!("{:?} is not an editsession", val)
-        }
-    }
-    fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
-        if let EnumNode::EditSession(ref mut ed) = *val {
-            ed
-        } else {
-            panic!("{:?} is not an editsession", val)
-        }
     }
 }
 

@@ -1,7 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, node_types::EnumNode};
+use data::{Generable, HasID, HasUUID, NodeID};
 use uuid::{IntoUUID, Uuid5};
 
 #[derive(Clone, Copy, Debug)]
@@ -72,29 +72,6 @@ impl Socket {
 impl HasID for Socket {
     fn get_db_id(&self) -> NodeID {
         self.db_id
-    }
-}
-
-impl Enumerable for Socket {
-    fn enumerate(self) -> EnumNode {
-        EnumNode::Socket(self)
-    }
-}
-
-impl Denumerate for Socket {
-    fn denumerate(val: &EnumNode) -> &Self {
-        if let EnumNode::Socket(ref s) = *val {
-            s
-        } else {
-            panic!("{:?} is not a socket", val)
-        }
-    }
-    fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
-        if let EnumNode::Socket(ref mut s) = *val {
-            s
-        } else {
-            panic!("{:?} is not a socket", val)
-        }
     }
 }
 

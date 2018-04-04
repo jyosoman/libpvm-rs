@@ -1,7 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, node_types::EnumNode};
+use data::{Generable, HasID, HasUUID, NodeID};
 use uuid::{IntoUUID, Uuid5};
 
 pub struct FileInit {
@@ -37,29 +37,6 @@ impl File {
 impl HasID for File {
     fn get_db_id(&self) -> NodeID {
         self.db_id
-    }
-}
-
-impl Enumerable for File {
-    fn enumerate(self) -> EnumNode {
-        EnumNode::File(self)
-    }
-}
-
-impl Denumerate for File {
-    fn denumerate(val: &EnumNode) -> &Self {
-        if let EnumNode::File(ref f) = *val {
-            f
-        } else {
-            panic!("{:?} is not a file", val)
-        }
-    }
-    fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
-        if let EnumNode::File(ref mut f) = *val {
-            f
-        } else {
-            panic!("{:?} is not a file", val)
-        }
     }
 }
 

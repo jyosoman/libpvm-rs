@@ -1,7 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, node_types::EnumNode};
+use data::{Generable, HasID, HasUUID, NodeID};
 use uuid::{IntoUUID, Uuid5};
 
 #[derive(Clone, Debug)]
@@ -49,29 +49,6 @@ impl Process {
 impl HasID for Process {
     fn get_db_id(&self) -> NodeID {
         self.db_id
-    }
-}
-
-impl Enumerable for Process {
-    fn enumerate(self) -> EnumNode {
-        EnumNode::Proc(self)
-    }
-}
-
-impl Denumerate for Process {
-    fn denumerate(val: &EnumNode) -> &Self {
-        if let EnumNode::Proc(ref pro) = *val {
-            pro
-        } else {
-            panic!("{:?} is not a process", val)
-        }
-    }
-    fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
-        if let EnumNode::Proc(ref mut pro) = *val {
-            pro
-        } else {
-            panic!("{:?} is not a process", val)
-        }
     }
 }
 
