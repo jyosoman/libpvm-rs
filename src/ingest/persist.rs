@@ -1,8 +1,3 @@
-mod cypher_view;
-mod neo4j_view;
-
-pub use self::{cypher_view::CypherView, neo4j_view::Neo4JView};
-
 use std::{collections::HashMap, sync::{mpsc, Arc}, thread::{spawn, JoinHandle}};
 
 use data::{NodeID, node_types::EnumNode};

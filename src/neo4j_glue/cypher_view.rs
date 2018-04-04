@@ -2,25 +2,25 @@ use std::{collections::HashMap, io::{BufWriter, Write}, sync::{Arc, mpsc::Receiv
 
 use neo4j::Value;
 
-use super::{DBTr, View};
+use ingest::persist::{DBTr, View};
 
-use super::neo4j_view::ToDB;
+use neo4j_glue::ToDB;
 
 const TR_SIZE: usize = 10_000;
 
-pub struct CypherView<O: Write> {
-    out: BufWriter<O>,
+pub struct CypherView<W: Write> {
+    out: BufWriter<W>,
 }
 
-impl<O: Write> CypherView<O> {
-    pub fn new(stream: O) -> Box<Self> {
+impl<W: Write> CypherView<W> {
+    pub fn new(stream: W) -> Box<Self> {
         Box::new(CypherView {
             out: BufWriter::new(stream),
         })
     }
 }
 
-impl<O: Write> View for CypherView<O> {
+impl<W: Write> View for CypherView<W> {
     fn run(&mut self, stream: Receiver<Arc<DBTr>>) {
         let mut nodes = HashMap::new();
         let mut rels = Vec::new();
@@ -37,7 +37,7 @@ impl<O: Write> View for CypherView<O> {
                     ref props,
                 } => {
                     rels.push(format!(
-                        "{{src: {}, dst: {}, type: \"{}\", props: {}}}",
+                        "MATCH (s:Node {{db_id: {}}}), (d:Node {{db_id: {}}}) CREATE (s)-[:{} {}]->(d);",
                         src,
                         dst,
                         ty,
@@ -53,17 +53,17 @@ impl<O: Write> View for CypherView<O> {
         }
         let props = nodes
             .into_iter()
-            .map(|(_k, (l, p))| format!("{{labels: {}, props: {}}}", l, p))
+            .map(|(_k, (l, p))| {
+                format!("CREATE (n:{} {});", l, p)
+            })
             .collect::<Vec<String>>();
         for chunk in props.chunks(TR_SIZE) {
             writeln!(
                 self.out,
                 ":begin
-                 UNWIND [{}] as n
-                 CALL apoc.create.node(n.labels, n.props) YIELD node
-                 RETURN 0;
+                 {}
                  :commit",
-                chunk.join(", ")
+                chunk.join("\n")
             ).unwrap();
         }
         writeln!(
@@ -80,12 +80,9 @@ impl<O: Write> View for CypherView<O> {
             writeln!(
                 self.out,
                 ":begin
-                 UNWIND [{}] AS r
-                 MATCH (s:Node {{db_id: r.src}}), (d:Node {{db_id: r.dst}})
-                 CALL apoc.create.relationship(s, r.type, r.props, d) YIELD rel
-                 RETURN 0;
+                 {}
                  :commit",
-                chunk.join(", ")
+                chunk.join("\n")
             ).unwrap();
         }
         self.out.flush().unwrap();
@@ -93,7 +90,7 @@ impl<O: Write> View for CypherView<O> {
 }
 
 fn render_labs(labs: &[&str]) -> String {
-    format!("[\"{}\"]", labs.join("\", \""))
+    format!("{}", labs.join(":"))
 }
 
 fn render_props(props: &HashMap<&str, Value>) -> String {

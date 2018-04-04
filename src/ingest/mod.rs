@@ -1,6 +1,6 @@
 mod db;
 mod parse;
-mod persist;
+pub mod persist;
 mod pvm;
 
 use std::{thread, io::{BufRead, Write}, sync::mpsc};
@@ -9,7 +9,9 @@ use neo4j::Neo4jDB;
 use rayon::prelude::*;
 use serde_json;
 
-use self::{persist::{CypherView, Neo4JView, ViewCoordinator}, pvm::PVM};
+use self::{persist::ViewCoordinator, pvm::PVM};
+
+use neo4j_glue::{Neo4JView, CypherView};
 
 use trace::TraceEvent;
 

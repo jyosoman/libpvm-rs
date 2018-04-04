@@ -39,6 +39,7 @@ pub mod data;
 pub mod ingest;
 pub mod invbloom;
 pub mod iostream;
+pub mod neo4j_glue;
 pub mod query;
 pub mod trace;
 pub mod uuid;
