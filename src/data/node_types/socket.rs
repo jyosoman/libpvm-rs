@@ -1,7 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, ToDB, node_types::EnumNode};
+use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, node_types::EnumNode};
 use uuid::{IntoUUID, Uuid5};
 
 #[derive(Clone, Copy, Debug)]
@@ -66,19 +66,6 @@ impl Socket {
                 .and_then(Value::into_int)
                 .ok_or("port property is missing or not an Integer")?,
         })
-    }
-}
-
-impl ToDB for Socket {
-    fn get_labels(&self) -> Vec<&'static str> {
-        vec!["Node", "Socket"]
-    }
-    fn get_props(&self) -> HashMap<&'static str, Value> {
-        hashmap!("uuid"  => Value::from(self.uuid),
-                 "class"  => Value::from(self.class as i64),
-                 "path" => Value::from(self.path.clone()),
-                 "ip" => Value::from(self.ip.clone()),
-                 "port" => Value::from(self.port))
     }
 }
 

@@ -1,7 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, ToDB, node_types::EnumNode};
+use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, node_types::EnumNode};
 use uuid::{IntoUUID, Uuid5};
 
 #[derive(Clone, Debug)]
@@ -43,18 +43,6 @@ impl Process {
                 .and_then(Value::into_bool)
                 .ok_or("thin property is missing or not a bool")?,
         })
-    }
-}
-
-impl ToDB for Process {
-    fn get_labels(&self) -> Vec<&'static str> {
-        vec!["Node", "Process"]
-    }
-    fn get_props(&self) -> HashMap<&'static str, Value> {
-        hashmap!("uuid"    => Value::from(self.uuid),
-                 "cmdline" => Value::from(self.cmdline.clone()),
-                 "pid"     => Value::from(self.pid),
-                 "thin"    => Value::from(self.thin))
     }
 }
 

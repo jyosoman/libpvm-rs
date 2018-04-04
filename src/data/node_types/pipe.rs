@@ -1,7 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, ToDB, node_types::EnumNode};
+use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, node_types::EnumNode};
 use uuid::{IntoUUID, Uuid5};
 
 pub struct PipeInit {
@@ -31,16 +31,6 @@ impl Pipe {
                 .and_then(Value::into_int)
                 .ok_or("fd property is missing or not an Integer")?,
         })
-    }
-}
-
-impl ToDB for Pipe {
-    fn get_labels(&self) -> Vec<&'static str> {
-        vec!["Node", "Pipe"]
-    }
-    fn get_props(&self) -> HashMap<&'static str, Value> {
-        hashmap!("uuid"  => Value::from(self.uuid),
-                 "fd"    => Value::from(self.fd))
     }
 }
 

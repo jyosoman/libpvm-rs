@@ -1,9 +1,6 @@
 pub mod node_types;
 mod nodeid;
 
-use std::collections::HashMap;
-
-use neo4j::Value;
 use uuid::Uuid5;
 
 pub use self::nodeid::NodeID;
@@ -25,16 +22,6 @@ pub trait HasID {
 
 pub trait HasUUID {
     fn get_uuid(&self) -> Uuid5;
-}
-
-pub trait ToDB: HasID {
-    fn get_labels(&self) -> Vec<&'static str>;
-    fn get_props(&self) -> HashMap<&'static str, Value>;
-    fn to_db(&self) -> (NodeID, Vec<&'static str>, HashMap<&'static str, Value>) {
-        let mut props = self.get_props();
-        props.insert("db_id", self.get_db_id().into());
-        (self.get_db_id(), self.get_labels(), props)
-    }
 }
 
 pub trait Generable: HasID + HasUUID {

@@ -4,15 +4,13 @@ mod pipe;
 mod process;
 mod socket;
 
-use std::collections::HashMap;
-
-use neo4j::Value;
+use neo4j::{Node, Value};
 
 pub use self::{editsession::{EditInit, EditSession}, file::{File, FileInit},
                pipe::{Pipe, PipeInit}, process::{Process, ProcessInit},
                socket::{Socket, SocketClass, SocketInit}};
 
-use super::{HasID, HasUUID, NodeID, ToDB, gen_node::GenNode};
+use super::{HasID, HasUUID, NodeID};
 use uuid::Uuid5;
 
 #[derive(Clone, Debug)]
@@ -26,7 +24,7 @@ pub enum EnumNode {
 
 impl EnumNode {
     pub fn from_db(val: Value) -> Result<EnumNode, &'static str> {
-        let g = GenNode::from_db(val)?;
+        let g = Node::from_value(val)?;
         if g.labs.contains(&String::from("Process")) {
             Ok(EnumNode::Proc(Process::from_props(g.props)?))
         } else if g.labs.contains(&String::from("File")) {
@@ -65,7 +63,3 @@ enumnode_trait!(HasID,
 
 enumnode_trait!(HasUUID,
                 get_uuid() -> Uuid5);
-
-enumnode_trait!(ToDB,
-                get_labels() -> Vec<&'static str>,
-                get_props() -> HashMap<&'static str, Value>);

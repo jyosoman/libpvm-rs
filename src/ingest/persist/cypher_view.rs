@@ -4,7 +4,7 @@ use neo4j::Value;
 
 use super::{DBTr, View};
 
-use data::ToDB;
+use super::neo4j_view::ToDB;
 
 const TR_SIZE: usize = 10_000;
 

@@ -1,7 +1,7 @@
 use neo4j::Value;
 use std::collections::HashMap;
 
-use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, ToDB, node_types::EnumNode};
+use data::{Denumerate, Enumerable, Generable, HasID, HasUUID, NodeID, node_types::EnumNode};
 use uuid::{IntoUUID, Uuid5};
 
 pub struct FileInit {
@@ -31,16 +31,6 @@ impl File {
                 .and_then(Value::into_string)
                 .ok_or("name property is missing or not a string")?,
         })
-    }
-}
-
-impl ToDB for File {
-    fn get_labels(&self) -> Vec<&'static str> {
-        vec!["Node", "File"]
-    }
-    fn get_props(&self) -> HashMap<&'static str, Value> {
-        hashmap!("uuid"  => Value::from(self.uuid),
-                 "name"  => Value::from(self.name.clone()))
     }
 }
 
