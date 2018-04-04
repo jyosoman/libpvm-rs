@@ -1,5 +1,3 @@
-mod edge;
-mod gen_node;
 pub mod node_types;
 mod nodeid;
 
@@ -8,7 +6,7 @@ use std::collections::HashMap;
 use neo4j::Value;
 use uuid::Uuid5;
 
-pub use self::{edge::Edge, gen_node::GenNode, nodeid::NodeID};
+pub use self::nodeid::NodeID;
 
 use self::node_types::EnumNode;
 
