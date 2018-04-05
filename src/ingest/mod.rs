@@ -11,7 +11,7 @@ use serde_json;
 
 use self::{persist::ViewCoordinator, pvm::PVM};
 
-use neo4j_glue::{Neo4JView, CypherView};
+use neo4j_glue::{CypherView, Neo4JView};
 
 use trace::TraceEvent;
 

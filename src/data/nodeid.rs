@@ -1,4 +1,3 @@
-use neo4j::Value;
 use std::fmt::Display;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -8,11 +7,8 @@ impl NodeID {
     pub fn new(val: i64) -> NodeID {
         NodeID(val)
     }
-}
-
-impl From<NodeID> for Value {
-    fn from(val: NodeID) -> Self {
-        Value::Integer(val.0 as i64)
+    pub fn inner(self) -> i64 {
+        self.0
     }
 }
 

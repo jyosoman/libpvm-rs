@@ -1,14 +1,22 @@
-use neo4j::Value;
-use std::collections::HashMap;
-
 use data::{Generable, HasID, HasUUID, NodeID};
-use uuid::{IntoUUID, Uuid5};
+use uuid::Uuid5;
 
 #[derive(Clone, Copy, Debug)]
 pub enum SocketClass {
     Unknown = 0,
     AfInet = 1,
     AfUnix = 2,
+}
+
+impl SocketClass {
+    pub fn from_int(val: i64) -> Option<SocketClass> {
+        match val {
+            0 => Some(SocketClass::Unknown),
+            1 => Some(SocketClass::AfInet),
+            2 => Some(SocketClass::AfUnix),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -26,47 +34,6 @@ pub struct SocketInit {
     pub path: String,
     pub ip: String,
     pub port: u16,
-}
-
-fn int_to_sock_class(val: i64) -> Option<SocketClass> {
-    match val {
-        0 => Some(SocketClass::Unknown),
-        1 => Some(SocketClass::AfInet),
-        2 => Some(SocketClass::AfUnix),
-        _ => None,
-    }
-}
-
-impl Socket {
-    pub fn from_props(mut props: HashMap<String, Value>) -> Result<Self, &'static str> {
-        Ok(Socket {
-            db_id: NodeID::new(props
-                .remove("db_id")
-                .and_then(Value::into_int)
-                .ok_or("db_id property is missing or not an Integer")?),
-            uuid: props
-                .remove("uuid")
-                .and_then(Value::into_uuid5)
-                .ok_or("uuid property is missing or not a UUID5")?,
-            class: props
-                .remove("class")
-                .and_then(Value::into_int)
-                .and_then(int_to_sock_class)
-                .ok_or("class property is missing or not an Integer")?,
-            path: props
-                .remove("path")
-                .and_then(Value::into_string)
-                .ok_or("path property is missing or not a string")?,
-            ip: props
-                .remove("ip")
-                .and_then(Value::into_string)
-                .ok_or("ip property is missing or not a string")?,
-            port: props
-                .remove("port")
-                .and_then(Value::into_int)
-                .ok_or("port property is missing or not an Integer")?,
-        })
-    }
 }
 
 impl HasID for Socket {
