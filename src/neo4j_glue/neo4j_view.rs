@@ -172,4 +172,3 @@ impl UpdateNodes {
         self.props.push(value);
     }
 }
-

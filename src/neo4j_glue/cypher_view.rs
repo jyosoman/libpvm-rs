@@ -53,9 +53,7 @@ impl<W: Write> View for CypherView<W> {
         }
         let props = nodes
             .into_iter()
-            .map(|(_k, (l, p))| {
-                format!("CREATE (n:{} {});", l, p)
-            })
+            .map(|(_k, (l, p))| format!("CREATE (n:{} {});", l, p))
             .collect::<Vec<String>>();
         for chunk in props.chunks(TR_SIZE) {
             writeln!(
