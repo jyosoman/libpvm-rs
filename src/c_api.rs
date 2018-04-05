@@ -62,7 +62,6 @@ pub struct Config {
     cfg_detail: *const AdvancedConfig,
 }
 
-#[repr(C)]
 pub struct OpusHdl(engine::Engine);
 
 #[repr(C)]
@@ -208,9 +207,9 @@ pub unsafe extern "C" fn opus_list_view_inst(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn opus_ingest_fd(hdl: *mut OpusHdl, fd: RawFd) {
+pub unsafe extern "C" fn opus_ingest_fd(hdl: *mut OpusHdl, fd: i32) {
     let engine = &mut (*hdl).0;
-    let stream = IOStream::from_raw_fd(fd);
+    let stream = IOStream::from_raw_fd(fd as RawFd);
     timeit!(engine.ingest_stream(stream).unwrap());
 }
 

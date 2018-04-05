@@ -3,6 +3,10 @@ name = "libopus"
 version = "0.1.0"
 authors = ["Lucian Carata <lc525@cam.ac.uk>",
            "Thomas Bytheway <tb403@cam.ac.uk>"]
+build = "build.rs"
+
+[build-dependencies]
+cbindgen = { git = "https://github.com/eqrion/cbindgen.git" }
 
 [lib]
 name = "opus"
