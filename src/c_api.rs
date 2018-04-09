@@ -67,13 +67,15 @@ pub struct ViewHdl(usize);
 pub struct ViewInstHdl(usize);
 
 fn keyval_arr_to_hashmap(ptr: *mut KeyVal, n: usize) -> HashMap<String, String> {
-    let mut ret = HashMap::new();
-    let s = unsafe { slice::from_raw_parts(ptr, n) };
-    for kv in s {
-        ret.insert(
-            string_from_c_char(kv.key).unwrap(),
-            string_from_c_char(kv.val).unwrap(),
-        );
+    let mut ret = HashMap::with_capacity(n);
+    if !ptr.is_null() {
+        let s = unsafe { slice::from_raw_parts(ptr, n) };
+        for kv in s {
+            ret.insert(
+                string_from_c_char(kv.key).unwrap(),
+                string_from_c_char(kv.val).unwrap(),
+            );
+        }
     }
     ret
 }
