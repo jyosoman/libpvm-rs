@@ -36,14 +36,7 @@ int main(int argc, char** argv) {
         printf("%s: %s\n", views[i].parameters[j].key, views[i].parameters[j].val);
     }
     if(strcmp(views[i].name, "Neo4jView") == 0){
-      KeyVal params[3];
-      params[0].key = "addr";
-      params[0].val = "localhost:7687";
-      params[1].key = "user";
-      params[1].val = "neo4j";
-      params[2].key = "pass";
-      params[2].val = "opus";
-      opus_create_view(hdl, views[i].id, params, 3);
+      opus_create_view(hdl, views[i].id, 0, 0);
     }
   }
 

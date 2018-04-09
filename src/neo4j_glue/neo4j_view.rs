@@ -30,9 +30,9 @@ impl View for Neo4JView {
         "View for streaming data to a Neo4j database instance."
     }
     fn params(&self) -> HashMap<&'static str, &'static str> {
-        hashmap!("addr" => "The Neo4j server address to connect to.",
-                 "user" => "The username to auth with.",
-                 "pass" => "The password to auth with.")
+        hashmap!("addr" => "The Neo4j server address to connect to. Defaults to main cfg value.",
+                 "user" => "The username to auth with. Defaults to main cfg value.",
+                 "pass" => "The password to auth with. Defaults to main cfg value.")
     }
     fn create(
         &self,
@@ -41,7 +41,12 @@ impl View for Neo4JView {
         cfg: &Config,
         stream: Receiver<Arc<DBTr>>,
     ) -> ViewInst {
-        let mut db = Neo4jDB::connect(&params["addr"], &params["user"], &params["pass"]).unwrap();
+        let mut db = {
+            let addr = params.get("addr").unwrap_or(&cfg.db_server);
+            let user = params.get("user").unwrap_or(&cfg.db_user);
+            let pass = params.get("pass").unwrap_or(&cfg.db_password);
+            Neo4jDB::connect(addr, user, pass).unwrap()
+        };
         let thr = thread::spawn(move || {
             let mut nodes = CreateNodes::new();
             let mut edges = CreateRels::new();
