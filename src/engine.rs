@@ -85,7 +85,9 @@ impl Engine {
         params: HashMap<String, String>,
     ) -> Result<usize, &'static str> {
         if let Some(ref mut pipeline) = self.pipeline {
-            Ok(pipeline.view_ctrl.create_view_inst(view_id, params))
+            Ok(pipeline
+                .view_ctrl
+                .create_view_inst(view_id, params, &self.cfg))
         } else {
             Err("Pipeline not running")
         }

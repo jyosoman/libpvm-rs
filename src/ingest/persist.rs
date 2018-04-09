@@ -2,6 +2,8 @@ use std::{collections::HashMap, fmt::Debug, sync::{mpsc, Arc, Mutex}, thread::{s
 
 use data::{NodeID, node_types::EnumNode};
 
+use engine::Config;
+
 use neo4j::Value;
 
 #[derive(Clone, Debug)]
@@ -50,6 +52,7 @@ pub trait View: Debug {
         &self,
         id: usize,
         params: HashMap<String, String>,
+        cfg: &Config,
         stream: mpsc::Receiver<Arc<DBTr>>,
     ) -> ViewInst;
 }
@@ -104,11 +107,16 @@ impl ViewCoordinator {
         self.insts.iter().collect()
     }
 
-    pub fn create_view_inst(&mut self, id: usize, params: HashMap<String, String>) -> usize {
+    pub fn create_view_inst(
+        &mut self,
+        id: usize,
+        params: HashMap<String, String>,
+        cfg: &Config,
+    ) -> usize {
         let iid = self.viid_gen;
         self.viid_gen += 1;
         let (w, r) = mpsc::sync_channel(1000);
-        let view = self.views[&id].create(iid, params, r);
+        let view = self.views[&id].create(iid, params, cfg, r);
         self.insts.push(view);
         self.streams.lock().unwrap().push(w);
         iid

@@ -5,6 +5,8 @@ use neo4j::Value;
 
 use ingest::persist::{DBTr, View, ViewInst};
 
+use engine::Config;
+
 use neo4j_glue::ToDB;
 
 const TR_SIZE: usize = 10_000;
@@ -34,6 +36,7 @@ impl View for CypherView {
         &self,
         id: usize,
         params: HashMap<String, String>,
+        _cfg: &Config,
         stream: Receiver<Arc<DBTr>>,
     ) -> ViewInst {
         let mut out = BufWriter::new(File::create(&params["path"]).unwrap());

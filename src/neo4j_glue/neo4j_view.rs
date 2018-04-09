@@ -4,6 +4,7 @@ use std::{thread, collections::{HashMap, hash_map::Entry}, sync::{Arc, mpsc::Rec
 
 use data::NodeID;
 
+use engine::Config;
 use ingest::persist::{DBTr, View, ViewInst};
 use neo4j_glue::ToDB;
 
@@ -37,6 +38,7 @@ impl View for Neo4JView {
         &self,
         id: usize,
         params: HashMap<String, String>,
+        cfg: &Config,
         stream: Receiver<Arc<DBTr>>,
     ) -> ViewInst {
         let mut db = Neo4jDB::connect(&params["addr"], &params["user"], &params["pass"]).unwrap();
