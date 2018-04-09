@@ -14,21 +14,52 @@ int main(int argc, char** argv) {
     in = open(argv[1], O_RDONLY);
   }
 
-  Config cfg = { Auto, "localhost:7687", user, "opus", "./cypher.db", 0 };
+  Config cfg = { Auto, "localhost:7687", user, "opus", 0 };
   OpusHdl* hdl = opus_init(cfg);
   printf("Rust C API handle ptr: hdl(%p) \n", hdl);
 
-  print_cfg(hdl);
+  opus_print_cfg(hdl);
+
+  opus_start_pipeline(hdl);
 
   // test to see whether rust has copied the underlying memory or still
   // refers to C memory (the user should remain "neo4j" as far as rust
   // is concerned)
   strcpy(user, "dummy_info");
 
-  printf("File fd: %d\n", in);
-  process_events(hdl, in, false, true);
+  View* views;
+  size_t num_views = opus_list_view_types(hdl, &views);
 
-  printf("Number of processes: %lld\n", count_processes(hdl));
+  for (int i=0; i<num_views; i++) {
+    printf("Views[%d]\nName: %s\nDescription: %s\nParams:\n", i, views[i].name, views[i].desc);
+    for (int j=0; j<views[i].num_parameters; j++) {
+        printf("%s: %s\n", views[i].parameters[j].key, views[i].parameters[j].val);
+    }
+    if(strcmp(views[i].name, "Neo4jView") == 0){
+      KeyVal params[3];
+      params[0].key = "addr";
+      params[0].val = "localhost:7687";
+      params[1].key = "user";
+      params[1].val = "neo4j";
+      params[2].key = "pass";
+      params[2].val = "opus";
+      opus_create_view(hdl, views[i].id, params, 3);
+    }
+  }
+
+  for (int i=0; i<num_views; i++) {
+    free((void*)views[i].name);
+    free((void*)views[i].desc);
+    free((void*)views[i].parameters);
+  }
+  free(views);
+
+  printf("File fd: %d\n", in);
+  opus_ingest_fd(hdl, in);
+
+  opus_shutdown_pipeline(hdl);
+
+  printf("Number of processes: %ld\n", opus_count_processes(hdl));
 
   opus_cleanup(hdl);
 

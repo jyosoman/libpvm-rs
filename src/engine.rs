@@ -1,20 +1,118 @@
-use futures::executor::Executor;
-use futures::future::Future;
-use futures_cpupool::Builder;
+use c_api::{AdvancedConfig, CfgMode};
+use ingest::{ingest_stream, persist::{View, ViewCoordinator, ViewInst}, pvm::PVM};
+use iostream::IOStream;
+use neo4j_glue::{CypherView, Neo4JView};
+use query::low::count_processes;
+use std::{collections::HashMap, sync::mpsc};
 
-struct StreamHashSplitter {}
+use neo4j::Neo4jDB;
 
-impl Executor for ProcessingPool {
-    fn execute(&self, r: Run) {}
+type EngineResult<T> = Result<T, &'static str>;
+
+#[derive(Debug)]
+pub struct Config {
+    pub cfg_mode: CfgMode,
+    pub db_server: String,
+    pub db_user: String,
+    pub db_password: String,
+    pub cfg_detail: Option<AdvancedConfig>,
 }
 
-fn cpu_pool_init() {
-    let mut cpuBpool = Builder::new();
-    let mut ioBpool = Builder::new();
-    cpuBpool.pool_size += 2;
-    cpuBpool.name_prefix = Some(String::from("opus-cpu"));
-    cpuBpool.create();
-    ioBpool.pool_size += 4;
-    ioBpool.name_prefix = Some(String::from("opus-io"));
-    ioBpool.create();
+pub struct Pipeline {
+    pvm: PVM,
+    view_ctrl: ViewCoordinator,
+}
+
+pub struct Engine {
+    cfg: Config,
+    pipeline: Option<Pipeline>,
+}
+
+impl Drop for Engine {
+    fn drop(&mut self) {
+        self.shutdown_pipeline();
+    }
+}
+
+impl Engine {
+    pub fn new(cfg: Config) -> Engine {
+        Engine {
+            cfg,
+            pipeline: None,
+        }
+    }
+
+    pub fn init_pipeline(&mut self) -> EngineResult<()> {
+        if self.pipeline.is_some() {
+            return Err("Pipeline already running");
+        }
+        let (send, recv) = mpsc::sync_channel(100_000);
+        let mut view_ctrl = ViewCoordinator::new(recv);
+        view_ctrl.register_view_type::<Neo4JView>();
+        view_ctrl.register_view_type::<CypherView>();
+        self.pipeline = Some(Pipeline {
+            pvm: PVM::new(send),
+            view_ctrl,
+        });
+        Ok(())
+    }
+
+    pub fn shutdown_pipeline(&mut self) -> EngineResult<()> {
+        if let Some(pipeline) = self.pipeline.take() {
+            pipeline.pvm.shutdown();
+            pipeline.view_ctrl.shutdown();
+            Ok(())
+        } else {
+            Err("Pipeline not running")
+        }
+    }
+
+    pub fn print_cfg(&self) {
+        println!("libPVM Config: {:?}", self.cfg);
+    }
+
+    pub fn list_view_types(&self) -> Result<Vec<&View>, &'static str> {
+        if let Some(ref pipeline) = self.pipeline {
+            Ok(pipeline.view_ctrl.list_view_types())
+        } else {
+            Err("Pipeline not running")
+        }
+    }
+
+    pub fn create_view_by_id(
+        &mut self,
+        view_id: usize,
+        params: HashMap<String, String>,
+    ) -> Result<usize, &'static str> {
+        if let Some(ref mut pipeline) = self.pipeline {
+            Ok(pipeline.view_ctrl.create_view_inst(view_id, params))
+        } else {
+            Err("Pipeline not running")
+        }
+    }
+
+    pub fn list_running_views(&self) -> Result<Vec<&ViewInst>, &'static str> {
+        if let Some(ref pipeline) = self.pipeline {
+            Ok(pipeline.view_ctrl.list_view_insts())
+        } else {
+            Err("Pipeline not running")
+        }
+    }
+
+    pub fn ingest_stream(&mut self, stream: IOStream) -> Result<(), &'static str> {
+        if let Some(ref mut pipeline) = self.pipeline {
+            Ok(ingest_stream(stream, &mut pipeline.pvm))
+        } else {
+            Err("Pipeline not running")
+        }
+    }
+
+    pub fn count_processes(&self) -> i64 {
+        let mut db = Neo4jDB::connect(
+            &self.cfg.db_server,
+            &self.cfg.db_user,
+            &self.cfg.db_password,
+        ).unwrap();
+        count_processes(&mut db)
+    }
 }

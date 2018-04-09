@@ -1,98 +1,121 @@
 use neo4j::{Neo4jDB, Neo4jOperations, Value};
 
-use std::{collections::{HashMap, hash_map::Entry}, sync::{Arc, mpsc::Receiver}};
+use std::{thread, collections::{HashMap, hash_map::Entry}, sync::{Arc, mpsc::Receiver}};
 
 use data::NodeID;
 
-use ingest::persist::{DBTr, View};
+use ingest::persist::{DBTr, View, ViewInst};
 use neo4j_glue::ToDB;
 
 const BATCH_SIZE: usize = 1000;
 const TR_SIZE: usize = 100_000;
 
+#[derive(Debug)]
 pub struct Neo4JView {
-    db: Neo4jDB,
-}
-
-impl Neo4JView {
-    pub fn new(db: Neo4jDB) -> Box<Self> {
-        Box::new(Neo4JView { db })
-    }
+    id: usize,
 }
 
 impl View for Neo4JView {
-    fn run(&mut self, stream: Receiver<Arc<DBTr>>) {
-        let mut nodes = CreateNodes::new();
-        let mut edges = CreateRels::new();
-        let mut updates = UpdateNodes::new();
-        let mut ups = 0;
-        let mut btc = 0;
-        let mut trs = 0;
+    fn new(id: usize) -> Neo4JView {
+        Neo4JView { id }
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+    fn name(&self) -> &'static str {
+        "Neo4jView"
+    }
+    fn desc(&self) -> &'static str {
+        "View for streaming data to a Neo4j database instance."
+    }
+    fn params(&self) -> HashMap<&'static str, &'static str> {
+        hashmap!("addr" => "The Neo4j server address to connect to.",
+                 "user" => "The username to auth with.",
+                 "pass" => "The password to auth with.")
+    }
+    fn create(
+        &self,
+        id: usize,
+        params: HashMap<String, String>,
+        stream: Receiver<Arc<DBTr>>,
+    ) -> ViewInst {
+        let mut db = Neo4jDB::connect(&params["addr"], &params["user"], &params["pass"]).unwrap();
+        let thr = thread::spawn(move || {
+            let mut nodes = CreateNodes::new();
+            let mut edges = CreateRels::new();
+            let mut updates = UpdateNodes::new();
+            let mut ups = 0;
+            let mut btc = 0;
+            let mut trs = 0;
 
-        self.db
-            .run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
-        self.db
-            .run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
-        self.db
-            .run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
-        self.db
-            .run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
+            db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
+            db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
+            db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
+            db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
+            db.run_unchecked("CREATE INDEX ON :Pipe(uuid)", HashMap::new());
+            db.run_unchecked("CREATE INDEX ON :Socket(uuid)", HashMap::new());
 
-        self.db
-            .run_unchecked("MERGE (:DBInfo {pvm_version: 2})", hashmap!());
+            db.run_unchecked("MERGE (:DBInfo {pvm_version: 2})", hashmap!());
 
-        let mut tr = self.db.transaction();
-        for evt in stream {
-            match *evt {
-                DBTr::CreateNode(ref node) => {
-                    let (id, labs, props) = node.to_db();
-                    nodes.add(
-                        id,
-                        hashmap!("labels" => labs.into(), "props"  => props.into()),
-                    );
-                    ups += 1;
-                }
-                DBTr::CreateRel {
-                    src,
-                    dst,
-                    ty,
-                    ref props,
-                } => {
-                    let rel: HashMap<&str, Value> = hashmap!("src" => src.into(),
-                                                             "dst" => dst.into(),
-                                                             "type" => ty.into(),
-                                                             "props" => props.clone().into());
-                    edges.add(rel.into());
-                    ups += 1;
-                }
-                DBTr::UpdateNode(ref node) => {
-                    let (id, _, props) = node.to_db();
-                    if let Some(props) = nodes.update(id, props.into()) {
-                        updates.add(props);
+            let mut tr = db.transaction();
+            for evt in stream {
+                match *evt {
+                    DBTr::CreateNode(ref node) => {
+                        let (id, labs, props) = node.to_db();
+                        nodes.add(
+                            id,
+                            hashmap!("labels" => labs.into(), "props"  => props.into()),
+                        );
                         ups += 1;
                     }
+                    DBTr::CreateRel {
+                        src,
+                        dst,
+                        ty,
+                        ref props,
+                    } => {
+                        let rel: HashMap<&str, Value> = hashmap!("src" => src.into(),
+                                                                 "dst" => dst.into(),
+                                                                 "type" => ty.into(),
+                                                                 "props" => props.clone().into());
+                        edges.add(rel.into());
+                        ups += 1;
+                    }
+                    DBTr::UpdateNode(ref node) => {
+                        let (id, _, props) = node.to_db();
+                        if let Some(props) = nodes.update(id, props.into()) {
+                            updates.add(props);
+                            ups += 1;
+                        }
+                    }
+                }
+                if ups > (btc + 1) * BATCH_SIZE {
+                    nodes.execute(&mut tr);
+                    edges.execute(&mut tr);
+                    updates.execute(&mut tr);
+                    btc += 1;
+                }
+                if ups > (trs + 1) * TR_SIZE {
+                    tr.commit_and_refresh().unwrap();
+                    trs += 1;
                 }
             }
-            if ups > (btc + 1) * BATCH_SIZE {
-                nodes.execute(&mut tr);
-                edges.execute(&mut tr);
-                updates.execute(&mut tr);
-                btc += 1;
-            }
-            if ups > (trs + 1) * TR_SIZE {
-                tr.commit_and_refresh().unwrap();
-                trs += 1;
-            }
+            nodes.execute(&mut tr);
+            edges.execute(&mut tr);
+            updates.execute(&mut tr);
+            println!("Final Commit");
+            tr.commit().unwrap();
+            trs += 1;
+            println!("Neo4J Updates Issued: {}", ups);
+            println!("Neo4J Batches Issued: {}", btc * 3);
+            println!("Neo4J Transactions Issued: {}", trs);
+        });
+        ViewInst {
+            id,
+            vtype: self.id,
+            params,
+            handle: thr,
         }
-        nodes.execute(&mut tr);
-        edges.execute(&mut tr);
-        updates.execute(&mut tr);
-        println!("Final Commit");
-        tr.commit().unwrap();
-        trs += 1;
-        println!("Neo4J Updates Issued: {}", ups);
-        println!("Neo4J Batches Issued: {}", btc * 3);
-        println!("Neo4J Transactions Issued: {}", trs);
     }
 }
 

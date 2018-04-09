@@ -36,6 +36,7 @@ pub use c_api::*;
 pub mod c_api;
 pub mod checking_store;
 pub mod data;
+pub mod engine;
 pub mod ingest;
 pub mod invbloom;
 pub mod iostream;

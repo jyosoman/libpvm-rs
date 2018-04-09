@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::{mpsc, Arc}, thread::{spawn, JoinHandle}};
+use std::{collections::HashMap, fmt::Debug, sync::{mpsc, Arc, Mutex}, thread::{spawn, JoinHandle}};
 
 use data::{NodeID, node_types::EnumNode};
 
@@ -16,43 +16,109 @@ pub enum DBTr {
     UpdateNode(EnumNode),
 }
 
-pub trait View {
-    fn run(&mut self, stream: mpsc::Receiver<Arc<DBTr>>);
+pub struct ViewInst {
+    pub id: usize,
+    pub vtype: usize,
+    pub params: HashMap<String, String>,
+    pub handle: JoinHandle<()>,
+}
+
+impl ViewInst {
+    pub fn id(&self) -> usize {
+        self.id
+    }
+    pub fn vtype(&self) -> usize {
+        self.vtype
+    }
+    pub fn params(&self) -> &HashMap<String, String> {
+        &self.params
+    }
+    fn join(self) {
+        self.handle.join().unwrap()
+    }
+}
+
+pub trait View: Debug {
+    fn new(id: usize) -> Self
+    where
+        Self: Sized;
+    fn id(&self) -> usize;
+    fn name(&self) -> &'static str;
+    fn desc(&self) -> &'static str;
+    fn params(&self) -> HashMap<&'static str, &'static str>;
+    fn create(
+        &self,
+        id: usize,
+        params: HashMap<String, String>,
+        stream: mpsc::Receiver<Arc<DBTr>>,
+    ) -> ViewInst;
 }
 
 pub struct ViewCoordinator {
-    threads: Vec<JoinHandle<()>>,
-    streams: Vec<mpsc::SyncSender<Arc<DBTr>>>,
+    views: HashMap<usize, Box<View>>,
+    insts: Vec<ViewInst>,
+    streams: Arc<Mutex<Vec<mpsc::SyncSender<Arc<DBTr>>>>>,
+    thread: JoinHandle<()>,
+    vid_gen: usize,
+    viid_gen: usize,
 }
 
 impl ViewCoordinator {
-    pub fn new() -> Self {
+    pub fn new(recv: mpsc::Receiver<DBTr>) -> Self {
+        let streams: Arc<Mutex<Vec<mpsc::SyncSender<Arc<DBTr>>>>> =
+            Arc::new(Mutex::new(Vec::new()));
+        let thread_streams = streams.clone();
         ViewCoordinator {
-            threads: Vec::new(),
-            streams: Vec::new(),
-        }
-    }
-
-    pub fn register(&mut self, mut view: Box<View + Send>) {
-        let (w, r) = mpsc::sync_channel(1000);
-        self.threads.push(spawn(move || {
-            view.run(r);
-        }));
-        self.streams.push(w);
-    }
-
-    pub fn run(mut self, recv: mpsc::Receiver<DBTr>) {
-        for evt in recv {
-            {
-                let v = Arc::new(evt);
-                for stream in &mut self.streams {
-                    stream.send(v.clone()).unwrap();
+            thread: spawn(move || {
+                for evt in recv {
+                    {
+                        let v = Arc::new(evt);
+                        let mut strs = thread_streams.lock().unwrap();
+                        for stream in strs.iter_mut() {
+                            stream.send(v.clone()).unwrap();
+                        }
+                    }
                 }
-            }
+            }),
+            views: HashMap::new(),
+            insts: Vec::new(),
+            streams,
+            vid_gen: 0,
+            viid_gen: 0,
         }
-        self.streams.clear();
-        for thr in self.threads {
-            thr.join().unwrap();
+    }
+
+    pub fn register_view_type<T: View + 'static>(&mut self) -> usize {
+        let id = self.vid_gen;
+        self.vid_gen += 1;
+        let view = Box::new(T::new(id));
+        self.views.insert(id, view);
+        id
+    }
+
+    pub fn list_view_types(&self) -> Vec<&View> {
+        self.views.values().map(|v| v.as_ref()).collect()
+    }
+
+    pub fn list_view_insts(&self) -> Vec<&ViewInst> {
+        self.insts.iter().collect()
+    }
+
+    pub fn create_view_inst(&mut self, id: usize, params: HashMap<String, String>) -> usize {
+        let iid = self.viid_gen;
+        self.viid_gen += 1;
+        let (w, r) = mpsc::sync_channel(1000);
+        let view = self.views[&id].create(iid, params, r);
+        self.insts.push(view);
+        self.streams.lock().unwrap().push(w);
+        iid
+    }
+
+    pub fn shutdown(self) {
+        self.thread.join().unwrap();
+        self.streams.lock().unwrap().clear();
+        for view in self.insts {
+            view.join();
         }
     }
 }

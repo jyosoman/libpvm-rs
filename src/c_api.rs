@@ -1,11 +1,36 @@
 use iostream::IOStream;
-use libc::c_char;
-use neo4j::Neo4jDB;
+use libc::{c_char, malloc};
 
-use std::{self, ptr, ffi::CStr, io::BufReader, ops::FnOnce, os::unix::io::{FromRawFd, RawFd}};
+use std::{ptr, slice, collections::HashMap, ffi::CStr, hash::Hash, mem::size_of, ops::Deref,
+          os::unix::io::{FromRawFd, RawFd}};
 
-use ingest;
-use query;
+use engine;
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct KeyVal {
+    key: *mut c_char,
+    val: *mut c_char,
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct View {
+    id: ViewHdl,
+    name: *mut c_char,
+    desc: *mut c_char,
+    num_parameters: usize,
+    parameters: *mut KeyVal,
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct ViewInst {
+    id: ViewInstHdl,
+    vtype: ViewHdl,
+    num_parameters: usize,
+    parameters: *mut KeyVal,
+}
 
 #[repr(C)]
 #[derive(Debug, PartialEq)]
@@ -27,95 +52,156 @@ pub struct Config {
     db_server: *mut c_char,
     db_user: *mut c_char,
     db_password: *mut c_char,
-    cypher_file: *mut c_char,
     cfg_detail: *const AdvancedConfig,
 }
 
-#[derive(Debug)]
-pub struct RConfig {
-    cfg_mode: CfgMode,
-    db_server: String,
-    db_user: String,
-    db_password: String,
-    cypher_file: String,
-    cfg_detail: Option<AdvancedConfig>,
-}
-
-pub struct LibOpus {
-    cfg: RConfig,
-}
+#[repr(C)]
+pub struct OpusHdl(engine::Engine);
 
 #[repr(C)]
-pub struct OpusHdl(LibOpus);
+#[derive(Debug)]
+pub struct ViewHdl(usize);
 
-fn string_from_c_char<F>(str_p: *mut c_char, default: F) -> String
-where
-    F: FnOnce(std::ffi::IntoStringError) -> String,
-{
+#[repr(C)]
+#[derive(Debug)]
+pub struct ViewInstHdl(usize);
+
+fn keyval_arr_to_hashmap(ptr: *mut KeyVal, n: usize) -> HashMap<String, String> {
+    let mut ret = HashMap::new();
+    let s = unsafe { slice::from_raw_parts(ptr, n) };
+    for kv in s {
+        ret.insert(
+            string_from_c_char(kv.key).unwrap(),
+            string_from_c_char(kv.val).unwrap(),
+        );
+    }
+    ret
+}
+
+fn hashmap_to_keyval_arr<T: Deref<Target = str> + Eq + Hash>(
+    h: &HashMap<T, T>,
+) -> (*mut KeyVal, usize) {
+    let len = h.len();
+    let data = unsafe { malloc(len * size_of::<KeyVal>()) as *mut KeyVal };
+    let s = unsafe { slice::from_raw_parts_mut(data, len) };
+    for ((k, v), kv) in h.into_iter().zip(s) {
+        kv.key = string_to_c_char(k);
+        kv.val = string_to_c_char(v);
+    }
+    (data, len)
+}
+
+fn string_to_c_char(val: &str) -> *mut c_char {
+    if val.contains('\0') {
+        panic!("Trying to convert a string containing nulls to a C-string");
+    }
+    unsafe {
+        let data = malloc((val.len() + 1) * size_of::<c_char>()) as *mut c_char;
+        ptr::copy(val.as_ptr() as *const c_char, data, val.len());
+        *data.offset(val.len() as isize) = 0x00 as c_char;
+        data
+    }
+}
+
+fn string_from_c_char(str_p: *mut c_char) -> Option<String> {
     unsafe { CStr::from_ptr(str_p) }
-        .to_owned()
-        .into_string()
-        .unwrap_or_else(default)
+        .to_str()
+        .ok()
+        .map(|s| s.to_string())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
-    let hdl = Box::new(OpusHdl(LibOpus {
-        cfg: RConfig {
-            cfg_mode: cfg.cfg_mode,
-            db_server: string_from_c_char(cfg.db_server, |_| String::from("localhost:7687")),
-            db_user: string_from_c_char(cfg.db_user, |_| String::from("neo4j")),
-            db_password: string_from_c_char(cfg.db_password, |_| String::from("opus")),
-            cypher_file: string_from_c_char(cfg.cypher_file, |_| String::from("/tmp/cypher.db")),
-            cfg_detail: if cfg.cfg_detail.is_null() {
-                Option::None
-            } else {
-                Option::Some(ptr::read(cfg.cfg_detail))
-            },
+    let r_cfg = engine::Config {
+        cfg_mode: cfg.cfg_mode,
+        db_server: string_from_c_char(cfg.db_server).unwrap_or("localhost:7687".to_string()),
+        db_user: string_from_c_char(cfg.db_user).unwrap_or("neo4j".to_string()),
+        db_password: string_from_c_char(cfg.db_password).unwrap_or("opus".to_string()),
+        cfg_detail: if cfg.cfg_detail.is_null() {
+            Option::None
+        } else {
+            Option::Some(ptr::read(cfg.cfg_detail))
         },
-    }));
+    };
+    let e = engine::Engine::new(r_cfg);
+    let hdl = Box::new(OpusHdl(e));
     Box::into_raw(hdl)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn print_cfg(hdl: *const OpusHdl) {
-    let hdl = &(*hdl).0;
-    println!("LibOpus {:?}", hdl.cfg);
+pub unsafe extern "C" fn opus_start_pipeline(hdl: *mut OpusHdl) {
+    let engine = &mut (*hdl).0;
+    engine.init_pipeline().unwrap();
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn process_events(hdl: *mut OpusHdl, fd: RawFd, db: bool, cypher: bool) {
-    let hdl = &mut (&mut (*hdl).0);
-    let stream = BufReader::new(IOStream::from_raw_fd(fd));
-    let db = {
-        if db {
-            Some(
-                match Neo4jDB::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password) {
-                    Ok(conn) => conn,
-                    Err(ref s) => {
-                        println!("Database connection error: {:?}", s);
-                        return;
-                    }
-                },
-            )
-        } else {
-            None
-        }
-    };
-    let cy = {
-        if cypher {
-            Some(match std::fs::File::create(&hdl.cfg.cypher_file) {
-                Ok(f) => f,
-                Err(ref e) => {
-                    println!("Cypher File open error: {:?}", e);
-                    return;
-                }
-            })
-        } else {
-            None
-        }
-    };
-    timeit!(ingest::ingest(stream, db, cy));
+pub unsafe extern "C" fn opus_shutdown_pipeline(hdl: *mut OpusHdl) {
+    let engine = &mut (*hdl).0;
+    engine.shutdown_pipeline().unwrap();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn opus_print_cfg(hdl: *const OpusHdl) {
+    let engine = &(*hdl).0;
+    engine.print_cfg();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn opus_list_view_types(hdl: *const OpusHdl, out: *mut *mut View) -> usize {
+    let engine = &(*hdl).0;
+    let views = engine.list_view_types().unwrap();
+    let len = views.len();
+    *out = malloc(len * size_of::<View>()) as *mut View;
+    let s = slice::from_raw_parts_mut(*out, len);
+    for (view, c_view) in views.into_iter().zip(s) {
+        c_view.id = ViewHdl(view.id());
+        c_view.name = string_to_c_char(view.name());
+        c_view.desc = string_to_c_char(view.desc());
+        let (params, num) = hashmap_to_keyval_arr(&view.params());
+        c_view.num_parameters = num;
+        c_view.parameters = params;
+    }
+    len
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn opus_create_view(
+    hdl: *mut OpusHdl,
+    view_id: ViewHdl,
+    params: *mut KeyVal,
+    n_params: usize,
+) -> ViewInstHdl {
+    let engine = &mut (*hdl).0;
+    let rparams = keyval_arr_to_hashmap(params, n_params);
+    let ViewHdl(view_id) = view_id;
+    ViewInstHdl(engine.create_view_by_id(view_id, rparams).unwrap())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn opus_list_view_inst(
+    hdl: *const OpusHdl,
+    out: *mut *mut ViewInst,
+) -> usize {
+    let engine = &(*hdl).0;
+    let views = engine.list_running_views().unwrap();
+    let len = views.len();
+    *out = malloc(len * size_of::<ViewInst>()) as *mut ViewInst;
+    let s = slice::from_raw_parts_mut(*out, len);
+    for (view, c_view) in views.into_iter().zip(s) {
+        c_view.id = ViewInstHdl(view.id());
+        c_view.vtype = ViewHdl(view.vtype());
+        let (params, num) = hashmap_to_keyval_arr(view.params());
+        c_view.num_parameters = num;
+        c_view.parameters = params;
+    }
+    len
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn opus_ingest_fd(hdl: *mut OpusHdl, fd: RawFd) {
+    let engine = &mut (*hdl).0;
+    let stream = IOStream::from_raw_fd(fd);
+    timeit!(engine.ingest_stream(stream).unwrap());
 }
 
 #[no_mangle]
@@ -125,15 +211,7 @@ pub unsafe extern "C" fn opus_cleanup(hdl: *mut OpusHdl) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn count_processes(hdl: *const OpusHdl) -> i64 {
-    let hdl = &(*hdl).0;
-    let mut db = match Neo4jDB::connect(&hdl.cfg.db_server, &hdl.cfg.db_user, &hdl.cfg.db_password)
-    {
-        Ok(conn) => conn,
-        Err(ref s) => {
-            println!("Database connection error: {:?}", s);
-            return -1;
-        }
-    };
-    query::low::count_processes(&mut db)
+pub unsafe extern "C" fn opus_count_processes(hdl: *const OpusHdl) -> i64 {
+    let engine = &(*hdl).0;
+    engine.count_processes()
 }

@@ -178,4 +178,6 @@ impl PVM {
             self._inf(second, first, tag);
         }
     }
+
+    pub fn shutdown(self) {}
 }
