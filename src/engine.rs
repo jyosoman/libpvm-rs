@@ -15,6 +15,7 @@ pub struct Config {
     pub db_server: String,
     pub db_user: String,
     pub db_password: String,
+    pub suppress_default_views: bool,
     pub cfg_detail: Option<AdvancedConfig>,
 }
 
@@ -48,7 +49,10 @@ impl Engine {
         }
         let (send, recv) = mpsc::sync_channel(100_000);
         let mut view_ctrl = ViewCoordinator::new(recv);
-        view_ctrl.register_view_type::<Neo4JView>();
+        let neo4j_view_id = view_ctrl.register_view_type::<Neo4JView>();
+        if !self.cfg.suppress_default_views {
+            view_ctrl.create_view_inst(neo4j_view_id, hashmap!(), &self.cfg);
+        }
         view_ctrl.register_view_type::<CypherView>();
         self.pipeline = Some(Pipeline {
             pvm: PVM::new(send),

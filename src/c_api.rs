@@ -52,6 +52,7 @@ pub struct Config {
     db_server: *mut c_char,
     db_user: *mut c_char,
     db_password: *mut c_char,
+    suppress_default_views: bool,
     cfg_detail: *const AdvancedConfig,
 }
 
@@ -119,6 +120,7 @@ pub unsafe extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
         db_server: string_from_c_char(cfg.db_server).unwrap_or("localhost:7687".to_string()),
         db_user: string_from_c_char(cfg.db_user).unwrap_or("neo4j".to_string()),
         db_password: string_from_c_char(cfg.db_password).unwrap_or("opus".to_string()),
+        suppress_default_views: cfg.suppress_default_views,
         cfg_detail: if cfg.cfg_detail.is_null() {
             Option::None
         } else {

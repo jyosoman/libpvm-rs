@@ -50,6 +50,7 @@ typedef struct Config {
   char* db_server;
   char* db_user;
   char* db_password;
+  bool  suppress_default_views;
   AdvancedConfig* cfg_detail;
 } Config;
 

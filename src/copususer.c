@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     in = open(argv[1], O_RDONLY);
   }
 
-  Config cfg = { Auto, "localhost:7687", user, "opus", 0 };
+  Config cfg = { Auto, "localhost:7687", user, "opus", false, 0 };
   OpusHdl* hdl = opus_init(cfg);
   printf("Rust C API handle ptr: hdl(%p) \n", hdl);
 
@@ -33,10 +33,7 @@ int main(int argc, char** argv) {
   for (int i=0; i<num_views; i++) {
     printf("Views[%d]\nName: %s\nDescription: %s\nParams:\n", i, views[i].name, views[i].desc);
     for (int j=0; j<views[i].num_parameters; j++) {
-        printf("%s: %s\n", views[i].parameters[j].key, views[i].parameters[j].val);
-    }
-    if(strcmp(views[i].name, "Neo4jView") == 0){
-      opus_create_view(hdl, views[i].id, 0, 0);
+        printf("    %s: %s\n", views[i].parameters[j].key, views[i].parameters[j].val);
     }
   }
 
