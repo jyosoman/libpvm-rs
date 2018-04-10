@@ -1,5 +1,7 @@
 use c_api::{AdvancedConfig, CfgMode};
-use ingest::{ingest_stream, persist::{View, ViewCoordinator, ViewInst}, pvm::PVM};
+use ingest::{ingest_stream,
+             persist::{View, ViewCoordinator, ViewInst},
+             pvm::PVM};
 use iostream::IOStream;
 use neo4j_glue::{CypherView, Neo4JView};
 use query::low::count_processes;

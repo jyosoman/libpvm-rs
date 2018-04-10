@@ -4,8 +4,10 @@ mod pipe;
 mod process;
 mod socket;
 
-pub use self::{editsession::{EditInit, EditSession}, file::{File, FileInit},
-               pipe::{Pipe, PipeInit}, process::{Process, ProcessInit},
+pub use self::{editsession::{EditInit, EditSession},
+               file::{File, FileInit},
+               pipe::{Pipe, PipeInit},
+               process::{Process, ProcessInit},
                socket::{Socket, SocketClass, SocketInit}};
 
 use super::{Denumerate, Enumerable, HasID, HasUUID, NodeID};

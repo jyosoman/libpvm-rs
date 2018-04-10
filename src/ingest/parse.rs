@@ -1,7 +1,7 @@
 use super::pvm::{ConnectDir, NodeGuard, PVM};
-use data::{Denumerate,
-           node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Socket,
-                        SocketClass, SocketInit}};
+use data::{node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Socket,
+                        SocketClass, SocketInit},
+           Denumerate};
 use trace::{AuditEvent, TraceEvent};
 
 fn socket_addr(tr: AuditEvent, s: &mut EnumNode) -> bool {

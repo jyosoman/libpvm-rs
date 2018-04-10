@@ -1,9 +1,14 @@
 use std::{collections::{HashMap, HashSet},
-          sync::{atomic::{AtomicUsize, Ordering}, mpsc::SyncSender}};
+          sync::{atomic::{AtomicUsize, Ordering},
+                 mpsc::SyncSender}};
 
 use checking_store::{CheckingStore, DropGuard};
-use data::{Enumerable, Generable, HasID, HasUUID, NodeID,
-           node_types::{EditInit, EditSession, EnumNode, File, FileInit}};
+use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
+           Enumerable,
+           Generable,
+           HasID,
+           HasUUID,
+           NodeID};
 use uuid::Uuid5;
 
 use super::{db::DB, persist::DBTr};

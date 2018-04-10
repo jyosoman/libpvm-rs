@@ -1,6 +1,8 @@
 use neo4j::{Neo4jDB, Neo4jOperations, Value};
 
-use std::{thread, collections::{HashMap, hash_map::Entry}, sync::{Arc, mpsc::Receiver}};
+use std::{collections::{hash_map::Entry, HashMap},
+          sync::{mpsc::Receiver, Arc},
+          thread};
 
 use data::NodeID;
 

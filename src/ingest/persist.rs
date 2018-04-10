@@ -1,6 +1,9 @@
-use std::{collections::HashMap, fmt::Debug, sync::{mpsc, Arc, Mutex}, thread::{spawn, JoinHandle}};
+use std::{collections::HashMap,
+          fmt::Debug,
+          sync::{mpsc, Arc, Mutex},
+          thread::{spawn, JoinHandle}};
 
-use data::{NodeID, node_types::EnumNode};
+use data::{node_types::EnumNode, NodeID};
 
 use engine::Config;
 

@@ -1,5 +1,9 @@
-use std::{thread, cmp::Eq, collections::{HashMap, hash_map::Entry}, hash::Hash,
-          ops::{Deref, DerefMut}, sync::atomic::{AtomicUsize, Ordering}};
+use std::{cmp::Eq,
+          collections::{hash_map::Entry, HashMap},
+          hash::Hash,
+          ops::{Deref, DerefMut},
+          sync::atomic::{AtomicUsize, Ordering},
+          thread};
 
 enum StoreState<V> {
     Present(V),

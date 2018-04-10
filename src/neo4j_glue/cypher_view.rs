@@ -1,5 +1,8 @@
-use std::{thread, collections::HashMap, fs::File, io::{BufWriter, Write},
-          sync::{Arc, mpsc::Receiver}};
+use std::{collections::HashMap,
+          fs::File,
+          io::{BufWriter, Write},
+          sync::{mpsc::Receiver, Arc},
+          thread};
 
 use neo4j::Value;
 
