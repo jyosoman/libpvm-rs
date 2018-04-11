@@ -16,6 +16,7 @@ extern crate futures;
 extern crate nix;
 extern crate serde_json;
 extern crate tokio_core;
+extern crate zip;
 
 macro_rules! timeit {
     ($E:expr) => {{

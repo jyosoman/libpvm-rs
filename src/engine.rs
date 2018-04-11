@@ -3,7 +3,7 @@ use ingest::{ingest_stream,
              persist::{View, ViewCoordinator, ViewInst},
              pvm::PVM};
 use iostream::IOStream;
-use neo4j_glue::{CypherView, Neo4JView};
+use neo4j_glue::{CSVView, Neo4JView};
 use query::low::count_processes;
 use std::{collections::HashMap, sync::mpsc};
 
@@ -55,7 +55,7 @@ impl Engine {
         if !self.cfg.suppress_default_views {
             view_ctrl.create_view_inst(neo4j_view_id, hashmap!(), &self.cfg);
         }
-        view_ctrl.register_view_type::<CypherView>();
+        view_ctrl.register_view_type::<CSVView>();
         self.pipeline = Some(Pipeline {
             pvm: PVM::new(send),
             view_ctrl,

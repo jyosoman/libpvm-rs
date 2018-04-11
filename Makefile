@@ -14,10 +14,7 @@ CFLAGS=-I$(IDIR)
 _DEPS = opus.h
 DEPS= $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = copususer.o
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
-
-all: rust copususer
+all: rust copususer pvm2csv
 
 test: rust copususer
 	cargo test -- --nocapture
@@ -31,7 +28,10 @@ $(DEPS): rust
 $(ODIR)/%.o: src/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-copususer: $(OBJ)
+copususer: build/copususer.o
+	gcc -L$(LDIR) -o $(ODIR)/$@ $^ $(CFLAGS) $(LIBS)
+
+pvm2csv: build/pvm2csv.o
 	gcc -L$(LDIR) -o $(ODIR)/$@ $^ $(CFLAGS) $(LIBS)
 
 clean:

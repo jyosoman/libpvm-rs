@@ -1,7 +1,7 @@
-mod cypher_view;
+mod csv_view;
 mod neo4j_view;
 
-pub use self::{cypher_view::CypherView, neo4j_view::Neo4JView};
+pub use self::{csv_view::CSVView, neo4j_view::Neo4JView};
 
 use std::{collections::HashMap, str::FromStr};
 
