@@ -5,3 +5,4 @@ build/data.json
 *.swp
 *.bk
 Cargo.lock
+cmake-build-debug
