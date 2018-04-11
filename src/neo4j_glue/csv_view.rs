@@ -21,14 +21,16 @@ echo "Importing data"
 neo4j-admin import --nodes proc.csv --nodes file.csv --nodes es.csv --nodes pipe.csv --nodes socket.csv --nodes dbinfo.csv --relationships rel.csv --id-type=INTEGER
 echo "Data import complete"
 read -p "Now start neo4j, wait for it to come up, then press enter."
-echo "Building indexes"
-cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :Node(db_id);"
-cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :Process(uuid);"
-cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :File(uuid);"
-cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :EditSession(uuid);"
-cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :Pipe(uuid);"
-cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :Socket(uuid);"
-echo "Indexes built"
+echo -n "Building indexes..."
+cypher-shell -u$NEO4J_USER -p$NEO4J_PASS >/dev/null <<EOF
+CREATE INDEX ON :Node(db_id);
+CREATE INDEX ON :Process(uuid);
+CREATE INDEX ON :File(uuid);
+CREATE INDEX ON :EditSession(uuid);
+CREATE INDEX ON :Pipe(uuid);
+CREATE INDEX ON :Socket(uuid);
+EOF
+echo "Done"
 echo "Database hydrated"
 "#;
 
