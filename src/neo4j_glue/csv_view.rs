@@ -68,7 +68,8 @@ impl View for CSVView {
                 .unwrap();
             writeln!(out, "{}", HYDRATE_SH).unwrap();
 
-            out.start_file("dbinfo.csv", FileOptions::default()).unwrap();
+            out.start_file("dbinfo.csv", FileOptions::default())
+                .unwrap();
             writeln!(out, ":LABEL,pvm_version:int,source").unwrap();
             writeln!(out, "DBInfo,2,libPVM-{}", ::VERSION).unwrap();
 

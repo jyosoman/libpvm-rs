@@ -64,7 +64,10 @@ impl View for Neo4JView {
             db.run_unchecked("CREATE INDEX ON :Pipe(uuid)", HashMap::new());
             db.run_unchecked("CREATE INDEX ON :Socket(uuid)", HashMap::new());
 
-            db.run_unchecked("MERGE (:DBInfo {pvm_version: 2, source: $src})", hashmap!("src" => Value::from(format!("libPVM-{}", ::VERSION))));
+            db.run_unchecked(
+                "MERGE (:DBInfo {pvm_version: 2, source: $src})",
+                hashmap!("src" => Value::from(format!("libPVM-{}", ::VERSION))),
+            );
 
             let mut tr = db.transaction();
             for evt in stream {
