@@ -1,5 +1,3 @@
-# An optional string of text to output at the beginning of the generated file
-header = "/* HEADER */"
 # An optional string of text to output at the end of the generated file
 trailer = "/* FOOTER */"
 # An optional name to use as an include guard

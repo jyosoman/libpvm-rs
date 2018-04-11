@@ -18,7 +18,7 @@ export NEO4J_PASS=opus
 echo "Preparing to hydrate database"
 read -p "Ensure neo4j is stopped and that any database files have been removed. Then press enter."
 echo "Importing data"
-neo4j-admin import --nodes proc.csv --nodes file.csv --nodes es.csv --nodes pipe.csv --nodes socket.csv --relationships rel.csv --id-type=INTEGER
+neo4j-admin import --nodes proc.csv --nodes file.csv --nodes es.csv --nodes pipe.csv --nodes socket.csv --nodes dbinfo.csv --relationships rel.csv --id-type=INTEGER
 echo "Data import complete"
 read -p "Now start neo4j, wait for it to come up, then press enter."
 echo "Building indexes"
@@ -28,7 +28,6 @@ cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :File(uuid);"
 cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :EditSession(uuid);"
 cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :Pipe(uuid);"
 cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE INDEX ON :Socket(uuid);"
-cypher-shell -u$NEO4J_USER -p$NEO4J_PASS "CREATE (:DBInfo {pvm_version: 2});"
 echo "Indexes built"
 echo "Database hydrated"
 "#;
@@ -66,6 +65,10 @@ impl View for CSVView {
             out.start_file("hydrate.sh", FileOptions::default().unix_permissions(0o755))
                 .unwrap();
             writeln!(out, "{}", HYDRATE_SH).unwrap();
+
+            out.start_file("dbinfo.csv", FileOptions::default()).unwrap();
+            writeln!(out, ":LABEL,pvm_version:int,source").unwrap();
+            writeln!(out, "DBInfo,2,libPVM-{}", ::VERSION).unwrap();
 
             let mut procs = HashMap::new();
             let mut files = HashMap::new();

@@ -18,6 +18,8 @@ extern crate serde_json;
 extern crate tokio_core;
 extern crate zip;
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 macro_rules! timeit {
     ($E:expr) => {{
         use std::time::Instant;

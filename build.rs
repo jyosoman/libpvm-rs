@@ -1,5 +1,7 @@
 extern crate cbindgen;
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 use std::env;
 
 fn generate_with_lang(crate_dir: &str, lang: cbindgen::Language, out: &str) {
@@ -7,6 +9,7 @@ fn generate_with_lang(crate_dir: &str, lang: cbindgen::Language, out: &str) {
 
     cbindgen::Builder::new()
         .with_config(cfg)
+        .with_header(format!("/* libPVM Header Version {} */", VERSION))
         .with_language(lang)
         .with_crate(&crate_dir)
         .generate()
