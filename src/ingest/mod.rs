@@ -25,7 +25,7 @@ where
     loop {
         pre_vec.clear();
         while pre_vec.len() < BATCH_SIZE {
-            let l = match lines.next() {
+            let mut l = match lines.next() {
                 Some(l) => match l {
                     Ok(l) => l,
                     Err(perr) => {
@@ -39,6 +39,12 @@ where
             };
             if l.is_empty() {
                 continue;
+            }
+            if l == "[" || l == "]" {
+                continue;
+            }
+            if l.starts_with(", ") {
+                l.drain(0..2);
             }
             pre_vec.push(l);
         }
