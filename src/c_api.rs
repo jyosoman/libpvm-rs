@@ -13,6 +13,19 @@ use std::{collections::HashMap,
 use engine;
 
 #[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub enum OpusErr {
+    EUNKNOWN = 1,
+    EAMBIGUOUSVIEWNAME = 2,
+    ENOVIEWWITHNAME = 3,
+    EINVALIDARG = 4,
+}
+
+fn ret(err: OpusErr) -> isize {
+    -(err as isize)
+}
+
+#[repr(C)]
 #[derive(Debug)]
 pub struct KeyVal {
     key: *mut c_char,
@@ -22,7 +35,7 @@ pub struct KeyVal {
 #[repr(C)]
 #[derive(Debug)]
 pub struct View {
-    id: ViewHdl,
+    id: usize,
     name: *mut c_char,
     desc: *mut c_char,
     num_parameters: usize,
@@ -32,8 +45,8 @@ pub struct View {
 #[repr(C)]
 #[derive(Debug)]
 pub struct ViewInst {
-    id: ViewInstHdl,
-    vtype: ViewHdl,
+    id: usize,
+    vtype: usize,
     num_parameters: usize,
     parameters: *mut KeyVal,
 }
@@ -63,14 +76,6 @@ pub struct Config {
 }
 
 pub struct OpusHdl(engine::Engine);
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct ViewHdl(usize);
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct ViewInstHdl(usize);
 
 fn keyval_arr_to_hashmap(ptr: *const KeyVal, n: usize) -> HashMap<String, String> {
     let mut ret = HashMap::with_capacity(n);
@@ -138,15 +143,27 @@ pub unsafe extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn opus_start_pipeline(hdl: *mut OpusHdl) {
+pub unsafe extern "C" fn opus_start_pipeline(hdl: *mut OpusHdl) -> isize {
     let engine = &mut (*hdl).0;
-    engine.init_pipeline().unwrap();
+    match engine.init_pipeline() {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            ret(OpusErr::EUNKNOWN)
+        }
+    }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn opus_shutdown_pipeline(hdl: *mut OpusHdl) {
+pub unsafe extern "C" fn opus_shutdown_pipeline(hdl: *mut OpusHdl) -> isize {
     let engine = &mut (*hdl).0;
-    engine.shutdown_pipeline().unwrap();
+    match engine.shutdown_pipeline() {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            ret(OpusErr::EUNKNOWN)
+        }
+    }
 }
 
 #[no_mangle]
@@ -156,34 +173,45 @@ pub unsafe extern "C" fn opus_print_cfg(hdl: *const OpusHdl) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn opus_list_view_types(hdl: *const OpusHdl, out: *mut *mut View) -> usize {
+pub unsafe extern "C" fn opus_list_view_types(hdl: *const OpusHdl, out: *mut *mut View) -> isize {
     let engine = &(*hdl).0;
-    let views = engine.list_view_types().unwrap();
+    let views = match engine.list_view_types() {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            return ret(OpusErr::EUNKNOWN);
+        }
+    };
     let len = views.len();
     *out = malloc(len * size_of::<View>()) as *mut View;
     let s = slice::from_raw_parts_mut(*out, len);
     for (view, c_view) in views.into_iter().zip(s) {
-        c_view.id = ViewHdl(view.id());
+        c_view.id = view.id();
         c_view.name = string_to_c_char(view.name());
         c_view.desc = string_to_c_char(view.desc());
         let (params, num) = hashmap_to_keyval_arr(&view.params());
         c_view.num_parameters = num;
         c_view.parameters = params;
     }
-    len
+    len as isize
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn opus_create_view_by_id(
     hdl: *mut OpusHdl,
-    view_id: ViewHdl,
+    view_id: usize,
     params: *const KeyVal,
     n_params: usize,
-) -> ViewInstHdl {
+) -> isize {
     let engine = &mut (*hdl).0;
     let rparams = keyval_arr_to_hashmap(params, n_params);
-    let ViewHdl(view_id) = view_id;
-    ViewInstHdl(engine.create_view_by_id(view_id, rparams).unwrap())
+    match engine.create_view_by_id(view_id, rparams) {
+        Ok(vid) => vid as isize,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            ret(OpusErr::EUNKNOWN)
+        }
+    }
 }
 
 #[no_mangle]
@@ -192,46 +220,79 @@ pub unsafe extern "C" fn opus_create_view_by_name(
     name: *const c_char,
     params: *const KeyVal,
     n_params: usize,
-) -> ViewInstHdl {
+) -> isize {
     let engine = &mut (*hdl).0;
     let rparams = keyval_arr_to_hashmap(params, n_params);
-    let name = string_from_c_char(name).unwrap();
-    let view_with_name = engine
-        .list_view_types()
-        .unwrap()
-        .into_iter()
-        .skip_while(|v| v.name() != name)
-        .map(|v| v.id())
-        .next()
-        .unwrap();
-    ViewInstHdl(engine.create_view_by_id(view_with_name, rparams).unwrap())
+    let name = match string_from_c_char(name) {
+        Some(s) => s,
+        None => {
+            return ret(OpusErr::EINVALIDARG);
+        }
+    };
+    let views_with_name = match engine.list_view_types() {
+        Ok(vtypes) => vtypes
+            .into_iter()
+            .skip_while(|v| v.name() != name)
+            .map(|v| v.id())
+            .collect::<Vec<usize>>(),
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            return ret(OpusErr::EUNKNOWN);
+        }
+    };
+
+    if views_with_name.is_empty() {
+        ret(OpusErr::ENOVIEWWITHNAME)
+    } else if views_with_name.len() > 1 {
+        ret(OpusErr::EAMBIGUOUSVIEWNAME)
+    } else {
+        match engine.create_view_by_id(views_with_name[0], rparams) {
+            Ok(vid) => vid as isize,
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                ret(OpusErr::EUNKNOWN)
+            }
+        }
+    }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn opus_list_view_inst(
     hdl: *const OpusHdl,
     out: *mut *mut ViewInst,
-) -> usize {
+) -> isize {
     let engine = &(*hdl).0;
-    let views = engine.list_running_views().unwrap();
+    let views = match engine.list_running_views() {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            return ret(OpusErr::EUNKNOWN);
+        }
+    };
     let len = views.len();
     *out = malloc(len * size_of::<ViewInst>()) as *mut ViewInst;
     let s = slice::from_raw_parts_mut(*out, len);
     for (view, c_view) in views.into_iter().zip(s) {
-        c_view.id = ViewInstHdl(view.id());
-        c_view.vtype = ViewHdl(view.vtype());
+        c_view.id = view.id();
+        c_view.vtype = view.vtype();
         let (params, num) = hashmap_to_keyval_arr(view.params());
         c_view.num_parameters = num;
         c_view.parameters = params;
     }
-    len
+    len as isize
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn opus_ingest_fd(hdl: *mut OpusHdl, fd: i32) {
+pub unsafe extern "C" fn opus_ingest_fd(hdl: *mut OpusHdl, fd: i32) -> isize {
     let engine = &mut (*hdl).0;
     let stream = IOStream::from_raw_fd(fd as RawFd);
-    timeit!(engine.ingest_stream(stream).unwrap());
+    match timeit!(engine.ingest_stream(stream)) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            ret(OpusErr::EUNKNOWN)
+        }
+    }
 }
 
 #[no_mangle]

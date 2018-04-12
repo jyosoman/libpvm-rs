@@ -12,5 +12,6 @@ include_version = true
 namespace = "opus"
 
 [export]
+include = ["OpusErr"]
 # A list of items to not include in the generated bindings
 exclude = ["BATCH_SIZE", "N", "S_IFCHR", "S_IFIFO", "S_IFMT", "S_IFREG", "S_IFSOCK", "TR_SIZE"]
