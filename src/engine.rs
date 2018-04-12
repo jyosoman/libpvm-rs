@@ -33,7 +33,7 @@ pub struct Engine {
 
 impl Drop for Engine {
     fn drop(&mut self) {
-        self.shutdown_pipeline();
+        self.shutdown_pipeline().ok();
     }
 }
 
