@@ -20,24 +20,8 @@ int main(int argc, char** argv) {
   OpusHdl* hdl = opus_init(cfg);
   opus_start_pipeline(hdl);
 
-  View* views;
-  size_t num_views = opus_list_view_types(hdl, &views);
-
-  for (int i=0; i<num_views; i++) {
-    if(strcmp(views[i].name, "CSVView") == 0) {
-      KeyVal params[1];
-      params[0].key = "path";
-      params[0].val = argv[2];
-      opus_create_view(hdl, views[i].id, params, 1);
-    }
-  }
-
-  for (int i=0; i<num_views; i++) {
-    free((void*)views[i].name);
-    free((void*)views[i].desc);
-    free((void*)views[i].parameters);
-  }
-  free(views);
+  KeyVal params = {.key = "path", .val = argv[2]};
+  opus_create_view_by_name(hdl, "CSVView", &params, 1);
 
   opus_ingest_fd(hdl, in);
   opus_shutdown_pipeline(hdl);

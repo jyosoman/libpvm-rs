@@ -174,7 +174,7 @@ pub unsafe extern "C" fn opus_list_view_types(hdl: *const OpusHdl, out: *mut *mu
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn opus_create_view(
+pub unsafe extern "C" fn opus_create_view_by_id(
     hdl: *mut OpusHdl,
     view_id: ViewHdl,
     params: *mut KeyVal,
@@ -184,6 +184,27 @@ pub unsafe extern "C" fn opus_create_view(
     let rparams = keyval_arr_to_hashmap(params, n_params);
     let ViewHdl(view_id) = view_id;
     ViewInstHdl(engine.create_view_by_id(view_id, rparams).unwrap())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn opus_create_view_by_name(
+    hdl: *mut OpusHdl,
+    name: *const c_char,
+    params: *const KeyVal,
+    n_params: usize,
+) -> ViewInstHdl {
+    let engine = &mut (*hdl).0;
+    let rparams = keyval_arr_to_hashmap(params, n_params);
+    let name = string_from_c_char(name).unwrap();
+    let view_with_name = engine
+        .list_view_types()
+        .unwrap()
+        .into_iter()
+        .skip_while(|v| v.name() != name)
+        .map(|v| v.id())
+        .next()
+        .unwrap();
+    ViewInstHdl(engine.create_view_by_id(view_with_name, rparams).unwrap()
 }
 
 #[no_mangle]
