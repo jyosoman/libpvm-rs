@@ -72,7 +72,7 @@ pub struct ViewHdl(usize);
 #[derive(Debug)]
 pub struct ViewInstHdl(usize);
 
-fn keyval_arr_to_hashmap(ptr: *mut KeyVal, n: usize) -> HashMap<String, String> {
+fn keyval_arr_to_hashmap(ptr: *const KeyVal, n: usize) -> HashMap<String, String> {
     let mut ret = HashMap::with_capacity(n);
     if !ptr.is_null() {
         let s = unsafe { slice::from_raw_parts(ptr, n) };
@@ -111,7 +111,7 @@ fn string_to_c_char(val: &str) -> *mut c_char {
     }
 }
 
-fn string_from_c_char(str_p: *mut c_char) -> Option<String> {
+fn string_from_c_char(str_p: *const c_char) -> Option<String> {
     unsafe { CStr::from_ptr(str_p) }
         .to_str()
         .ok()
@@ -177,7 +177,7 @@ pub unsafe extern "C" fn opus_list_view_types(hdl: *const OpusHdl, out: *mut *mu
 pub unsafe extern "C" fn opus_create_view_by_id(
     hdl: *mut OpusHdl,
     view_id: ViewHdl,
-    params: *mut KeyVal,
+    params: *const KeyVal,
     n_params: usize,
 ) -> ViewInstHdl {
     let engine = &mut (*hdl).0;
@@ -204,7 +204,7 @@ pub unsafe extern "C" fn opus_create_view_by_name(
         .map(|v| v.id())
         .next()
         .unwrap();
-    ViewInstHdl(engine.create_view_by_id(view_with_name, rparams).unwrap()
+    ViewInstHdl(engine.create_view_by_id(view_with_name, rparams).unwrap())
 }
 
 #[no_mangle]
