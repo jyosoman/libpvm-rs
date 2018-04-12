@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv) {
   if(argc != 3) {
-    printf("pvm2csv trace-file csv-zip");
+    printf("usage: pvm2csv trace-file csv-zip\n");
     return -1;
   }
 
