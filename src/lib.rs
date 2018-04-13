@@ -1,7 +1,6 @@
-#![feature(try_from)]
 #![feature(slice_patterns)]
 #![feature(box_patterns)]
-#![feature(catch_expr)]
+#![feature(nll)]
 
 extern crate futures_cpupool;
 extern crate libc;
