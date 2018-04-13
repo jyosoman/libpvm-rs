@@ -1,4 +1,4 @@
-use data::{Generable, HasID, HasUUID, NodeID};
+use data::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid5;
 
 #[derive(Clone, Copy, Debug)]
@@ -21,7 +21,7 @@ impl SocketClass {
 
 #[derive(Clone, Debug)]
 pub struct Socket {
-    db_id: NodeID,
+    db_id: ID,
     uuid: Uuid5,
     pub class: SocketClass,
     pub path: String,
@@ -37,7 +37,7 @@ pub struct SocketInit {
 }
 
 impl HasID for Socket {
-    fn get_db_id(&self) -> NodeID {
+    fn get_db_id(&self) -> ID {
         self.db_id
     }
 }
@@ -45,7 +45,7 @@ impl HasID for Socket {
 impl Generable for Socket {
     type Init = SocketInit;
 
-    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {

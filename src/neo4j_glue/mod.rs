@@ -13,7 +13,7 @@ use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit, Pipe, P
            Generable,
            HasID,
            HasUUID,
-           NodeID};
+           ID};
 
 use uuid::Uuid5;
 
@@ -36,20 +36,20 @@ impl IntoUUID for Value {
     }
 }
 
-impl From<NodeID> for Value {
-    fn from(val: NodeID) -> Self {
+impl From<ID> for Value {
+    fn from(val: ID) -> Self {
         Value::Integer(val.inner())
     }
 }
 
-pub trait IntoNodeID {
-    fn into_nodeid(self) -> Option<NodeID>;
+pub trait IntoID {
+    fn into_id(self) -> Option<ID>;
 }
 
-impl IntoNodeID for Value {
-    fn into_nodeid(self) -> Option<NodeID> {
+impl IntoID for Value {
+    fn into_id(self) -> Option<ID> {
         match self {
-            Value::Integer(i) => Some(NodeID::new(i)),
+            Value::Integer(i) => Some(ID::new(i)),
             _ => None,
         }
     }
@@ -58,7 +58,7 @@ impl IntoNodeID for Value {
 pub trait ToDB: HasID + HasUUID {
     fn get_labels(&self) -> Vec<&'static str>;
     fn get_props(&self) -> HashMap<&'static str, Value>;
-    fn to_db(&self) -> (NodeID, Vec<&'static str>, HashMap<&'static str, Value>) {
+    fn to_db(&self) -> (ID, Vec<&'static str>, HashMap<&'static str, Value>) {
         let mut props = self.get_props();
         props.insert("db_id", self.get_db_id().into());
         props.insert("uuid", self.get_uuid().into());
@@ -104,7 +104,7 @@ impl FromDB for EnumNode {
 
         let id = g.props
             .remove("db_id")
-            .and_then(Value::into_nodeid)
+            .and_then(Value::into_id)
             .ok_or("db_id property is missing or not an Integer")?;
         let uuid = g.props
             .remove("uuid")

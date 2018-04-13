@@ -8,7 +8,7 @@ use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
            Generable,
            HasID,
            HasUUID,
-           NodeID};
+           ID};
 use uuid::Uuid5;
 
 use super::{db::DB, persist::DBTr};
@@ -18,14 +18,14 @@ pub enum ConnectDir {
     BiDirectional,
 }
 
-pub type NodeGuard = DropGuard<NodeID, Box<EnumNode>>;
+pub type NodeGuard = DropGuard<ID, Box<EnumNode>>;
 
 pub struct PVM {
     db: DB,
-    uuid_cache: HashMap<Uuid5, NodeID>,
-    node_cache: CheckingStore<NodeID, Box<EnumNode>>,
+    uuid_cache: HashMap<Uuid5, ID>,
+    node_cache: CheckingStore<ID, Box<EnumNode>>,
     id_counter: AtomicUsize,
-    inf_cache: HashSet<(NodeID, NodeID)>,
+    inf_cache: HashSet<(ID, ID)>,
     open_cache: HashMap<Uuid5, HashSet<Uuid5>>,
     pub unparsed_events: HashSet<String>,
 }
@@ -63,7 +63,7 @@ impl PVM {
     where
         T: Generable + Enumerable,
     {
-        let id = NodeID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as i64);
+        let id = ID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as i64);
         let node = Box::new(T::new(id, uuid, init).enumerate());
         if let Some(nid) = self.uuid_cache.insert(uuid, id) {
             self.node_cache.remove(nid);

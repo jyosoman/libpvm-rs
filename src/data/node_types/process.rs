@@ -1,9 +1,9 @@
-use data::{Generable, HasID, HasUUID, NodeID};
+use data::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid5;
 
 #[derive(Clone, Debug)]
 pub struct Process {
-    db_id: NodeID,
+    db_id: ID,
     uuid: Uuid5,
     pub pid: i32,
     pub cmdline: String,
@@ -17,7 +17,7 @@ pub struct ProcessInit {
 }
 
 impl HasID for Process {
-    fn get_db_id(&self) -> NodeID {
+    fn get_db_id(&self) -> ID {
         self.db_id
     }
 }
@@ -25,7 +25,7 @@ impl HasID for Process {
 impl Generable for Process {
     type Init = ProcessInit;
 
-    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {

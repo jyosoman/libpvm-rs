@@ -10,7 +10,7 @@ pub use self::{editsession::{EditInit, EditSession},
                process::{Process, ProcessInit},
                socket::{Socket, SocketClass, SocketInit}};
 
-use super::{Denumerate, Enumerable, HasID, HasUUID, NodeID};
+use super::{Denumerate, Enumerable, HasID, HasUUID, ID};
 use uuid::Uuid5;
 
 #[derive(Clone, Debug)]
@@ -40,7 +40,7 @@ macro_rules! enumnode_trait {
 }
 
 enumnode_trait!(HasID,
-                get_db_id() -> NodeID);
+                get_db_id() -> ID);
 
 enumnode_trait!(HasUUID,
                 get_uuid() -> Uuid5);

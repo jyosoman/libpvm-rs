@@ -1,9 +1,9 @@
-use data::{Generable, HasID, HasUUID, NodeID};
+use data::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid5;
 
 #[derive(Clone, Debug)]
 pub struct EditSession {
-    db_id: NodeID,
+    db_id: ID,
     uuid: Uuid5,
     pub name: String,
 }
@@ -13,7 +13,7 @@ pub struct EditInit {
 }
 
 impl HasID for EditSession {
-    fn get_db_id(&self) -> NodeID {
+    fn get_db_id(&self) -> ID {
         self.db_id
     }
 }
@@ -21,7 +21,7 @@ impl HasID for EditSession {
 impl Generable for EditSession {
     type Init = EditInit;
 
-    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {

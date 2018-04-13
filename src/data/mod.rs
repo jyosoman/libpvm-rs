@@ -1,9 +1,9 @@
 pub mod node_types;
-mod nodeid;
+mod id;
 
 use uuid::Uuid5;
 
-pub use self::nodeid::NodeID;
+pub use self::id::ID;
 
 use self::node_types::EnumNode;
 
@@ -17,7 +17,7 @@ pub trait Denumerate {
 }
 
 pub trait HasID {
-    fn get_db_id(&self) -> NodeID;
+    fn get_db_id(&self) -> ID;
 }
 
 pub trait HasUUID {
@@ -27,7 +27,7 @@ pub trait HasUUID {
 pub trait Generable: HasID + HasUUID {
     type Init;
 
-    fn new(id: NodeID, uuid: Uuid5, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid5, init: Option<Self::Init>) -> Self
     where
         Self: Sized;
 }

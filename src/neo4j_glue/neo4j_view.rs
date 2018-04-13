@@ -4,7 +4,7 @@ use std::{collections::{hash_map::Entry, HashMap},
           sync::{mpsc::Receiver, Arc},
           thread};
 
-use data::NodeID;
+use data::ID;
 
 use engine::Config;
 use ingest::persist::{DBTr, View, ViewInst};
@@ -132,7 +132,7 @@ impl View for Neo4JView {
 }
 
 struct CreateNodes {
-    nodes: HashMap<NodeID, HashMap<&'static str, Value>>,
+    nodes: HashMap<ID, HashMap<&'static str, Value>>,
 }
 
 impl CreateNodes {
@@ -150,10 +150,10 @@ impl CreateNodes {
             hashmap!("nodes" => nodes),
         );
     }
-    fn add(&mut self, id: NodeID, data: HashMap<&'static str, Value>) {
+    fn add(&mut self, id: ID, data: HashMap<&'static str, Value>) {
         self.nodes.insert(id, data);
     }
-    fn update(&mut self, id: NodeID, props: Value) -> Option<Value> {
+    fn update(&mut self, id: ID, props: Value) -> Option<Value> {
         match self.nodes.entry(id) {
             Entry::Occupied(mut ent) => {
                 ent.get_mut().insert("props", props);
