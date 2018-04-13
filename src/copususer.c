@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
   strcpy(user, "dummy_info");
 
   View* views;
-  size_t num_views = opus_list_view_types(hdl, &views);
+  intptr_t num_views = opus_list_view_types(hdl, &views);
 
   for (int i=0; i<num_views; i++) {
     printf("Views[%d]\nName: %s\nDescription: %s\nParams:\n", i, views[i].name, views[i].desc);
