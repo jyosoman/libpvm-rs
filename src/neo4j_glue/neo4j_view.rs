@@ -8,7 +8,7 @@ use data::ID;
 
 use engine::Config;
 use ingest::persist::{DBTr, View, ViewInst};
-use neo4j_glue::ToDB;
+use neo4j_glue::{ToDBNode, ToDBRel};
 
 const BATCH_SIZE: usize = 1000;
 const TR_SIZE: usize = 100_000;
@@ -80,17 +80,9 @@ impl View for Neo4JView {
                         );
                         ups += 1;
                     }
-                    DBTr::CreateRel {
-                        src,
-                        dst,
-                        ty,
-                        ref props,
-                    } => {
-                        let rel: HashMap<&str, Value> = hashmap!("src" => src.into(),
-                                                                 "dst" => dst.into(),
-                                                                 "type" => ty.into(),
-                                                                 "props" => props.clone().into());
-                        edges.add(rel.into());
+                    DBTr::CreateRel(ref rel) => {
+                        let (id, data) = rel.to_db();
+                        edges.add(id, data);
                         ups += 1;
                     }
                     DBTr::UpdateNode(ref node) => {
@@ -165,25 +157,28 @@ impl CreateNodes {
 }
 
 struct CreateRels {
-    rels: Vec<Value>,
+    rels: HashMap<ID, Value>,
 }
 
 impl CreateRels {
     fn new() -> Self {
-        CreateRels { rels: Vec::new() }
+        CreateRels {
+            rels: HashMap::new(),
+        }
     }
     fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
+        let rels: Value = self.rels.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
             "UNWIND $rels AS r
              MATCH (s:Node {db_id: r.src}),
                    (d:Node {db_id: r.dst})
              CALL apoc.create.relationship(s, r.type, r.props, d) YIELD rel
              RETURN 0",
-            hashmap!("rels" => self.rels.drain(..).collect()),
+            hashmap!("rels" => rels),
         );
     }
-    fn add(&mut self, value: Value) {
-        self.rels.push(value);
+    fn add(&mut self, id: ID, data: Value) {
+        self.rels.insert(id, data);
     }
 }
 

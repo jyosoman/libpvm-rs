@@ -6,7 +6,7 @@ use std::{collections::HashMap,
 
 use zip::{write::FileOptions, ZipWriter};
 
-use data::{node_types::EnumNode, HasID, HasUUID};
+use data::{node_types::EnumNode, HasID, HasUUID, Rel};
 use ingest::persist::{DBTr, View, ViewInst};
 
 use engine::Config;
@@ -78,9 +78,7 @@ impl View for CSVView {
             let mut es = HashMap::new();
             let mut pipes = HashMap::new();
             let mut sockets = HashMap::new();
-
-            out.start_file("rel.csv", FileOptions::default()).unwrap();
-            writeln!(out, ":START_ID,:END_ID,:TYPE,class").unwrap();
+            let mut rels = HashMap::new();
 
             for evt in stream {
                 match *evt {
@@ -101,13 +99,8 @@ impl View for CSVView {
                             sockets.insert(s.get_db_id(), s.clone());
                         }
                     },
-                    DBTr::CreateRel {
-                        src,
-                        dst,
-                        ty,
-                        ref props,
-                    } => {
-                        writeln!(out, "{},{},{},{}", src, dst, ty, props["class"]).unwrap();
+                    DBTr::CreateRel(ref rel) => {
+                        rels.insert(rel.get_db_id(), (*rel).clone());
                     }
                     DBTr::UpdateNode(ref node) => match *node {
                         EnumNode::Proc(ref p) => {
@@ -126,6 +119,27 @@ impl View for CSVView {
                             sockets.insert(s.get_db_id(), s.clone());
                         }
                     },
+                }
+            }
+            out.start_file("inf.csv", FileOptions::default()).unwrap();
+            writeln!(
+                out,
+                "db_id:ID,:START_ID,:END_ID,:TYPE,pvm_op,generating_call,byte_count:int"
+            ).unwrap();
+            for (_, rel) in rels {
+                match rel {
+                    Rel::Inf {
+                        id,
+                        src,
+                        dst,
+                        pvm_op,
+                        generating_call,
+                        byte_count,
+                    } => writeln!(
+                        out,
+                        "{},{},{},INF,{:?},\"{}\",{}",
+                        id, src, dst, pvm_op, generating_call, byte_count
+                    ).unwrap(),
                 }
             }
             out.start_file("proc.csv", FileOptions::default()).unwrap();

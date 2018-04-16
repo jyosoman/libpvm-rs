@@ -1,5 +1,5 @@
-pub mod node_types;
 mod id;
+pub mod node_types;
 
 use uuid::Uuid5;
 
@@ -53,5 +53,33 @@ where
 impl Enumerable for EnumNode {
     fn enumerate(self) -> EnumNode {
         self
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum PVMOps {
+    Source,
+    Sink,
+    Connect,
+    Version,
+}
+
+#[derive(Clone, Debug)]
+pub enum Rel {
+    Inf {
+        id: ID,
+        src: ID,
+        dst: ID,
+        pvm_op: PVMOps,
+        generating_call: String,
+        byte_count: u64,
+    },
+}
+
+impl HasID for Rel {
+    fn get_db_id(&self) -> ID {
+        match *self {
+            Rel::Inf { id, .. } => id,
+        }
     }
 }

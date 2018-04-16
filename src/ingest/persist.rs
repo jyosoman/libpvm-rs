@@ -3,21 +3,14 @@ use std::{collections::HashMap,
           sync::{mpsc, Arc, Mutex},
           thread::{spawn, JoinHandle}};
 
-use data::{node_types::EnumNode, ID};
+use data::{node_types::EnumNode, Rel};
 
 use engine::Config;
-
-use neo4j::Value;
 
 #[derive(Clone, Debug)]
 pub enum DBTr {
     CreateNode(EnumNode),
-    CreateRel {
-        src: ID,
-        dst: ID,
-        ty: &'static str,
-        props: HashMap<&'static str, Value>,
-    },
+    CreateRel(Rel),
     UpdateNode(EnumNode),
 }
 

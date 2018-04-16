@@ -13,6 +13,8 @@ use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit, Pipe, P
            Generable,
            HasID,
            HasUUID,
+           PVMOps,
+           Rel,
            ID};
 
 use uuid::Uuid5;
@@ -55,7 +57,7 @@ impl IntoID for Value {
     }
 }
 
-pub trait ToDB: HasID + HasUUID {
+pub trait ToDBNode: HasID + HasUUID {
     fn get_labels(&self) -> Vec<&'static str>;
     fn get_props(&self) -> HashMap<&'static str, Value>;
     fn to_db(&self) -> (ID, Vec<&'static str>, HashMap<&'static str, Value>) {
@@ -66,7 +68,7 @@ pub trait ToDB: HasID + HasUUID {
     }
 }
 
-impl ToDB for EnumNode {
+impl ToDBNode for EnumNode {
     fn get_labels(&self) -> Vec<&'static str> {
         match *self {
             EnumNode::EditSession(_) => vec!["Node", "EditSession"],
@@ -88,6 +90,49 @@ impl ToDB for EnumNode {
                                                 "path" => Value::from(s.path.clone()),
                                                 "ip" => Value::from(s.ip.clone()),
                                                 "port" => Value::from(s.port)),
+        }
+    }
+}
+
+impl From<PVMOps> for Value {
+    fn from(val: PVMOps) -> Value {
+        match val {
+            PVMOps::Sink => "Sink".into(),
+            PVMOps::Source => "Source".into(),
+            PVMOps::Connect => "Connect".into(),
+            PVMOps::Version => "Version".into(),
+        }
+    }
+}
+
+pub trait ToDBRel {
+    fn to_db(&self) -> (ID, Value);
+}
+
+impl ToDBRel for Rel {
+    fn to_db(&self) -> (ID, Value) {
+        match *self {
+            Rel::Inf {
+                id,
+                src,
+                dst,
+                pvm_op,
+                ref generating_call,
+                byte_count,
+            } => {
+                let props: HashMap<&str, Value> = hashmap!("db_id" => Value::from(id),
+                                                           "pvm_op" => Value::from(pvm_op),
+                                                           "generating_call" => Value::from(generating_call.clone()),
+                                                           "byte_count" => Value::from(byte_count));
+                (
+                    id,
+                    hashmap!("src" => Value::from(src),
+                          "dst" => Value::from(dst),
+                          "type" => Value::from("INF"),
+                          "props" => Value::from(props))
+                        .into(),
+                )
+            }
         }
     }
 }

@@ -1,9 +1,7 @@
 use std::sync::mpsc::SyncSender;
 
 use super::persist::DBTr;
-use data::{Enumerable, HasID};
-
-use neo4j::Value;
+use data::{Enumerable, Rel};
 
 pub struct DB {
     persist_pipe: SyncSender<DBTr>,
@@ -23,18 +21,9 @@ impl DB {
             .expect("Database worker closed queue unexpectadly")
     }
 
-    pub fn create_rel<T, U>(&mut self, src: &T, dst: &U, rtype: &'static str, class: &str)
-    where
-        T: HasID,
-        U: HasID,
-    {
+    pub fn create_rel(&mut self, rel: &Rel) {
         self.persist_pipe
-            .send(DBTr::CreateRel {
-                src: src.get_db_id(),
-                dst: dst.get_db_id(),
-                ty: rtype,
-                props: hashmap!("class" => Value::from(class)),
-            })
+            .send(DBTr::CreateRel(rel.clone()))
             .expect("Database worker closed queue unexpectadly");
     }
 
