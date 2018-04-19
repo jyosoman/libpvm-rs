@@ -52,10 +52,14 @@ impl View for Neo4JView {
         let thr = thread::spawn(move || {
             let mut nodes = CreateNodes::new();
             let mut edges = CreateRels::new();
-            let mut updates = UpdateNodes::new();
+            let mut up_node = UpdateNodes::new();
+            let mut up_rel = UpdateRels::new();
             let mut ups = 0;
             let mut btc = 0;
             let mut trs = 0;
+            let mut rel_up_base = 0;
+            let mut rel_up_node = 0;
+            let mut rel_up_rel = 0;
 
             db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
             db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
@@ -88,15 +92,28 @@ impl View for Neo4JView {
                     DBTr::UpdateNode(ref node) => {
                         let (id, _, props) = node.to_db();
                         if let Some(props) = nodes.update(id, props.into()) {
-                            updates.add(props);
-                            ups += 1;
+                            if up_node.add(id, props) {
+                                ups += 1;
+                            }
+                        }
+                    }
+                    DBTr::UpdateRel(ref rel) => {
+                        rel_up_base += 1;
+                        let (id, data) = rel.to_db();
+                        if let Some(data) = edges.update(id, data) {
+                            rel_up_node += 1;
+                            if up_rel.add(id, data) {
+                                ups += 1;
+                                rel_up_rel += 1;
+                            }
                         }
                     }
                 }
                 if ups > (btc + 1) * BATCH_SIZE {
                     nodes.execute(&mut tr);
                     edges.execute(&mut tr);
-                    updates.execute(&mut tr);
+                    up_node.execute(&mut tr);
+                    up_rel.execute(&mut tr);
                     btc += 1;
                 }
                 if ups > (trs + 1) * TR_SIZE {
@@ -106,13 +123,15 @@ impl View for Neo4JView {
             }
             nodes.execute(&mut tr);
             edges.execute(&mut tr);
-            updates.execute(&mut tr);
+            up_node.execute(&mut tr);
+            up_rel.execute(&mut tr);
             println!("Final Commit");
             tr.commit().unwrap();
             trs += 1;
             println!("Neo4J Updates Issued: {}", ups);
-            println!("Neo4J Batches Issued: {}", btc * 3);
+            println!("Neo4J Batches Issued: {}", btc * 4);
             println!("Neo4J Transactions Issued: {}", trs);
+            println!("Rel Updates: {}, Absorbed into Nodes: {}, Absorbed into other updates: {}, Finally executed: {}", rel_up_base, rel_up_base - rel_up_node, rel_up_node - rel_up_rel, rel_up_rel);
         });
         ViewInst {
             id,
@@ -180,25 +199,60 @@ impl CreateRels {
     fn add(&mut self, id: ID, data: Value) {
         self.rels.insert(id, data);
     }
+    fn update(&mut self, id: ID, data: Value) -> Option<Value> {
+        if self.rels.contains_key(&id) {
+            self.rels.insert(id, data);
+            None
+        } else {
+            Some(data)
+        }
+    }
 }
 
 struct UpdateNodes {
-    props: Vec<Value>,
+    props: HashMap<ID, Value>,
 }
 
 impl UpdateNodes {
     fn new() -> Self {
-        UpdateNodes { props: Vec::new() }
+        UpdateNodes {
+            props: HashMap::new(),
+        }
     }
     fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
+        let nodes: Value = self.props.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
             "UNWIND $upds AS props
              MATCH (p:Node {db_id: props.db_id})
              SET p += props",
-            hashmap!("upds" => self.props.drain(..).collect()),
+            hashmap!("upds" => nodes),
         );
     }
-    fn add(&mut self, value: Value) {
-        self.props.push(value);
+    fn add(&mut self, id: ID, value: Value) -> bool {
+        self.props.insert(id, value).is_none()
+    }
+}
+
+struct UpdateRels {
+    props: HashMap<ID, Value>,
+}
+
+impl UpdateRels {
+    fn new() -> Self {
+        UpdateRels {
+            props: HashMap::new(),
+        }
+    }
+    fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
+        let rels: Value = self.props.drain().map(|(_k, v)| v).collect();
+        db.run_unchecked(
+            "UNWIND $upds AS up
+             MATCH (s:Node {db_id: up.src})-[r {db_id: up.id}]->()
+             SET r += up.props",
+            hashmap!("upds" => rels),
+        );
+    }
+    fn add(&mut self, id: ID, value: Value) -> bool {
+        self.props.insert(id, value).is_none()
     }
 }

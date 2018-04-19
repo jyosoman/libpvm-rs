@@ -119,6 +119,9 @@ impl View for CSVView {
                             sockets.insert(s.get_db_id(), s.clone());
                         }
                     },
+                    DBTr::UpdateRel(ref rel) => {
+                        rels.insert(rel.get_db_id(), (*rel).clone());
+                    }
                 }
             }
             out.start_file("inf.csv", FileOptions::default()).unwrap();

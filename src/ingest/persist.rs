@@ -12,6 +12,7 @@ pub enum DBTr {
     CreateNode(EnumNode),
     CreateRel(Rel),
     UpdateNode(EnumNode),
+    UpdateRel(Rel),
 }
 
 pub struct ViewInst {
