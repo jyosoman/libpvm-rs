@@ -1,18 +1,19 @@
 use super::pvm::{ConnectDir, NodeGuard, PVM};
 use data::{node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Socket,
                         SocketClass, SocketInit},
-           Denumerate};
+           Denumerate,
+           Rel};
 use trace::{AuditEvent, TraceEvent};
 
-fn socket_addr(tr: AuditEvent, s: &mut EnumNode) -> bool {
+fn socket_addr(tr: &AuditEvent, s: &mut EnumNode) -> bool {
     if let EnumNode::Socket(ref mut s) = *s {
         if let SocketClass::Unknown = s.class {
-            if let Some(pth) = tr.upath1 {
+            if let Some(ref pth) = tr.upath1 {
                 s.class = SocketClass::AfUnix;
-                s.path = pth;
+                s.path = pth.clone();
                 return true;
             } else if let Some(prt) = tr.port {
-                let addr = tr.address.expect("record with port missing address");
+                let addr = tr.address.clone().expect("record with port missing address");
                 s.class = SocketClass::AfInet;
                 s.port = prt;
                 s.ip = addr;
@@ -42,7 +43,7 @@ fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
             pref.cmdline = cmdline;
             pref.thin = false;
         }
-        pvm.prop(&pro);
+        pvm.prop_node(&pro);
         pvm.source(&pro, &bin, "binary");
         pvm.source(&pro, &ld, "linker");
     } else {
@@ -54,7 +55,7 @@ fn proc_exec(mut tr: AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) {
                 thin: false,
             }),
         );
-        pvm.source(&next, &pro, "next");
+        pvm.source(&next, &pro, &tr.event);
         pvm.source(&next, &bin, "binary");
         pvm.source(&next, &ld, "linker");
     }
@@ -71,8 +72,8 @@ fn proc_fork(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
         chref.cmdline = pref.cmdline.clone();
         chref.thin = true;
     }
-    pvm.prop(&ch);
-    pvm.source(&ch, &pro, "child");
+    pvm.prop_node(&ch);
+    pvm.source(&ch, &pro, &tr.event);
 }
 
 fn proc_exit(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
@@ -97,7 +98,13 @@ fn posix_read(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
             pvm.name(&mut f, pth);
         }
     }
-    pvm.source(&pro, &f, "read");
+    let mut r = pvm.source(&pro, &f, &tr.event);
+    match *r {
+        Rel::Inf {ref mut byte_count, .. } => {
+            *byte_count += tr.retval as u64;
+        }
+    }
+    pvm.prop_rel(&r);
 }
 
 fn posix_write(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
@@ -109,13 +116,19 @@ fn posix_write(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
             pvm.name(&mut f, pth);
         }
     }
-    pvm.sinkstart(&pro, &f, "write");
+    let mut r = pvm.sinkstart(&pro, &f, &tr.event);
+    match *r {
+        Rel::Inf {ref mut byte_count, .. } => {
+            *byte_count += tr.retval as u64;
+        }
+    }
+    pvm.prop_rel(&r);
 }
 
 fn posix_close(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     if let Some(fuuid) = tr.arg_objuuid1 {
         let f = pvm.declare::<File>(fuuid, None);
-        pvm.sinkend(&pro, &f, "close");
+        pvm.sinkend(&pro, &f, &tr.event);
     }
 }
 
@@ -132,8 +145,8 @@ fn posix_listen(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
 fn posix_bind(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("bind missing arg_objuuid1");
     let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(tr, &mut s) {
-        pvm.prop(&s);
+    if socket_addr(&tr, &mut s) {
+        pvm.prop_node(&s);
     }
 }
 
@@ -170,8 +183,8 @@ fn posix_accept(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
 fn posix_connect(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("connect missing arg_objuuid1");
     let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(tr, &mut s) {
-        pvm.prop(&s);
+    if socket_addr(&tr, &mut s) {
+        pvm.prop_node(&s);
     }
 }
 
@@ -185,10 +198,10 @@ fn posix_mmap(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
         if flags.contains(&String::from("PROT_WRITE"))
             && !flags.contains(&String::from("MAP_PRIVATE"))
         {
-            pvm.sinkstart(&pro, &f, "mmap");
+            pvm.sinkstart(&pro, &f, &tr.event);
         }
         if flags.contains(&String::from("PROT_READ")) {
-            pvm.source(&pro, &f, "mmap");
+            pvm.source(&pro, &f, &tr.event);
         }
     }
 }
@@ -198,7 +211,7 @@ fn posix_socketpair(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let ruuid2 = tr.ret_objuuid2.expect("socketpair missing ret_objuuid2");
     let s1 = pvm.declare::<Socket>(ruuid1, None);
     let s2 = pvm.declare::<Socket>(ruuid2, None);
-    pvm.connect(&s1, &s2, ConnectDir::BiDirectional, "socketpair");
+    pvm.connect(&s1, &s2, ConnectDir::BiDirectional, &tr.event);
 }
 
 fn posix_pipe(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
@@ -208,43 +221,43 @@ fn posix_pipe(tr: AuditEvent, _pro: NodeGuard, pvm: &mut PVM) {
     let rfd2 = tr.ret_fd2.expect("pipe missing ret_fd2");
     let p1 = pvm.declare::<Pipe>(ruuid1, Some(PipeInit { fd: rfd1 }));
     let p2 = pvm.declare::<Pipe>(ruuid2, Some(PipeInit { fd: rfd2 }));
-    pvm.connect(&p1, &p2, ConnectDir::BiDirectional, "pipe");
+    pvm.connect(&p1, &p2, ConnectDir::BiDirectional, &tr.event);
 }
 
 fn posix_sendmsg(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("sendmsg missing arg_objuuid1");
     let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(tr, &mut s) {
-        pvm.prop(&s);
+    if socket_addr(&tr, &mut s) {
+        pvm.prop_node(&s);
     }
-    pvm.sinkstart(&pro, &s, "sendmsg");
+    pvm.sinkstart(&pro, &s, &tr.event);
 }
 
 fn posix_sendto(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("sendto missing arg_objuuid1");
     let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(tr, &mut s) {
-        pvm.prop(&s);
+    if socket_addr(&tr, &mut s) {
+        pvm.prop_node(&s);
     }
-    pvm.sinkstart(&pro, &s, "sendto");
+    pvm.sinkstart(&pro, &s, &tr.event);
 }
 
 fn posix_recvmsg(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("recvmsg missing arg_objuuid1");
     let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(tr, &mut s) {
-        pvm.prop(&s);
+    if socket_addr(&tr, &mut s) {
+        pvm.prop_node(&s);
     }
-    pvm.source(&pro, &s, "recvmsg");
+    pvm.source(&pro, &s, &tr.event);
 }
 
 fn posix_recvfrom(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     let suuid = tr.arg_objuuid1.expect("recvfrom missing arg_objuuid1");
     let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(tr, &mut s) {
-        pvm.prop(&s);
+    if socket_addr(&tr, &mut s) {
+        pvm.prop_node(&s);
     }
-    pvm.source(&pro, &s, "recvfrom");
+    pvm.source(&pro, &s, &tr.event);
 }
 
 pub fn parse_trace(tr: TraceEvent, pvm: &mut PVM) {

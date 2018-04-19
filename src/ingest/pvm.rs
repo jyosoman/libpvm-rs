@@ -110,11 +110,11 @@ impl PVM {
         }
     }
 
-    pub fn source(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) {
-        self._inf(ent, act, PVMOps::Source, tag);
+    pub fn source(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) -> RelGuard {
+        self._inf(ent, act, PVMOps::Source, tag)
     }
 
-    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) {
+    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) -> RelGuard {
         match *ent {
             EnumNode::File(ref fref) => {
                 let f = self.add::<File>(
@@ -124,10 +124,10 @@ impl PVM {
                     }),
                 );
                 self._inf(fref, &**f, PVMOps::Version, tag);
-                self._inf(act, &**f, PVMOps::Sink, tag);
+                self._inf(act, &**f, PVMOps::Sink, tag)
             }
             _ => {
-                self._inf(act, ent, PVMOps::Sink, tag);
+                self._inf(act, ent, PVMOps::Sink, tag)
             }
         }
     }
@@ -157,17 +157,12 @@ impl PVM {
         }
     }
 
-    pub fn sinkend(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) -> Option<RelGuard> {
+    pub fn sinkend(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) {
         if let EnumNode::EditSession(ref eref) = *ent {
-            let ret = if !self.open_cache
+            self.open_cache
                 .get_mut(&eref.get_uuid())
                 .unwrap()
-                .remove(&act.get_uuid())
-            {
-                Some(self._inf(act, eref, PVMOps::Sink, tag))
-            } else {
-                None
-            };
+                .remove(&act.get_uuid());
             if self.open_cache[&eref.get_uuid()].is_empty() {
                 let f = self.add::<File>(
                     eref.get_uuid(),
@@ -177,9 +172,6 @@ impl PVM {
                 );
                 self._inf(eref, &**f, PVMOps::Version, tag);
             }
-            ret
-        } else {
-            None
         }
     }
 
@@ -201,8 +193,12 @@ impl PVM {
         }
     }
 
-    pub fn prop(&mut self, ent: &EnumNode) {
+    pub fn prop_node(&mut self, ent: &EnumNode) {
         self.db.update_node(ent)
+    }
+
+    pub fn prop_rel(&mut self, ent: &Rel) {
+        self.db.update_rel(ent)
     }
 
     pub fn connect(&mut self, first: &EnumNode, second: &EnumNode, dir: ConnectDir, tag: &str) {
