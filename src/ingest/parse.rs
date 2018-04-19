@@ -13,7 +13,9 @@ fn socket_addr(tr: &AuditEvent, s: &mut EnumNode) -> bool {
                 s.path = pth.clone();
                 return true;
             } else if let Some(prt) = tr.port {
-                let addr = tr.address.clone().expect("record with port missing address");
+                let addr = tr.address
+                    .clone()
+                    .expect("record with port missing address");
                 s.class = SocketClass::AfInet;
                 s.port = prt;
                 s.ip = addr;
@@ -100,7 +102,9 @@ fn posix_read(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     }
     let mut r = pvm.source(&pro, &f, &tr.event);
     match *r {
-        Rel::Inf {ref mut byte_count, .. } => {
+        Rel::Inf {
+            ref mut byte_count, ..
+        } => {
             *byte_count += tr.retval as u64;
         }
     }
@@ -118,7 +122,9 @@ fn posix_write(tr: AuditEvent, pro: NodeGuard, pvm: &mut PVM) {
     }
     let mut r = pvm.sinkstart(&pro, &f, &tr.event);
     match *r {
-        Rel::Inf {ref mut byte_count, .. } => {
+        Rel::Inf {
+            ref mut byte_count, ..
+        } => {
             *byte_count += tr.retval as u64;
         }
     }

@@ -24,9 +24,7 @@ macro_rules! timeit {
     ($E:expr) => {{
         use std::time::Instant;
         let now = Instant::now();
-        let ret = {
-            $E
-        };
+        let ret = { $E };
         let dur = now.elapsed();
         eprintln!(
             "{} took {:.3}",

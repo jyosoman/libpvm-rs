@@ -36,8 +36,7 @@ impl DB {
             .expect("Database worker closed queue unexpectadly")
     }
 
-    pub fn update_rel(&mut self, rel: &Rel)
-    {
+    pub fn update_rel(&mut self, rel: &Rel) {
         self.persist_pipe
             .send(DBTr::UpdateRel(rel.clone()))
             .expect("Database worker closed queue unexpectadly")

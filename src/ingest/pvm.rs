@@ -126,9 +126,7 @@ impl PVM {
                 self._inf(fref, &**f, PVMOps::Version, tag);
                 self._inf(act, &**f, PVMOps::Sink, tag)
             }
-            _ => {
-                self._inf(act, ent, PVMOps::Sink, tag)
-            }
+            _ => self._inf(act, ent, PVMOps::Sink, tag),
         }
     }
 

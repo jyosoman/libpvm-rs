@@ -111,6 +111,55 @@ where
     }
 }
 
+pub struct Iter<'a, K, V>
+where
+    K: Hash + Eq + Copy + 'a,
+    V: 'a,
+{
+    iter: ::std::iter::Map<
+        ::std::collections::hash_map::Iter<'a, K, StoreState<V>>,
+        fn((&'a K, &'a StoreState<V>)) -> (&'a K, &'a V),
+    >,
+}
+
+impl<'a, K, V> Iter<'a, K, V>
+where
+    K: Hash + Eq + Copy + 'a,
+    V: 'a,
+{
+    fn new(val: &'a CheckingStore<K, V>) -> Self {
+        Iter {
+            iter: val.store.iter().map(|(k, v)| match v {
+                StoreState::Present(v) => (k, v),
+                _ => panic!("Trying to iterate over a store with loaned items."),
+            }),
+        }
+    }
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V>
+where
+    K: Hash + Eq + Copy + 'a,
+    V: 'a,
+{
+    type Item = (&'a K, &'a V);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
+impl<'a, K, V> IntoIterator for &'a CheckingStore<K, V>
+where
+    K: Hash + Eq + Copy + 'a,
+    V: 'a,
+{
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
+    fn into_iter(self) -> Self::IntoIter {
+        Iter::new(&self)
+    }
+}
+
 impl<K, V> Drop for CheckingStore<K, V>
 where
     K: Hash + Eq + Copy,
