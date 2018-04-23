@@ -16,6 +16,7 @@ crate-type = ["rlib", "cdylib"]
 [dependencies]
 futures = "*"
 futures-cpupool = "*"
+lending-library = "0.1.*"
 tokio-io = "*"
 tokio-core = "*"
 serde = "*"

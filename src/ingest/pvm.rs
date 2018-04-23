@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet},
           sync::{atomic::{AtomicUsize, Ordering},
                  mpsc::SyncSender}};
 
-use checking_store::{CheckingStore, DropGuard};
+use lending_library::{LendingLibrary, DropGuard};
 use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
            Enumerable,
            Generable,
@@ -26,8 +26,8 @@ pub type RelGuard = DropGuard<ID, Rel>;
 pub struct PVM {
     db: DB,
     uuid_cache: HashMap<Uuid5, ID>,
-    node_cache: CheckingStore<ID, Box<EnumNode>>,
-    rel_cache: CheckingStore<ID, Rel>,
+    node_cache: LendingLibrary<ID, Box<EnumNode>>,
+    rel_cache: LendingLibrary<ID, Rel>,
     id_counter: AtomicUsize,
     inf_cache: HashMap<(ID, ID), ID>,
     open_cache: HashMap<Uuid5, HashSet<Uuid5>>,
@@ -39,8 +39,8 @@ impl PVM {
         PVM {
             db: DB::create(db),
             uuid_cache: HashMap::new(),
-            node_cache: CheckingStore::new(),
-            rel_cache: CheckingStore::new(),
+            node_cache: LendingLibrary::new(),
+            rel_cache: LendingLibrary::new(),
             id_counter: AtomicUsize::new(0),
             inf_cache: HashMap::new(),
             open_cache: HashMap::new(),
@@ -65,7 +65,7 @@ impl PVM {
     {
         let id_pair = (src.get_db_id(), dst.get_db_id());
         if self.inf_cache.contains_key(&id_pair) {
-            self.rel_cache.checkout(self.inf_cache[&id_pair]).unwrap()
+            self.rel_cache.lend(self.inf_cache[&id_pair]).unwrap()
         } else {
             let id = self._nextid();
             let rel = Rel::Inf {
@@ -78,7 +78,7 @@ impl PVM {
             };
             self.rel_cache.insert(id, rel);
             self.inf_cache.insert(id_pair, id);
-            let r = self.rel_cache.checkout(id).unwrap();
+            let r = self.rel_cache.lend(id).unwrap();
             self.db.create_rel(&r);
             r
         }
@@ -94,7 +94,7 @@ impl PVM {
             self.node_cache.remove(nid);
         }
         self.node_cache.insert(id, node);
-        let n = self.node_cache.checkout(id).unwrap();
+        let n = self.node_cache.lend(id).unwrap();
         self.db.create_node(&**n);
         n
     }
@@ -106,7 +106,7 @@ impl PVM {
         if !self.uuid_cache.contains_key(&uuid) {
             self.add::<T>(uuid, init)
         } else {
-            self.node_cache.checkout(self.uuid_cache[&uuid]).unwrap()
+            self.node_cache.lend(self.uuid_cache[&uuid]).unwrap()
         }
     }
 

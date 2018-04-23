@@ -4,6 +4,7 @@
 
 extern crate futures_cpupool;
 extern crate libc;
+extern crate lending_library;
 #[macro_use]
 extern crate maplit;
 extern crate neo4j;
@@ -38,7 +39,6 @@ macro_rules! timeit {
 pub use c_api::*;
 
 pub mod c_api;
-pub mod checking_store;
 pub mod data;
 pub mod engine;
 pub mod ingest;
