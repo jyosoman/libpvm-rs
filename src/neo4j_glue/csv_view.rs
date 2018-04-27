@@ -18,7 +18,7 @@ export NEO4J_PASS=opus
 echo "Preparing to hydrate database"
 read -p "Ensure neo4j is stopped and that any database files have been removed. Then press enter."
 echo "Importing data"
-neo4j-admin import --nodes proc.csv --nodes file.csv --nodes es.csv --nodes pipe.csv --nodes socket.csv --nodes dbinfo.csv --relationships rel.csv --id-type=INTEGER
+neo4j-admin import --nodes proc.csv --nodes file.csv --nodes es.csv --nodes pipe.csv --nodes socket.csv --nodes dbinfo.csv --relationships rel.csv --id-type=INTEGER --multiline-fields=true
 echo "Data import complete"
 read -p "Now start neo4j, wait for it to come up, then press enter."
 echo -n "Building indexes..."
