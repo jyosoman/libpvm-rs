@@ -3,7 +3,7 @@ use std::{collections::{HashMap, HashSet},
           sync::{atomic::{AtomicUsize, Ordering},
                  mpsc::SyncSender}};
 
-use lending_library::{LendingLibrary, DropGuard};
+use lending_library::{LendingLibrary, Loan};
 use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
            Enumerable,
            Generable,
@@ -40,8 +40,8 @@ pub enum ConnectDir {
     BiDirectional,
 }
 
-pub type NodeGuard = DropGuard<ID, Box<EnumNode>>;
-pub type RelGuard = DropGuard<ID, Rel>;
+pub type NodeGuard = Loan<ID, Box<EnumNode>>;
+pub type RelGuard = Loan<ID, Rel>;
 
 pub struct PVM {
     db: DB,
