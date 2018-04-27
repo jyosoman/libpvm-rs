@@ -7,14 +7,20 @@ use std::env;
 fn generate_with_lang(crate_dir: &str, lang: cbindgen::Language, out: &str) {
     let cfg = cbindgen::Config::from_root_or_default(std::path::Path::new(crate_dir));
 
-    cbindgen::Builder::new()
+    match cbindgen::Builder::new()
         .with_config(cfg)
         .with_header(format!("/* libPVM Header Version {} */", VERSION))
         .with_language(lang)
         .with_crate(&crate_dir)
         .generate()
-        .expect("Unable to generate bindings")
-        .write_to_file(out);
+    {
+        Ok(b) => {
+            b.write_to_file(out);
+        }
+        Err(e) => {
+            eprintln!("Failed to generate bindings: {}", e);
+        }
+    }
 }
 
 fn main() {
