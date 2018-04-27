@@ -1,4 +1,5 @@
 use std::{collections::{HashMap, HashSet},
+          fmt::{Display, Formatter, Result as FMTResult},
           sync::{atomic::{AtomicUsize, Ordering},
                  mpsc::SyncSender}};
 
@@ -14,6 +15,25 @@ use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
 use uuid::Uuid5;
 
 use super::{db::DB, persist::DBTr};
+
+pub enum PVMError {
+    MissingField{
+        evt: String,
+        field: &'static str,
+    }
+}
+
+impl Display for PVMError {
+    fn fmt(&self, f: &mut Formatter) -> FMTResult {
+        match *self {
+            PVMError::MissingField {
+                ref evt, field
+            } => {
+                write!(f, "Event {} missing needed field {}", evt, field)
+            }
+        }
+    }
+}
 
 pub enum ConnectDir {
     Mono,

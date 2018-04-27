@@ -63,7 +63,10 @@ where
 
         for tr in post_vec.drain(..) {
             if let Some(tr) = tr {
-                parse::parse_trace(tr, pvm);
+                if let Err(e) = parse::parse_trace(&tr, pvm){
+                    eprintln!("PVM Parsing error: {}", e);
+                    eprintln!("{:?}", tr);
+                }
             }
         }
         if pre_vec.len() < BATCH_SIZE {

@@ -9,7 +9,7 @@ pub struct AuditEvent {
     pub ppid: i32,
     pub tid: i32,
     pub uid: i32,
-    pub exec: Option<String>,
+    pub exec: String,
     pub cmdline: Option<String>,
     pub upath1: Option<String>,
     pub upath2: Option<String>,
