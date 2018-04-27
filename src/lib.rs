@@ -3,8 +3,8 @@
 #![feature(nll)]
 
 extern crate futures_cpupool;
-extern crate libc;
 extern crate lending_library;
+extern crate libc;
 #[macro_use]
 extern crate maplit;
 extern crate neo4j;
