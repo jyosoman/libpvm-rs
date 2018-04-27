@@ -29,7 +29,7 @@ where
                 Some((n, l)) => match l {
                     Ok(l) => (n, l),
                     Err(perr) => {
-                        eprintln!("Line: {}", n+1);
+                        eprintln!("Line: {}", n + 1);
                         eprintln!("File Reading error: {}", perr);
                         continue;
                     }
@@ -55,7 +55,7 @@ where
             .map(|(n, s)| match serde_json::from_slice(s.as_bytes()) {
                 Ok(evt) => (*n, Some(evt)),
                 Err(perr) => {
-                    eprintln!("Line: {}", n+1);
+                    eprintln!("Line: {}", n + 1);
                     eprintln!("JSON Parsing error: {}", perr);
                     eprintln!("{}", s);
                     (*n, None)
@@ -65,8 +65,8 @@ where
 
         for (n, tr) in post_vec.drain(..) {
             if let Some(tr) = tr {
-                if let Err(e) = parse::parse_trace(&tr, pvm){
-                    eprintln!("Line: {}", n+1);
+                if let Err(e) = parse::parse_trace(&tr, pvm) {
+                    eprintln!("Line: {}", n + 1);
                     eprintln!("PVM Parsing error: {}", e);
                     eprintln!("{:?}", tr);
                 }

@@ -3,7 +3,6 @@ use std::{collections::{HashMap, HashSet},
           sync::{atomic::{AtomicUsize, Ordering},
                  mpsc::SyncSender}};
 
-use lending_library::{LendingLibrary, Loan};
 use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
            Enumerable,
            Generable,
@@ -12,23 +11,19 @@ use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
            PVMOps,
            Rel,
            ID};
+use lending_library::{LendingLibrary, Loan};
 use uuid::Uuid5;
 
 use super::{db::DB, persist::DBTr};
 
 pub enum PVMError {
-    MissingField{
-        evt: String,
-        field: &'static str,
-    }
+    MissingField { evt: String, field: &'static str },
 }
 
 impl Display for PVMError {
     fn fmt(&self, f: &mut Formatter) -> FMTResult {
         match *self {
-            PVMError::MissingField {
-                ref evt, field
-            } => {
+            PVMError::MissingField { ref evt, field } => {
                 write!(f, "Event {} missing needed field {}", evt, field)
             }
         }
