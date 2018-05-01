@@ -354,34 +354,34 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
                 }),
             );
             match &tr.event[..] {
+                "audit:event:aue_accept:" => posix_accept(tr, pro, pvm),
+                "audit:event:aue_bind:" => posix_bind(tr, pro, pvm),
                 "audit:event:aue_chdir:" | "audit:event:aue_fchdir:" => posix_chdir(tr, pro, pvm),
                 "audit:event:aue_chmod:" | "audit:event:aue_fchmodat:" => posix_chmod(tr, pro, pvm),
                 "audit:event:aue_chown:" => posix_chown(tr, pro, pvm),
+                "audit:event:aue_close:" => posix_close(tr, pro, pvm),
+                "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
                 "audit:event:aue_execve:" => proc_exec(tr, pro, pvm),
-                "audit:event:aue_fork:" | "audit:event:aue_vfork:" => proc_fork(tr, pro, pvm),
                 "audit:event:aue_exit:" => proc_exit(tr, pro, pvm),
+                "audit:event:aue_fork:" | "audit:event:aue_vfork:" => proc_fork(tr, pro, pvm),
                 "audit:event:aue_fchmod:" => posix_fchmod(tr, pro, pvm),
                 "audit:event:aue_fchown:" => posix_fchown(tr, pro, pvm),
+                "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
+                "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
                 "audit:event:aue_open_rwtc:" | "audit:event:aue_openat_rwtc:" => {
                     posix_open(tr, pro, pvm)
                 }
+                "audit:event:aue_pipe:" => posix_pipe(tr, pro, pvm),
                 "audit:event:aue_read:" | "audit:event:aue_pread:" => posix_read(tr, pro, pvm),
+                "audit:event:aue_recvmsg:" => posix_recvmsg(tr, pro, pvm),
+                "audit:event:aue_recvfrom:" => posix_recvfrom(tr, pro, pvm),
+                "audit:event:aue_sendmsg:" => posix_sendmsg(tr, pro, pvm),
+                "audit:event:aue_sendto:" => posix_sendto(tr, pro, pvm),
+                "audit:event:aue_socket:" => posix_socket(tr, pro, pvm),
+                "audit:event:aue_socketpair:" => posix_socketpair(tr, pro, pvm),
                 "audit:event:aue_write:"
                 | "audit:event:aue_pwrite:"
                 | "audit:event:aue_writev:" => posix_write(tr, pro, pvm),
-                "audit:event:aue_sendmsg:" => posix_sendmsg(tr, pro, pvm),
-                "audit:event:aue_sendto:" => posix_sendto(tr, pro, pvm),
-                "audit:event:aue_recvmsg:" => posix_recvmsg(tr, pro, pvm),
-                "audit:event:aue_recvfrom:" => posix_recvfrom(tr, pro, pvm),
-                "audit:event:aue_close:" => posix_close(tr, pro, pvm),
-                "audit:event:aue_socket:" => posix_socket(tr, pro, pvm),
-                "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
-                "audit:event:aue_bind:" => posix_bind(tr, pro, pvm),
-                "audit:event:aue_accept:" => posix_accept(tr, pro, pvm),
-                "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
-                "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
-                "audit:event:aue_socketpair:" => posix_socketpair(tr, pro, pvm),
-                "audit:event:aue_pipe:" => posix_pipe(tr, pro, pvm),
                 "audit:event:aue_dup2:" => Ok(()), /* IGNORE */
                 _ => {
                     pvm.unparsed_events.insert(tr.event.clone());
