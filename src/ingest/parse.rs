@@ -301,6 +301,47 @@ fn posix_recvfrom(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), 
     Ok(())
 }
 
+fn posix_chdir(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let duuid = tr_field!(tr, arg_objuuid1);
+    let mut d = pvm.declare::<File>(duuid, None);
+    if let Some(dpath) = tr.upath1.clone() {
+        pvm.name(&mut d, dpath);
+    }
+    Ok(())
+}
+
+fn posix_chmod(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let fuuid = tr_field!(tr, arg_objuuid1);
+    let fpath = tr_opt_field!(tr, upath1);
+    let mut f = pvm.declare::<File>(fuuid, None);
+    pvm.name(&mut f, fpath);
+    pvm.sink(&pro, &f, &tr.event);
+    Ok(())
+}
+
+fn posix_chown(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let fuuid = tr_field!(tr, arg_objuuid1);
+    let fpath = tr_opt_field!(tr, upath1);
+    let mut f = pvm.declare::<File>(fuuid, None);
+    pvm.name(&mut f, fpath);
+    pvm.sink(&pro, &f, &tr.event);
+    Ok(())
+}
+
+fn posix_fchmod(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let fuuid = tr_field!(tr, arg_objuuid1);
+    let f = pvm.declare::<File>(fuuid, None);
+    pvm.sinkstart(&pro, &f, &tr.event);
+    Ok(())
+}
+
+fn posix_fchown(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let fuuid = tr_field!(tr, arg_objuuid1);
+    let f = pvm.declare::<File>(fuuid, None);
+    pvm.sinkstart(&pro, &f, &tr.event);
+    Ok(())
+}
+
 pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
     match *tr {
         TraceEvent::Audit(box ref tr) => {
@@ -313,9 +354,14 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
                 }),
             );
             match &tr.event[..] {
+                "audit:event:aue_chdir:" | "audit:event:aue_fchdir:" => posix_chdir(tr, pro, pvm),
+                "audit:event:aue_chmod:" | "audit:event:aue_fchmodat:" => posix_chmod(tr, pro, pvm),
+                "audit:event:aue_chown:" => posix_chown(tr, pro, pvm),
                 "audit:event:aue_execve:" => proc_exec(tr, pro, pvm),
                 "audit:event:aue_fork:" | "audit:event:aue_vfork:" => proc_fork(tr, pro, pvm),
                 "audit:event:aue_exit:" => proc_exit(tr, pro, pvm),
+                "audit:event:aue_fchmod:" => posix_fchmod(tr, pro, pvm),
+                "audit:event:aue_fchown:" => posix_fchown(tr, pro, pvm),
                 "audit:event:aue_open_rwtc:" | "audit:event:aue_openat_rwtc:" => {
                     posix_open(tr, pro, pvm)
                 }
@@ -336,6 +382,7 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
                 "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
                 "audit:event:aue_socketpair:" => posix_socketpair(tr, pro, pvm),
                 "audit:event:aue_pipe:" => posix_pipe(tr, pro, pvm),
+                "audit:event:aue_dup2:" => Ok(()), /* IGNORE */
                 _ => {
                     pvm.unparsed_events.insert(tr.event.clone());
                     Ok(())
