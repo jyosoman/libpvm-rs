@@ -3,7 +3,7 @@ mod neo4j_view;
 
 pub use self::{csv_view::CSVView, neo4j_view::Neo4JView};
 
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use neo4j::{Node, Value};
 
@@ -17,24 +17,28 @@ use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit, Pipe, P
            Rel,
            ID};
 
-use uuid::Uuid5;
+use uuid::Uuid;
 
-impl From<Uuid5> for Value {
-    fn from(val: Uuid5) -> Self {
-        Value::String(val.to_string())
+pub trait Val2UUID {
+    fn into_uuid(self) -> Option<Uuid>;
+}
+
+pub trait UUID2Val {
+    fn into_val(self) -> Value;
+}
+
+impl Val2UUID for Value {
+    fn into_uuid(self) -> Option<Uuid> {
+        match self {
+            Value::String(s) => Uuid::parse_str(&s).ok(),
+            _ => None,
+        }
     }
 }
 
-pub trait IntoUUID {
-    fn into_uuid5(self) -> Option<Uuid5>;
-}
-
-impl IntoUUID for Value {
-    fn into_uuid5(self) -> Option<Uuid5> {
-        match self {
-            Value::String(s) => Uuid5::from_str(&s).ok(),
-            _ => None,
-        }
+impl UUID2Val for Uuid {
+    fn into_val(self) -> Value {
+        Value::String(self.hyphenated().to_string())
     }
 }
 
@@ -63,7 +67,7 @@ pub trait ToDBNode: HasID + HasUUID {
     fn to_db(&self) -> (ID, Vec<&'static str>, HashMap<&'static str, Value>) {
         let mut props = self.get_props();
         props.insert("db_id", self.get_db_id().into());
-        props.insert("uuid", self.get_uuid().into());
+        props.insert("uuid", self.get_uuid().into_val());
         (self.get_db_id(), self.get_labels(), props)
     }
 }
@@ -153,7 +157,7 @@ impl FromDB for EnumNode {
             .ok_or("db_id property is missing or not an Integer")?;
         let uuid = g.props
             .remove("uuid")
-            .and_then(Value::into_uuid5)
+            .and_then(Value::into_uuid)
             .ok_or("uuid property is missing or not a UUID5")?;
 
         if g.labs.contains(&String::from("Process")) {

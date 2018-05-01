@@ -17,6 +17,7 @@ extern crate futures;
 extern crate nix;
 extern crate serde_json;
 extern crate tokio_core;
+extern crate uuid;
 extern crate zip;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -47,4 +48,3 @@ pub mod iostream;
 pub mod neo4j_glue;
 pub mod query;
 pub mod trace;
-pub mod uuid;

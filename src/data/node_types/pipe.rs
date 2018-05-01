@@ -1,5 +1,5 @@
 use data::{Generable, HasID, HasUUID, ID};
-use uuid::Uuid5;
+use uuid::Uuid;
 
 pub struct PipeInit {
     pub fd: i32,
@@ -8,7 +8,7 @@ pub struct PipeInit {
 #[derive(Clone, Debug)]
 pub struct Pipe {
     db_id: ID,
-    uuid: Uuid5,
+    uuid: Uuid,
     pub fd: i32,
 }
 
@@ -21,7 +21,7 @@ impl HasID for Pipe {
 impl Generable for Pipe {
     type Init = PipeInit;
 
-    fn new(id: ID, uuid: Uuid5, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
@@ -41,7 +41,7 @@ impl Generable for Pipe {
 }
 
 impl HasUUID for Pipe {
-    fn get_uuid(&self) -> Uuid5 {
+    fn get_uuid(&self) -> Uuid {
         self.uuid
     }
 }

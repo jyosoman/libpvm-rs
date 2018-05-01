@@ -1,9 +1,9 @@
-use uuid::Uuid5;
+use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
 pub struct AuditEvent {
     pub event: String,
-    pub host: Option<Uuid5>,
+    pub host: Option<Uuid>,
     pub time: u64,
     pub pid: i32,
     pub ppid: i32,
@@ -17,12 +17,12 @@ pub struct AuditEvent {
     pub fd: Option<i32>,
     pub flags: Option<i32>,
     pub fdpath: Option<String>,
-    pub subjprocuuid: Uuid5,
-    pub subjthruuid: Uuid5,
-    pub arg_objuuid1: Option<Uuid5>,
-    pub arg_objuuid2: Option<Uuid5>,
-    pub ret_objuuid1: Option<Uuid5>,
-    pub ret_objuuid2: Option<Uuid5>,
+    pub subjprocuuid: Uuid,
+    pub subjthruuid: Uuid,
+    pub arg_objuuid1: Option<Uuid>,
+    pub arg_objuuid2: Option<Uuid>,
+    pub ret_objuuid1: Option<Uuid>,
+    pub ret_objuuid2: Option<Uuid>,
     pub retval: i32,
     pub ret_fd1: Option<i32>,
     pub ret_fd2: Option<i32>,
@@ -34,9 +34,9 @@ pub struct AuditEvent {
 #[derive(Deserialize, Debug)]
 pub struct FBTEvent {
     pub event: String,
-    pub host: Uuid5,
+    pub host: Uuid,
     pub time: u64,
-    pub so_uuid: Uuid5,
+    pub so_uuid: Uuid,
     pub lport: i32,
     pub fport: i32,
     pub laddr: String,

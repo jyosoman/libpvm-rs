@@ -1,7 +1,7 @@
 mod id;
 pub mod node_types;
 
-use uuid::Uuid5;
+use uuid::Uuid;
 
 pub use self::id::ID;
 
@@ -21,13 +21,13 @@ pub trait HasID {
 }
 
 pub trait HasUUID {
-    fn get_uuid(&self) -> Uuid5;
+    fn get_uuid(&self) -> Uuid;
 }
 
 pub trait Generable: HasID + HasUUID {
     type Init;
 
-    fn new(id: ID, uuid: Uuid5, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
     where
         Self: Sized;
 }

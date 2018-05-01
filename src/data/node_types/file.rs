@@ -1,5 +1,5 @@
 use data::{Generable, HasID, HasUUID, ID};
-use uuid::Uuid5;
+use uuid::Uuid;
 
 pub struct FileInit {
     pub name: String,
@@ -8,7 +8,7 @@ pub struct FileInit {
 #[derive(Clone, Debug)]
 pub struct File {
     db_id: ID,
-    uuid: Uuid5,
+    uuid: Uuid,
     pub name: String,
 }
 
@@ -21,7 +21,7 @@ impl HasID for File {
 impl Generable for File {
     type Init = FileInit;
 
-    fn new(id: ID, uuid: Uuid5, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
@@ -41,7 +41,7 @@ impl Generable for File {
 }
 
 impl HasUUID for File {
-    fn get_uuid(&self) -> Uuid5 {
+    fn get_uuid(&self) -> Uuid {
         self.uuid
     }
 }

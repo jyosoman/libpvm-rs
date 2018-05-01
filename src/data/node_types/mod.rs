@@ -11,7 +11,7 @@ pub use self::{editsession::{EditInit, EditSession},
                socket::{Socket, SocketClass, SocketInit}};
 
 use super::{Denumerate, Enumerable, HasID, HasUUID, ID};
-use uuid::Uuid5;
+use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub enum EnumNode {
@@ -43,7 +43,7 @@ enumnode_trait!(HasID,
                 get_db_id() -> ID);
 
 enumnode_trait!(HasUUID,
-                get_uuid() -> Uuid5);
+                get_uuid() -> Uuid);
 
 macro_rules! enum_denum {
     ($V:path, $T:ty) => {

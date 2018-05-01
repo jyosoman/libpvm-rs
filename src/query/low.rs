@@ -2,16 +2,16 @@ use data::node_types::EnumNode;
 
 use neo4j::{Neo4jDB, Neo4jOperations};
 
-use neo4j_glue::FromDB;
+use neo4j_glue::{FromDB, UUID2Val};
 
-use uuid::Uuid5;
+use uuid::Uuid;
 
-pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid5) -> Vec<EnumNode> {
+pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid) -> Vec<EnumNode> {
     cypher
         .run(
             "MATCH (n {uuid: {uuid}})
               RETURN n",
-            hashmap!("uuid" => uuid.into()),
+            hashmap!("uuid" => uuid.into_val()),
         )
         .unwrap()
         .first()

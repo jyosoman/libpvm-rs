@@ -12,7 +12,7 @@ use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
            Rel,
            ID};
 use lending_library::{LendingLibrary, Loan};
-use uuid::Uuid5;
+use uuid::Uuid;
 
 use super::{db::DB, persist::DBTr};
 
@@ -40,12 +40,12 @@ pub type RelGuard = Loan<ID, Rel>;
 
 pub struct PVM {
     db: DB,
-    uuid_cache: HashMap<Uuid5, ID>,
+    uuid_cache: HashMap<Uuid, ID>,
     node_cache: LendingLibrary<ID, Box<EnumNode>>,
     rel_cache: LendingLibrary<ID, Rel>,
     id_counter: AtomicUsize,
     inf_cache: HashMap<(ID, ID), ID>,
-    open_cache: HashMap<Uuid5, HashSet<Uuid5>>,
+    open_cache: HashMap<Uuid, HashSet<Uuid>>,
     pub unparsed_events: HashSet<String>,
 }
 
@@ -63,7 +63,7 @@ impl PVM {
         }
     }
 
-    pub fn release(&mut self, uuid: &Uuid5) {
+    pub fn release(&mut self, uuid: &Uuid) {
         if let Some(nid) = self.uuid_cache.remove(uuid) {
             self.node_cache.remove(nid);
         }
@@ -99,7 +99,7 @@ impl PVM {
         }
     }
 
-    pub fn add<T>(&mut self, uuid: Uuid5, init: Option<T::Init>) -> NodeGuard
+    pub fn add<T>(&mut self, uuid: Uuid, init: Option<T::Init>) -> NodeGuard
     where
         T: Generable + Enumerable,
     {
@@ -114,7 +114,7 @@ impl PVM {
         n
     }
 
-    pub fn declare<T>(&mut self, uuid: Uuid5, init: Option<T::Init>) -> NodeGuard
+    pub fn declare<T>(&mut self, uuid: Uuid, init: Option<T::Init>) -> NodeGuard
     where
         T: Generable + Enumerable,
     {

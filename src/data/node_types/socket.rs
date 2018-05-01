@@ -1,5 +1,5 @@
 use data::{Generable, HasID, HasUUID, ID};
-use uuid::Uuid5;
+use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug)]
 pub enum SocketClass {
@@ -22,7 +22,7 @@ impl SocketClass {
 #[derive(Clone, Debug)]
 pub struct Socket {
     db_id: ID,
-    uuid: Uuid5,
+    uuid: Uuid,
     pub class: SocketClass,
     pub path: String,
     pub ip: String,
@@ -45,7 +45,7 @@ impl HasID for Socket {
 impl Generable for Socket {
     type Init = SocketInit;
 
-    fn new(id: ID, uuid: Uuid5, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
@@ -71,7 +71,7 @@ impl Generable for Socket {
 }
 
 impl HasUUID for Socket {
-    fn get_uuid(&self) -> Uuid5 {
+    fn get_uuid(&self) -> Uuid {
         self.uuid
     }
 }
