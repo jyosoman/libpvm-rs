@@ -2,6 +2,8 @@
 #![feature(box_patterns)]
 #![feature(nll)]
 
+extern crate pvm_data as data;
+
 extern crate futures_cpupool;
 extern crate lending_library;
 extern crate libc;
@@ -40,7 +42,6 @@ macro_rules! timeit {
 pub use c_api::*;
 
 pub mod c_api;
-pub mod data;
 pub mod engine;
 pub mod ingest;
 pub mod invbloom;

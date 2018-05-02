@@ -1,3 +1,5 @@
+extern crate uuid;
+
 mod id;
 pub mod node_types;
 

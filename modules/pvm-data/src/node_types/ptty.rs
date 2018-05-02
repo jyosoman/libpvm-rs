@@ -1,37 +1,37 @@
-use data::{Generable, HasID, HasUUID, ID};
+use ::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid;
 
+pub struct PttyInit {
+    pub name: String,
+}
+
 #[derive(Clone, Debug)]
-pub struct EditSession {
+pub struct Ptty {
     db_id: ID,
     uuid: Uuid,
     pub name: String,
 }
 
-pub struct EditInit {
-    pub name: String,
-}
-
-impl HasID for EditSession {
+impl HasID for Ptty {
     fn get_db_id(&self) -> ID {
         self.db_id
     }
 }
 
-impl Generable for EditSession {
-    type Init = EditInit;
+impl Generable for Ptty {
+    type Init = PttyInit;
 
     fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         match init {
-            Some(i) => EditSession {
+            Some(i) => Ptty {
                 db_id: id,
                 uuid,
                 name: i.name,
             },
-            None => EditSession {
+            None => Ptty {
                 db_id: id,
                 uuid,
                 name: String::new(),
@@ -40,7 +40,7 @@ impl Generable for EditSession {
     }
 }
 
-impl HasUUID for EditSession {
+impl HasUUID for Ptty {
     fn get_uuid(&self) -> Uuid {
         self.uuid
     }

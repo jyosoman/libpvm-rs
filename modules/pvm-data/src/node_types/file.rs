@@ -1,46 +1,46 @@
-use data::{Generable, HasID, HasUUID, ID};
+use ::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid;
 
-pub struct PipeInit {
-    pub fd: i32,
+pub struct FileInit {
+    pub name: String,
 }
 
 #[derive(Clone, Debug)]
-pub struct Pipe {
+pub struct File {
     db_id: ID,
     uuid: Uuid,
-    pub fd: i32,
+    pub name: String,
 }
 
-impl HasID for Pipe {
+impl HasID for File {
     fn get_db_id(&self) -> ID {
         self.db_id
     }
 }
 
-impl Generable for Pipe {
-    type Init = PipeInit;
+impl Generable for File {
+    type Init = FileInit;
 
     fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
         match init {
-            Some(i) => Pipe {
+            Some(i) => File {
                 db_id: id,
                 uuid,
-                fd: i.fd,
+                name: i.name,
             },
-            None => Pipe {
+            None => File {
                 db_id: id,
                 uuid,
-                fd: -1,
+                name: String::new(),
             },
         }
     }
 }
 
-impl HasUUID for Pipe {
+impl HasUUID for File {
     fn get_uuid(&self) -> Uuid {
         self.uuid
     }

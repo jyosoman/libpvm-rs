@@ -1,4 +1,4 @@
-use data::{Generable, HasID, HasUUID, ID};
+use ::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug)]

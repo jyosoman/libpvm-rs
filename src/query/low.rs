@@ -2,7 +2,7 @@ use data::node_types::EnumNode;
 
 use neo4j::{Neo4jDB, Neo4jOperations};
 
-use neo4j_glue::{FromDB, UUID2Val};
+use neo4j_glue::{FromDB, IntoVal};
 
 use uuid::Uuid;
 

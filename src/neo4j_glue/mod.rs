@@ -23,7 +23,7 @@ pub trait Val2UUID {
     fn into_uuid(self) -> Option<Uuid>;
 }
 
-pub trait UUID2Val {
+pub trait IntoVal {
     fn into_val(self) -> Value;
 }
 
@@ -36,15 +36,26 @@ impl Val2UUID for Value {
     }
 }
 
-impl UUID2Val for Uuid {
+impl IntoVal for Uuid {
     fn into_val(self) -> Value {
         Value::String(self.hyphenated().to_string())
     }
 }
 
-impl From<ID> for Value {
-    fn from(val: ID) -> Self {
-        Value::Integer(val.inner())
+impl IntoVal for ID {
+    fn into_val(self) -> Value {
+        Value::Integer(self.inner())
+    }
+}
+
+impl IntoVal for PVMOps {
+    fn into_val(self) -> Value {
+        match self {
+            PVMOps::Sink => "Sink".into(),
+            PVMOps::Source => "Source".into(),
+            PVMOps::Connect => "Connect".into(),
+            PVMOps::Version => "Version".into(),
+        }
     }
 }
 
@@ -66,7 +77,7 @@ pub trait ToDBNode: HasID + HasUUID {
     fn get_props(&self) -> HashMap<&'static str, Value>;
     fn to_db(&self) -> (ID, Vec<&'static str>, HashMap<&'static str, Value>) {
         let mut props = self.get_props();
-        props.insert("db_id", self.get_db_id().into());
+        props.insert("db_id", self.get_db_id().into_val());
         props.insert("uuid", self.get_uuid().into_val());
         (self.get_db_id(), self.get_labels(), props)
     }
@@ -100,17 +111,6 @@ impl ToDBNode for EnumNode {
     }
 }
 
-impl From<PVMOps> for Value {
-    fn from(val: PVMOps) -> Value {
-        match val {
-            PVMOps::Sink => "Sink".into(),
-            PVMOps::Source => "Source".into(),
-            PVMOps::Connect => "Connect".into(),
-            PVMOps::Version => "Version".into(),
-        }
-    }
-}
-
 pub trait ToDBRel {
     fn to_db(&self) -> (ID, Value);
 }
@@ -126,14 +126,14 @@ impl ToDBRel for Rel {
                 ref generating_call,
                 byte_count,
             } => {
-                let props: HashMap<&str, Value> = hashmap!("db_id" => Value::from(id),
-                                                           "pvm_op" => Value::from(pvm_op),
+                let props: HashMap<&str, Value> = hashmap!("db_id" => id.into_val(),
+                                                           "pvm_op" => pvm_op.into_val(),
                                                            "generating_call" => Value::from(generating_call.clone()),
                                                            "byte_count" => Value::from(byte_count));
                 (
                     id,
-                    hashmap!("src" => Value::from(src),
-                          "dst" => Value::from(dst),
+                    hashmap!("src" => src.into_val(),
+                          "dst" => dst.into_val(),
                           "type" => Value::from("INF"),
                           "props" => Value::from(props))
                         .into(),
