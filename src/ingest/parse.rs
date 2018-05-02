@@ -369,7 +369,9 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
                 "audit:event:aue_connect:" => posix_connect(tr, pro, pvm),
                 "audit:event:aue_execve:" => proc_exec(tr, pro, pvm),
                 "audit:event:aue_exit:" => proc_exit(tr, pro, pvm),
-                "audit:event:aue_fork:" | "audit:event:aue_vfork:" => proc_fork(tr, pro, pvm),
+                "audit:event:aue_fork:" | "audit:event:aue_pdfork:" | "audit:event:aue_vfork:" => {
+                    proc_fork(tr, pro, pvm)
+                }
                 "audit:event:aue_fchmod:" => posix_fchmod(tr, pro, pvm),
                 "audit:event:aue_fchown:" => posix_fchown(tr, pro, pvm),
                 "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
