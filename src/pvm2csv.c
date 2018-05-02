@@ -21,7 +21,19 @@ int main(int argc, char** argv) {
   opus_start_pipeline(hdl);
 
   KeyVal params = {.key = "path", .val = argv[2]};
-  opus_create_view_by_name(hdl, "CSVView", &params, 1);
+  intptr_t ret = opus_create_view_by_name(hdl, "CSVView", &params, 1);
+  if(ret < 0 ){
+    if(ret == -EAMBIGUOUSVIEWNAME) {
+      printf("Error: Ambiguous view name");
+    }
+    if(ret == -ENOVIEWWITHNAME) {
+      printf("Error: Unknown view");
+    }
+    if(ret == -EINVALIDARG) {
+      printf("Error: Cannot parse name");
+    }
+    return -1;
+  }
 
   opus_ingest_fd(hdl, in);
   opus_shutdown_pipeline(hdl);
