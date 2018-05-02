@@ -232,7 +232,7 @@ pub unsafe extern "C" fn opus_create_view_by_name(
     let views_with_name = match engine.list_view_types() {
         Ok(vtypes) => vtypes
             .into_iter()
-            .skip_while(|v| v.name() != name)
+            .filter(|v| v.name() == name)
             .map(|v| v.id())
             .collect::<Vec<usize>>(),
         Err(e) => {
