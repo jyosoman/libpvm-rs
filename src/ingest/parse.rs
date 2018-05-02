@@ -1,5 +1,5 @@
 use super::pvm::{ConnectDir, NodeGuard, PVMError, PVM};
-use data::{node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Socket,
+use data::{node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket,
                         SocketClass, SocketInit},
            Denumerate,
            Rel};
@@ -342,6 +342,12 @@ fn posix_fchown(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PV
     Ok(())
 }
 
+fn posix_posix_openpt(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let ttyuuid = tr_field!(tr, ret_objuuid1);
+    pvm.declare::<Ptty>(ttyuuid, None);
+    Ok(())
+}
+
 pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
     match *tr {
         TraceEvent::Audit(box ref tr) => {
@@ -372,6 +378,7 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
                     posix_open(tr, pro, pvm)
                 }
                 "audit:event:aue_pipe:" => posix_pipe(tr, pro, pvm),
+                "audit:event:aue_posix_openpt:" => posix_posix_openpt(tr, pro, pvm),
                 "audit:event:aue_read:" | "audit:event:aue_pread:" => posix_read(tr, pro, pvm),
                 "audit:event:aue_recvmsg:" => posix_recvmsg(tr, pro, pvm),
                 "audit:event:aue_recvfrom:" => posix_recvfrom(tr, pro, pvm),

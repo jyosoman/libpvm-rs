@@ -2,12 +2,14 @@ mod editsession;
 mod file;
 mod pipe;
 mod process;
+mod ptty;
 mod socket;
 
 pub use self::{editsession::{EditInit, EditSession},
                file::{File, FileInit},
                pipe::{Pipe, PipeInit},
                process::{Process, ProcessInit},
+               ptty::{Ptty, PttyInit},
                socket::{Socket, SocketClass, SocketInit}};
 
 use super::{Denumerate, Enumerable, HasID, HasUUID, ID};
@@ -20,6 +22,7 @@ pub enum EnumNode {
     Pipe(Pipe),
     EditSession(EditSession),
     Socket(Socket),
+    Ptty(Ptty),
 }
 
 macro_rules! enumnode_trait {
@@ -33,6 +36,7 @@ macro_rules! enumnode_trait {
                     EnumNode::EditSession(ref e) => e.$F(),
                     EnumNode::File(ref f) => f.$F(),
                     EnumNode::Socket(ref s) => s.$F(),
+                    EnumNode::Ptty(ref p) => p.$F(),
                 }
             })*
         }
@@ -77,3 +81,4 @@ enum_denum!(EnumNode::File, File);
 enum_denum!(EnumNode::Pipe, Pipe);
 enum_denum!(EnumNode::Proc, Process);
 enum_denum!(EnumNode::Socket, Socket);
+enum_denum!(EnumNode::Ptty, Ptty);

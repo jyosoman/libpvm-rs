@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use neo4j::{Node, Value};
 
 use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit, Pipe, PipeInit, Process,
-                        ProcessInit, Socket, SocketClass, SocketInit},
+                        ProcessInit, Ptty, PttyInit, Socket, SocketClass, SocketInit},
            Enumerable,
            Generable,
            HasID,
@@ -80,6 +80,7 @@ impl ToDBNode for EnumNode {
             EnumNode::Pipe(_) => vec!["Node", "Pipe"],
             EnumNode::Proc(_) => vec!["Node", "Process"],
             EnumNode::Socket(_) => vec!["Node", "Socket"],
+            EnumNode::Ptty(_) => vec!["Node", "Ptty"],
         }
     }
     fn get_props(&self) -> HashMap<&'static str, Value> {
@@ -94,6 +95,7 @@ impl ToDBNode for EnumNode {
                                                 "path" => Value::from(s.path.clone()),
                                                 "ip" => Value::from(s.ip.clone()),
                                                 "port" => Value::from(s.port)),
+            EnumNode::Ptty(ref p) => hashmap!("name"  => Value::from(p.name.clone())),
         }
     }
 }
@@ -170,6 +172,8 @@ impl FromDB for EnumNode {
             Ok(Socket::new(id, uuid, Some(g.into_init()?)).enumerate())
         } else if g.labs.contains(&String::from("Pipe")) {
             Ok(Pipe::new(id, uuid, Some(g.into_init()?)).enumerate())
+        } else if g.labs.contains(&String::from("Ptty")) {
+            Ok(Ptty::new(id, uuid, Some(g.into_init()?)).enumerate())
         } else {
             Err("Node doesn't match any known type.")
         }
@@ -252,6 +256,17 @@ impl IntoInit<SocketInit> for Node {
                 .remove("port")
                 .and_then(Value::into_int)
                 .ok_or("port property is missing or not an Integer")?,
+        })
+    }
+}
+
+impl IntoInit<PttyInit> for Node {
+    fn into_init(mut self) -> Result<PttyInit, &'static str> {
+        Ok(PttyInit {
+            name: self.props
+                .remove("name")
+                .and_then(Value::into_string)
+                .ok_or("name property is missing or not a string")?,
         })
     }
 }

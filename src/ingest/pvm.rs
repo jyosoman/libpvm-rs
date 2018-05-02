@@ -202,6 +202,12 @@ impl PVM {
                     self.db.update_node(eref);
                 }
             }
+            EnumNode::Ptty(ref mut pref) => {
+                if pref.name == "" {
+                    pref.name = name;
+                    self.db.update_node(pref);
+                }
+            }
             _ => {}
         }
     }

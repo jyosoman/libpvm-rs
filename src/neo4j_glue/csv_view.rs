@@ -18,7 +18,7 @@ export NEO4J_PASS=opus
 echo "Preparing to hydrate database"
 read -p "Ensure neo4j is stopped and that any database files have been removed. Then press enter."
 echo "Importing data"
-neo4j-admin import --nodes proc.csv --nodes file.csv --nodes es.csv --nodes pipe.csv --nodes socket.csv --nodes dbinfo.csv --relationships rel.csv --id-type=INTEGER --multiline-fields=true
+neo4j-admin import --nodes proc.csv --nodes file.csv --nodes es.csv --nodes pipe.csv --nodes ptty.csv --nodes socket.csv --nodes dbinfo.csv --relationships rel.csv --id-type=INTEGER --multiline-fields=true
 echo "Data import complete"
 read -p "Now start neo4j, wait for it to come up, then press enter."
 echo -n "Building indexes..."
@@ -79,6 +79,7 @@ impl View for CSVView {
             let mut pipes = HashMap::new();
             let mut sockets = HashMap::new();
             let mut rels = HashMap::new();
+            let mut pttys = HashMap::new();
 
             for evt in stream {
                 match *evt {
@@ -97,6 +98,9 @@ impl View for CSVView {
                         }
                         EnumNode::Socket(ref s) => {
                             sockets.insert(s.get_db_id(), s.clone());
+                        }
+                        EnumNode::Ptty(ref p) => {
+                            pttys.insert(p.get_db_id(), p.clone());
                         }
                     },
                     DBTr::CreateRel(ref rel) => {
@@ -117,6 +121,9 @@ impl View for CSVView {
                         }
                         EnumNode::Socket(ref s) => {
                             sockets.insert(s.get_db_id(), s.clone());
+                        }
+                        EnumNode::Ptty(ref p) => {
+                            pttys.insert(p.get_db_id(), p.clone());
                         }
                     },
                     DBTr::UpdateRel(ref rel) => {
@@ -199,6 +206,11 @@ impl View for CSVView {
                     v.ip,
                     v.port
                 ).unwrap();
+            }
+            out.start_file("ptty.csv", FileOptions::default()).unwrap();
+            writeln!(out, "db_id:ID,:LABEL,uuid,name").unwrap();
+            for (_, v) in pttys {
+                writeln!(out, "{},Node;Ptty,{},\"{}\"", v.get_db_id(), v.get_uuid(), v.name).unwrap();
             }
             out.finish().unwrap();
         });
