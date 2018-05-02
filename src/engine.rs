@@ -1,25 +1,16 @@
-use c_api::{AdvancedConfig, CfgMode};
 use ingest::{ingest_stream,
-             persist::{View, ViewCoordinator, ViewInst},
              pvm::PVM};
 use iostream::IOStream;
 use neo4j_glue::{CSVView, Neo4JView};
 use query::low::count_processes;
 use std::{collections::HashMap, sync::mpsc};
 
+use cfg::Config;
+use views::{View, ViewInst, ViewCoordinator};
+
 use neo4j::Neo4jDB;
 
 type EngineResult<T> = Result<T, &'static str>;
-
-#[derive(Debug)]
-pub struct Config {
-    pub cfg_mode: CfgMode,
-    pub db_server: String,
-    pub db_user: String,
-    pub db_password: String,
-    pub suppress_default_views: bool,
-    pub cfg_detail: Option<AdvancedConfig>,
-}
 
 pub struct Pipeline {
     pvm: PVM,

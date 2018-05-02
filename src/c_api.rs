@@ -10,6 +10,7 @@ use std::{collections::HashMap,
           ptr,
           slice};
 
+use cfg;
 use engine;
 
 #[repr(C)]
@@ -52,27 +53,13 @@ pub struct ViewInst {
 }
 
 #[repr(C)]
-#[derive(Debug, PartialEq)]
-pub enum CfgMode {
-    Auto,
-    Advanced,
-}
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct AdvancedConfig {
-    consumer_threads: usize,
-    persistence_threads: usize,
-}
-
-#[repr(C)]
 pub struct Config {
-    cfg_mode: CfgMode,
+    cfg_mode: cfg::CfgMode,
     db_server: *mut c_char,
     db_user: *mut c_char,
     db_password: *mut c_char,
     suppress_default_views: bool,
-    cfg_detail: *const AdvancedConfig,
+    cfg_detail: *const cfg::AdvancedConfig,
 }
 
 pub struct OpusHdl(engine::Engine);
@@ -125,7 +112,7 @@ fn string_from_c_char(str_p: *const c_char) -> Option<String> {
 
 #[no_mangle]
 pub unsafe extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
-    let r_cfg = engine::Config {
+    let r_cfg = cfg::Config {
         cfg_mode: cfg.cfg_mode,
         db_server: string_from_c_char(cfg.db_server).unwrap_or("localhost:7687".to_string()),
         db_user: string_from_c_char(cfg.db_user).unwrap_or("neo4j".to_string()),

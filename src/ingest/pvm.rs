@@ -11,10 +11,12 @@ use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
            PVMOps,
            Rel,
            ID};
+use views::DBTr;
+
 use lending_library::{LendingLibrary, Loan};
 use uuid::Uuid;
 
-use super::{db::DB, persist::DBTr};
+use super::{db::DB};
 
 pub enum PVMError {
     MissingField { evt: String, field: &'static str },

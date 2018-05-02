@@ -1,3 +1,6 @@
+extern crate pvm_cfg as cfg;
+extern crate pvm_data as data;
+
 use std::{collections::HashMap,
           fmt::Debug,
           sync::{mpsc, Arc, Mutex},
@@ -5,7 +8,7 @@ use std::{collections::HashMap,
 
 use data::{node_types::EnumNode, Rel};
 
-use engine::Config;
+use cfg::Config;
 
 #[derive(Clone, Debug)]
 pub enum DBTr {
@@ -39,8 +42,8 @@ impl ViewInst {
 
 pub trait View: Debug {
     fn new(id: usize) -> Self
-    where
-        Self: Sized;
+        where
+            Self: Sized;
     fn id(&self) -> usize;
     fn name(&self) -> &'static str;
     fn desc(&self) -> &'static str;

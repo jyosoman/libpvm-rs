@@ -30,5 +30,6 @@ maplit = "*"
 uuid = { version = "0.6", features = ["serde"] }
 zip = "0.3.1"
 neo4j = {path = "modules/rusty-bolt/neo4j" }
-pvm-data = {path = "modules/pvm-data" }
-
+pvm-cfg = { path = "modules/pvm-cfg" }
+pvm-data = { path = "modules/pvm-data" }
+pvm-views = { path = "modules/pvm-views" }

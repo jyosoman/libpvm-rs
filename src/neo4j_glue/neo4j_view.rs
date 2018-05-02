@@ -6,8 +6,8 @@ use std::{collections::{hash_map::Entry, HashMap},
 
 use data::ID;
 
-use engine::Config;
-use ingest::persist::{DBTr, View, ViewInst};
+use cfg::Config;
+use views::{DBTr, View, ViewInst};
 use neo4j_glue::{ToDBNode, ToDBRel};
 
 const BATCH_SIZE: usize = 1000;

@@ -6,10 +6,9 @@ use std::{collections::HashMap,
 
 use zip::{write::FileOptions, ZipWriter};
 
+use cfg::Config;
 use data::{node_types::EnumNode, HasID, HasUUID, Rel};
-use ingest::persist::{DBTr, View, ViewInst};
-
-use engine::Config;
+use views::{DBTr, View, ViewInst};
 
 const HYDRATE_SH: &'static str =
 r#"#! /bin/bash

@@ -1,6 +1,5 @@
 mod db;
 mod parse;
-pub mod persist;
 pub mod pvm;
 
 use std::io::{BufRead, BufReader, Read};

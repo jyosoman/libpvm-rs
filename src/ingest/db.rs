@@ -1,7 +1,7 @@
 use std::sync::mpsc::SyncSender;
 
-use super::persist::DBTr;
 use data::{Enumerable, Rel};
+use views::DBTr;
 
 pub struct DB {
     persist_pipe: SyncSender<DBTr>,
