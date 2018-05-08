@@ -3,9 +3,10 @@
  * https://www.somethingsimilar.com/2012/05/21/the-opposite-of-a-bloom-filter/
  */
 
-use std::{collections::hash_map::DefaultHasher,
-          hash::{Hash, Hasher},
-          sync::atomic::{AtomicUsize, Ordering}};
+use std::{
+    collections::hash_map::DefaultHasher, hash::{Hash, Hasher},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 const N: usize = 256; // have to pick power of 2
 const NMASK: usize = N - 1;

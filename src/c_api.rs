@@ -1,14 +1,10 @@
 use iostream::IOStream;
 use libc::{c_char, malloc};
 
-use std::{collections::HashMap,
-          ffi::CStr,
-          hash::Hash,
-          mem::size_of,
-          ops::Deref,
-          os::unix::io::{FromRawFd, RawFd},
-          ptr,
-          slice};
+use std::{
+    collections::HashMap, ffi::CStr, hash::Hash, mem::size_of, ops::Deref,
+    os::unix::io::{FromRawFd, RawFd}, ptr, slice,
+};
 
 use cfg;
 use engine;

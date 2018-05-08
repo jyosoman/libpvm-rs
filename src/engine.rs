@@ -1,12 +1,11 @@
-use ingest::{ingest_stream,
-             pvm::PVM};
+use ingest::{ingest_stream, pvm::PVM};
 use iostream::IOStream;
 use neo4j_glue::{CSVView, Neo4JView};
 use query::low::count_processes;
 use std::{collections::HashMap, sync::mpsc};
 
 use cfg::Config;
-use views::{View, ViewInst, ViewCoordinator};
+use views::{View, ViewCoordinator, ViewInst};
 
 use neo4j::Neo4jDB;
 

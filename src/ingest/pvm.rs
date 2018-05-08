@@ -1,22 +1,20 @@
-use std::{collections::{HashMap, HashSet},
-          fmt::{Display, Formatter, Result as FMTResult},
-          sync::{atomic::{AtomicUsize, Ordering},
-                 mpsc::SyncSender}};
+use std::{
+    collections::{HashMap, HashSet}, fmt::{Display, Formatter, Result as FMTResult},
+    sync::{
+        atomic::{AtomicUsize, Ordering}, mpsc::SyncSender,
+    },
+};
 
-use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit},
-           Enumerable,
-           Generable,
-           HasID,
-           HasUUID,
-           PVMOps,
-           Rel,
-           ID};
+use data::{
+    node_types::{EditInit, EditSession, EnumNode, File, FileInit}, Enumerable, Generable, HasID,
+    HasUUID, PVMOps, Rel, ID,
+};
 use views::DBTr;
 
 use lending_library::{LendingLibrary, Loan};
 use uuid::Uuid;
 
-use super::{db::DB};
+use super::db::DB;
 
 pub enum PVMError {
     MissingField { evt: String, field: &'static str },

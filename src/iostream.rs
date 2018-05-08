@@ -1,12 +1,15 @@
-use nix::{self,
-          sys::{socket::{getsockname, getsockopt, sockopt, SockAddr, SockType},
-                stat::fstat}};
-use std::{error::Error,
-          fs,
-          io::{self, Read},
-          net,
-          os::unix::{self,
-                     io::{FromRawFd, RawFd}}};
+use nix::{
+    self,
+    sys::{
+        socket::{getsockname, getsockopt, sockopt, SockAddr, SockType}, stat::fstat,
+    },
+};
+use std::{
+    error::Error, fs, io::{self, Read}, net,
+    os::unix::{
+        self, io::{FromRawFd, RawFd},
+    },
+};
 
 pub struct UdpSocketR(pub net::UdpSocket);
 pub struct UnixPipe(fs::File);

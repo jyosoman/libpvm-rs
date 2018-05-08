@@ -1,14 +1,14 @@
 use neo4j::{Neo4jDB, Neo4jOperations, Value};
 
-use std::{collections::{hash_map::Entry, HashMap},
-          sync::{mpsc::Receiver, Arc},
-          thread};
+use std::{
+    collections::{hash_map::Entry, HashMap}, sync::{mpsc::Receiver, Arc}, thread,
+};
 
 use data::ID;
 
 use cfg::Config;
-use views::{DBTr, View, ViewInst};
 use neo4j_glue::{ToDBNode, ToDBRel};
+use views::{DBTr, View, ViewInst};
 
 const BATCH_SIZE: usize = 1000;
 const TR_SIZE: usize = 100_000;

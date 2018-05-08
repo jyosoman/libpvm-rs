@@ -1,8 +1,10 @@
 use super::pvm::{ConnectDir, NodeGuard, PVMError, PVM};
-use data::{node_types::{EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket,
-                        SocketClass, SocketInit},
-           Denumerate,
-           Rel};
+use data::{
+    node_types::{
+        EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket, SocketClass, SocketInit,
+    },
+    Denumerate, Rel,
+};
 use trace::{AuditEvent, TraceEvent};
 
 macro_rules! tr_field {

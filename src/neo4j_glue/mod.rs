@@ -7,15 +7,13 @@ use std::collections::HashMap;
 
 use neo4j::{Node, Value};
 
-use data::{node_types::{EditInit, EditSession, EnumNode, File, FileInit, Pipe, PipeInit, Process,
-                        ProcessInit, Ptty, PttyInit, Socket, SocketClass, SocketInit},
-           Enumerable,
-           Generable,
-           HasID,
-           HasUUID,
-           PVMOps,
-           Rel,
-           ID};
+use data::{
+    node_types::{
+        EditInit, EditSession, EnumNode, File, FileInit, Pipe, PipeInit, Process, ProcessInit,
+        Ptty, PttyInit, Socket, SocketClass, SocketInit,
+    },
+    Enumerable, Generable, HasID, HasUUID, PVMOps, Rel, ID,
+};
 
 use uuid::Uuid;
 
