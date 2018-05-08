@@ -6,7 +6,7 @@ use std::{
     os::unix::io::{FromRawFd, RawFd}, ptr, slice,
 };
 
-use cfg;
+use cfg::{self, CfgMode, AdvancedConfig};
 use engine;
 
 #[repr(C)]
@@ -50,12 +50,12 @@ pub struct ViewInst {
 
 #[repr(C)]
 pub struct Config {
-    cfg_mode: cfg::CfgMode,
+    cfg_mode: CfgMode,
     db_server: *mut c_char,
     db_user: *mut c_char,
     db_password: *mut c_char,
     suppress_default_views: bool,
-    cfg_detail: *const cfg::AdvancedConfig,
+    cfg_detail: *const AdvancedConfig,
 }
 
 pub struct OpusHdl(engine::Engine);

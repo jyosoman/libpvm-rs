@@ -19,6 +19,7 @@ fn generate_with_lang(crate_dir: &str, lang: cbindgen::Language, out: &str) {
         }
         Err(e) => {
             eprintln!("Failed to generate bindings: {}", e);
+            panic!();
         }
     }
 }
