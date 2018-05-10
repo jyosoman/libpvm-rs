@@ -65,7 +65,7 @@ impl PVM {
 
     pub fn release(&mut self, uuid: &Uuid) {
         if let Some(nid) = self.uuid_cache.remove(uuid) {
-            self.node_cache.remove(nid);
+            self.node_cache.remove(&nid);
         }
     }
 
@@ -80,7 +80,7 @@ impl PVM {
     {
         let id_pair = (src.get_db_id(), dst.get_db_id());
         if self.inf_cache.contains_key(&id_pair) {
-            self.rel_cache.lend(self.inf_cache[&id_pair]).unwrap()
+            self.rel_cache.lend(&self.inf_cache[&id_pair]).unwrap()
         } else {
             let id = self._nextid();
             let rel = Rel::Inf {
@@ -93,7 +93,7 @@ impl PVM {
             };
             self.rel_cache.insert(id, rel);
             self.inf_cache.insert(id_pair, id);
-            let r = self.rel_cache.lend(id).unwrap();
+            let r = self.rel_cache.lend(&id).unwrap();
             self.db.create_rel(&r);
             r
         }
@@ -106,10 +106,10 @@ impl PVM {
         let id = self._nextid();
         let node = Box::new(T::new(id, uuid, init).enumerate());
         if let Some(nid) = self.uuid_cache.insert(uuid, id) {
-            self.node_cache.remove(nid);
+            self.node_cache.remove(&nid);
         }
         self.node_cache.insert(id, node);
-        let n = self.node_cache.lend(id).unwrap();
+        let n = self.node_cache.lend(&id).unwrap();
         self.db.create_node(&**n);
         n
     }
@@ -121,7 +121,7 @@ impl PVM {
         if !self.uuid_cache.contains_key(&uuid) {
             self.add::<T>(uuid, init)
         } else {
-            self.node_cache.lend(self.uuid_cache[&uuid]).unwrap()
+            self.node_cache.lend(&self.uuid_cache[&uuid]).unwrap()
         }
     }
 
