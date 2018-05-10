@@ -231,11 +231,16 @@ fn posix_mmap(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVME
         pvm.name(&mut f, fdpath);
     }
     if let Some(flags) = tr.arg_mem_flags.clone() {
-        if flags.contains(&String::from("PROT_WRITE"))
-            && !flags.contains(&String::from("MAP_PRIVATE"))
-        {
-            pvm.sinkstart(&pro, &f, &tr.event);
+        if flags.contains(&String::from("PROT_WRITE")) {
+            if let Some(share_flags) = tr.arg_sharing_flags.clone() {
+                if !share_flags.contains(&String::from("MAP_PRIVATE")) {
+                    pvm.sinkstart(&pro, &f, &tr.event);
+                }
+            } else {
+                pvm.sinkstart(&pro, &f, &tr.event);
+            }
         }
+
         if flags.contains(&String::from("PROT_READ")) {
             pvm.source(&pro, &f, &tr.event);
         }

@@ -27,6 +27,7 @@ pub struct AuditEvent {
     pub ret_fd1: Option<i32>,
     pub ret_fd2: Option<i32>,
     pub arg_mem_flags: Option<Vec<String>>,
+    pub arg_sharing_flags: Option<Vec<String>>,
     pub address: Option<String>,
     pub port: Option<u16>,
 }
