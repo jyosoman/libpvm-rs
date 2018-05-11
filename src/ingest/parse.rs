@@ -356,8 +356,8 @@ fn posix_posix_openpt(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result
 }
 
 pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
-    match *tr {
-        TraceEvent::Audit(box ref tr) => {
+    match tr {
+        TraceEvent::Audit(box tr) => {
             let pro = pvm.declare::<Process>(
                 tr.subjprocuuid,
                 Some(ProcessInit {

@@ -1,4 +1,3 @@
-#![feature(slice_patterns)]
 #![feature(box_patterns)]
 #![feature(nll)]
 

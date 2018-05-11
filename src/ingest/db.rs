@@ -12,10 +12,7 @@ impl DB {
         DB { persist_pipe: pipe }
     }
 
-    pub fn create_node<T>(&mut self, node: T)
-    where
-        T: Enumerable,
-    {
+    pub fn create_node(&mut self, node: impl Enumerable) {
         self.persist_pipe
             .send(DBTr::CreateNode(node.enumerate()))
             .expect("Database worker closed queue unexpectadly")
@@ -27,10 +24,7 @@ impl DB {
             .expect("Database worker closed queue unexpectadly");
     }
 
-    pub fn update_node<T>(&mut self, node: T)
-    where
-        T: Enumerable,
-    {
+    pub fn update_node(&mut self, node: impl Enumerable) {
         self.persist_pipe
             .send(DBTr::UpdateNode(node.enumerate()))
             .expect("Database worker closed queue unexpectadly")

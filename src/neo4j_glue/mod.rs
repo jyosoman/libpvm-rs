@@ -83,7 +83,7 @@ pub trait ToDBNode: HasID + HasUUID {
 
 impl ToDBNode for EnumNode {
     fn get_labels(&self) -> Vec<&'static str> {
-        match *self {
+        match self {
             EnumNode::EditSession(_) => vec!["Node", "EditSession"],
             EnumNode::File(_) => vec!["Node", "File"],
             EnumNode::Pipe(_) => vec!["Node", "Pipe"],
@@ -93,18 +93,18 @@ impl ToDBNode for EnumNode {
         }
     }
     fn get_props(&self) -> HashMap<&'static str, Value> {
-        match *self {
-            EnumNode::EditSession(ref e) => hashmap!("name"  => Value::from(e.name.clone())),
-            EnumNode::File(ref f) => hashmap!("name"  => Value::from(f.name.clone())),
-            EnumNode::Pipe(ref p) => hashmap!("fd"    => Value::from(p.fd)),
-            EnumNode::Proc(ref p) => hashmap!("cmdline" => Value::from(p.cmdline.clone()),
-                                              "pid"     => Value::from(p.pid),
-                                              "thin"    => Value::from(p.thin)),
-            EnumNode::Socket(ref s) => hashmap!("class"  => Value::from(s.class as i64),
-                                                "path" => Value::from(s.path.clone()),
-                                                "ip" => Value::from(s.ip.clone()),
-                                                "port" => Value::from(s.port)),
-            EnumNode::Ptty(ref p) => hashmap!("name"  => Value::from(p.name.clone())),
+        match self {
+            EnumNode::EditSession(e) => hashmap!("name"  => Value::from(e.name.clone())),
+            EnumNode::File(f) => hashmap!("name"  => Value::from(f.name.clone())),
+            EnumNode::Pipe(p) => hashmap!("fd"    => Value::from(p.fd)),
+            EnumNode::Proc(p) => hashmap!("cmdline" => Value::from(p.cmdline.clone()),
+                                          "pid"     => Value::from(p.pid),
+                                          "thin"    => Value::from(p.thin)),
+            EnumNode::Socket(s) => hashmap!("class"  => Value::from(s.class as i64),
+                                            "path" => Value::from(s.path.clone()),
+                                            "ip" => Value::from(s.ip.clone()),
+                                            "port" => Value::from(s.port)),
+            EnumNode::Ptty(p) => hashmap!("name"  => Value::from(p.name.clone())),
         }
     }
 }
@@ -115,21 +115,21 @@ pub trait ToDBRel {
 
 impl ToDBRel for Rel {
     fn to_db(&self) -> (ID, Value) {
-        match *self {
+        match self {
             Rel::Inf {
                 id,
                 src,
                 dst,
                 pvm_op,
-                ref generating_call,
+                generating_call,
                 byte_count,
             } => {
                 let props: HashMap<&str, Value> = hashmap!("db_id" => id.into_val(),
                                                            "pvm_op" => pvm_op.into_val(),
                                                            "generating_call" => Value::from(generating_call.clone()),
-                                                           "byte_count" => Value::from(byte_count));
+                                                           "byte_count" => Value::from(*byte_count));
                 (
-                    id,
+                    *id,
                     hashmap!("src" => src.into_val(),
                           "dst" => dst.into_val(),
                           "type" => Value::from("INF"),

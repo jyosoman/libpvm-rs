@@ -13,10 +13,7 @@ use trace::TraceEvent;
 
 const BATCH_SIZE: usize = 0x80_000;
 
-pub fn ingest_stream<R>(stream: R, pvm: &mut PVM)
-where
-    R: Read,
-{
+pub fn ingest_stream(stream: impl Read, pvm: &mut PVM) {
     let mut pre_vec: Vec<(usize, String)> = Vec::with_capacity(BATCH_SIZE);
     let mut post_vec: Vec<(usize, Option<TraceEvent>)> = Vec::with_capacity(BATCH_SIZE);
     let mut lines = BufReader::new(stream).lines().enumerate();

@@ -30,13 +30,13 @@ macro_rules! enumnode_trait {
      $($F:ident() -> $T: ty),*) => {
         impl $TR for EnumNode {
             $(fn $F(&self) -> $T {
-                match *self {
-                    EnumNode::Proc(ref p) => p.$F(),
-                    EnumNode::Pipe(ref p) => p.$F(),
-                    EnumNode::EditSession(ref e) => e.$F(),
-                    EnumNode::File(ref f) => f.$F(),
-                    EnumNode::Socket(ref s) => s.$F(),
-                    EnumNode::Ptty(ref p) => p.$F(),
+                match self {
+                    EnumNode::Proc(p) => p.$F(),
+                    EnumNode::Pipe(p) => p.$F(),
+                    EnumNode::EditSession(e) => e.$F(),
+                    EnumNode::File(f) => f.$F(),
+                    EnumNode::Socket(s) => s.$F(),
+                    EnumNode::Ptty(p) => p.$F(),
                 }
             })*
         }

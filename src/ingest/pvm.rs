@@ -22,8 +22,8 @@ pub enum PVMError {
 
 impl Display for PVMError {
     fn fmt(&self, f: &mut Formatter) -> FMTResult {
-        match *self {
-            PVMError::MissingField { ref evt, field } => {
+        match self {
+            PVMError::MissingField { evt, field } => {
                 write!(f, "Event {} missing needed field {}", evt, field)
             }
         }
@@ -73,11 +73,7 @@ impl PVM {
         ID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as i64)
     }
 
-    fn _inf<T, U>(&mut self, src: &T, dst: &U, pvm_op: PVMOps, call: &str) -> RelGuard
-    where
-        T: HasID,
-        U: HasID,
-    {
+    fn _inf(&mut self, src: &impl HasID, dst: &impl HasID, pvm_op: PVMOps, call: &str) -> RelGuard {
         let id_pair = (src.get_db_id(), dst.get_db_id());
         if self.inf_cache.contains_key(&id_pair) {
             self.rel_cache.lend(&self.inf_cache[&id_pair]).unwrap()
@@ -130,8 +126,8 @@ impl PVM {
     }
 
     pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) -> RelGuard {
-        match *ent {
-            EnumNode::File(ref fref) => {
+        match ent {
+            EnumNode::File(fref) => {
                 let f = self.add::<File>(
                     fref.get_uuid(),
                     Some(FileInit {
@@ -146,8 +142,8 @@ impl PVM {
     }
 
     pub fn sinkstart(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) -> RelGuard {
-        match *ent {
-            EnumNode::File(ref fref) => {
+        match ent {
+            EnumNode::File(fref) => {
                 let es = self.add::<EditSession>(
                     fref.get_uuid(),
                     Some(EditInit {
@@ -159,7 +155,7 @@ impl PVM {
                 self._inf(fref, &**es, PVMOps::Version, tag);
                 self._inf(act, &**es, PVMOps::Sink, tag)
             }
-            EnumNode::EditSession(ref eref) => {
+            EnumNode::EditSession(eref) => {
                 self.open_cache
                     .get_mut(&eref.get_uuid())
                     .unwrap()
@@ -189,20 +185,20 @@ impl PVM {
     }
 
     pub fn name(&mut self, obj: &mut EnumNode, name: String) {
-        match *obj {
-            EnumNode::File(ref mut fref) => {
+        match obj {
+            EnumNode::File(fref) => {
                 if fref.name == "" {
                     fref.name = name;
                     self.db.update_node(fref);
                 }
             }
-            EnumNode::EditSession(ref mut eref) => {
+            EnumNode::EditSession(eref) => {
                 if eref.name == "" {
                     eref.name = name;
                     self.db.update_node(eref);
                 }
             }
-            EnumNode::Ptty(ref mut pref) => {
+            EnumNode::Ptty(pref) => {
                 if pref.name == "" {
                     pref.name = name;
                     self.db.update_node(pref);

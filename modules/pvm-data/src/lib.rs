@@ -80,8 +80,8 @@ pub enum Rel {
 
 impl HasID for Rel {
     fn get_db_id(&self) -> ID {
-        match *self {
-            Rel::Inf { id, .. } => id,
+        match self {
+            Rel::Inf { id, .. } => *id,
         }
     }
 }

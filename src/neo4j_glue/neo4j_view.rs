@@ -152,7 +152,7 @@ impl CreateNodes {
             nodes: HashMap::new(),
         }
     }
-    fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
+    fn execute(&mut self, db: &mut impl Neo4jOperations) {
         let nodes: Value = self.nodes.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
             "UNWIND $nodes AS n
@@ -185,7 +185,7 @@ impl CreateRels {
             rels: HashMap::new(),
         }
     }
-    fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
+    fn execute(&mut self, db: &mut impl Neo4jOperations) {
         let rels: Value = self.rels.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
             "UNWIND $rels AS r
@@ -219,7 +219,7 @@ impl UpdateNodes {
             props: HashMap::new(),
         }
     }
-    fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
+    fn execute(&mut self, db: &mut impl Neo4jOperations) {
         let nodes: Value = self.props.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
             "UNWIND $upds AS props
@@ -243,7 +243,7 @@ impl UpdateRels {
             props: HashMap::new(),
         }
     }
-    fn execute<T: Neo4jOperations>(&mut self, db: &mut T) {
+    fn execute(&mut self, db: &mut impl Neo4jOperations) {
         let rels: Value = self.props.drain().map(|(_k, v)| v).collect();
         db.run_unchecked(
             "UNWIND $upds AS up

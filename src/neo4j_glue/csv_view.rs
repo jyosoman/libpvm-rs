@@ -145,7 +145,7 @@ trait ToCSV {
 
 impl ToCSV for EnumNode {
     fn fname(&self) -> &'static str {
-        match *self {
+        match self {
             EnumNode::EditSession(_) => "es.csv",
             EnumNode::File(_) => "file.csv",
             EnumNode::Pipe(_) => "pipe.csv",
@@ -156,7 +156,7 @@ impl ToCSV for EnumNode {
     }
 
     fn write_header<F: Write>(&self, f: &mut F) {
-        match *self {
+        match self {
             EnumNode::EditSession(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
             EnumNode::File(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
             EnumNode::Pipe(_) => writeln!(f, "db_id:ID,:LABEL,uuid,fd:int").unwrap(),
@@ -171,25 +171,25 @@ impl ToCSV for EnumNode {
     }
 
     fn write_self<F: Write>(&self, f: &mut F) {
-        match *self {
-            EnumNode::EditSession(ref v) => writeln!(
+        match self {
+            EnumNode::EditSession(v) => writeln!(
                 f,
                 "{},Node;EditSession,{},\"{}\"",
                 v.get_db_id(),
                 v.get_uuid(),
                 v.name
             ).unwrap(),
-            EnumNode::File(ref v) => writeln!(
+            EnumNode::File(v) => writeln!(
                 f,
                 "{},Node;File,{},\"{}\"",
                 v.get_db_id(),
                 v.get_uuid(),
                 v.name
             ).unwrap(),
-            EnumNode::Pipe(ref v) => {
+            EnumNode::Pipe(v) => {
                 writeln!(f, "{},Node;Pipe,{},{}", v.get_db_id(), v.get_uuid(), v.fd).unwrap()
             }
-            EnumNode::Proc(ref v) => writeln!(
+            EnumNode::Proc(v) => writeln!(
                 f,
                 "{},Node;Process,{},\"{}\",{},{}",
                 v.get_db_id(),
@@ -198,14 +198,14 @@ impl ToCSV for EnumNode {
                 v.pid,
                 v.thin
             ).unwrap(),
-            EnumNode::Ptty(ref v) => writeln!(
+            EnumNode::Ptty(v) => writeln!(
                 f,
                 "{},Node;Ptty,{},\"{}\"",
                 v.get_db_id(),
                 v.get_uuid(),
                 v.name
             ).unwrap(),
-            EnumNode::Socket(ref v) => writeln!(
+            EnumNode::Socket(v) => writeln!(
                 f,
                 "{},Node;Socket,{},{},\"{}\",\"{}\",{}",
                 v.get_db_id(),
@@ -221,13 +221,13 @@ impl ToCSV for EnumNode {
 
 impl ToCSV for Rel {
     fn fname(&self) -> &'static str {
-        match *self {
+        match self {
             Rel::Inf { .. } => "inf.csv",
         }
     }
 
     fn write_header<F: Write>(&self, f: &mut F) {
-        match *self {
+        match self {
             Rel::Inf { .. } => writeln!(
                 f,
                 "db_id,:START_ID,:END_ID,:TYPE,pvm_op,generating_call,byte_count:int"
@@ -236,13 +236,13 @@ impl ToCSV for Rel {
     }
 
     fn write_self<F: Write>(&self, f: &mut F) {
-        match *self {
+        match self {
             Rel::Inf {
                 id,
                 src,
                 dst,
                 pvm_op,
-                ref generating_call,
+                generating_call,
                 byte_count,
             } => writeln!(
                 f,
