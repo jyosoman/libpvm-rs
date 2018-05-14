@@ -6,7 +6,7 @@ use std::{collections::HashMap,
           sync::{mpsc, Arc, Mutex},
           thread::{spawn, JoinHandle}};
 
-use data::{node_types::EnumNode, Rel};
+use data::{node_types::EnumNode, rel_types::Rel};
 
 use cfg::Config;
 

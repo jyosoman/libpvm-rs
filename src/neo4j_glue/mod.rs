@@ -12,7 +12,7 @@ use data::{
         EditInit, EditSession, EnumNode, File, FileInit, Pipe, PipeInit, Process, ProcessInit,
         Ptty, PttyInit, Socket, SocketClass, SocketInit,
     },
-    Enumerable, Generable, HasID, HasUUID, PVMOps, Rel, ID,
+    rel_types::{PVMOps, Rel}, Enumerable, Generable, HasDst, HasID, HasSrc, HasUUID, ID,
 };
 
 use uuid::Uuid;
@@ -53,6 +53,7 @@ impl IntoVal for PVMOps {
             PVMOps::Source => "Source".into(),
             PVMOps::Connect => "Connect".into(),
             PVMOps::Version => "Version".into(),
+            PVMOps::Unknown => "Unknown".into(),
         }
     }
 }
@@ -116,24 +117,17 @@ pub trait ToDBRel {
 impl ToDBRel for Rel {
     fn to_db(&self) -> (ID, Value) {
         match self {
-            Rel::Inf {
-                id,
-                src,
-                dst,
-                pvm_op,
-                generating_call,
-                byte_count,
-            } => {
-                let props: HashMap<&str, Value> = hashmap!("db_id" => id.into_val(),
-                                                           "pvm_op" => pvm_op.into_val(),
-                                                           "generating_call" => Value::from(generating_call.clone()),
-                                                           "byte_count" => Value::from(*byte_count));
+            Rel::Inf(i) => {
+                let props: HashMap<&str, Value> = hashmap!("db_id" => i.get_db_id().into_val(),
+                                                           "pvm_op" => i.pvm_op.into_val(),
+                                                           "generating_call" => Value::from(i.generating_call.clone()),
+                                                           "byte_count" => Value::from(i.byte_count));
                 (
-                    *id,
-                    hashmap!("src" => src.into_val(),
-                          "dst" => dst.into_val(),
-                          "type" => Value::from("INF"),
-                          "props" => Value::from(props))
+                    i.get_db_id(),
+                    hashmap!("src" => i.get_src().into_val(),
+                             "dst" => i.get_dst().into_val(),
+                             "type" => Value::from("INF"),
+                             "props" => Value::from(props))
                         .into(),
                 )
             }

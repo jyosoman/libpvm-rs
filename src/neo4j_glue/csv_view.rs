@@ -5,7 +5,9 @@ use std::{
 use zip::{write::FileOptions, ZipWriter};
 
 use cfg::Config;
-use data::{node_types::EnumNode, HasID, HasUUID, Rel, ID};
+use data::{
+    node_types::EnumNode, rel_types::Rel, HasDst, HasID, HasSrc, HasUUID, ID,
+};
 use views::{DBTr, View, ViewInst};
 
 const HYDRATE_SH_PRE: &str = r#"#! /bin/bash
@@ -222,32 +224,30 @@ impl ToCSV for EnumNode {
 impl ToCSV for Rel {
     fn fname(&self) -> &'static str {
         match self {
-            Rel::Inf { .. } => "inf.csv",
+            Rel::Inf(_) => "inf.csv",
         }
     }
 
     fn write_header<F: Write>(&self, f: &mut F) {
+        write!(f, "db_id,:START_ID,:END_ID,:TYPE").unwrap();
         match self {
-            Rel::Inf { .. } => writeln!(
-                f,
-                "db_id,:START_ID,:END_ID,:TYPE,pvm_op,generating_call,byte_count:int"
-            ).unwrap(),
+            Rel::Inf(_) => writeln!(f, ",pvm_op,generating_call,byte_count:int").unwrap(),
         }
     }
 
     fn write_self<F: Write>(&self, f: &mut F) {
+        write!(
+            f,
+            "{},{},{}",
+            self.get_db_id(),
+            self.get_src(),
+            self.get_dst(),
+        ).unwrap();
         match self {
-            Rel::Inf {
-                id,
-                src,
-                dst,
-                pvm_op,
-                generating_call,
-                byte_count,
-            } => writeln!(
+            Rel::Inf(i) => writeln!(
                 f,
-                "{},{},{},INF,{:?},\"{}\",{}",
-                id, src, dst, pvm_op, generating_call, byte_count
+                ",INF,{:?},\"{}\",{}",
+                i.pvm_op, i.generating_call, i.byte_count
             ).unwrap(),
         }
     }

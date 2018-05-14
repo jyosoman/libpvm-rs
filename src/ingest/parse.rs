@@ -3,7 +3,7 @@ use data::{
     node_types::{
         EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket, SocketClass, SocketInit,
     },
-    Denumerate, Rel,
+    Denumerate, rel_types::Rel,
 };
 use trace::{AuditEvent, TraceEvent};
 
@@ -64,8 +64,8 @@ fn proc_exec(tr: &AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
             pref.thin = false;
         }
         pvm.prop_node(&pro);
-        pvm.source(&pro, &bin, "binary");
-        pvm.source(&pro, &ld, "linker");
+        pvm.source(&pro, &bin);
+        pvm.source(&pro, &ld);
     } else {
         let next = pvm.add::<Process>(
             tr.subjprocuuid,
@@ -75,9 +75,9 @@ fn proc_exec(tr: &AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
                 thin: false,
             }),
         );
-        pvm.source(&next, &pro, &tr.event);
-        pvm.source(&next, &bin, "binary");
-        pvm.source(&next, &ld, "linker");
+        pvm.source(&next, &pro);
+        pvm.source(&next, &bin);
+        pvm.source(&next, &ld);
     }
     Ok(())
 }
@@ -94,7 +94,7 @@ fn proc_fork(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMEr
         chref.thin = true;
     }
     pvm.prop_node(&ch);
-    pvm.source(&ch, &pro, &tr.event);
+    pvm.source(&ch, &pro);
     Ok(())
 }
 
@@ -122,13 +122,10 @@ fn posix_read(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVME
             pvm.name(&mut f, pth);
         }
     }
-    let mut r = pvm.source(&pro, &f, &tr.event);
-    match *r {
-        Rel::Inf {
-            ref mut byte_count, ..
-        } => {
-            *byte_count += tr.retval as u64;
-        }
+    let mut r = pvm.source(&pro, &f);
+    {
+        let Rel::Inf(ref mut iref) = *r;
+        iref.byte_count += tr.retval as u64;
     }
     pvm.prop_rel(&r);
     Ok(())
@@ -143,13 +140,10 @@ fn posix_write(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
             pvm.name(&mut f, pth);
         }
     }
-    let mut r = pvm.sinkstart(&pro, &f, &tr.event);
-    match *r {
-        Rel::Inf {
-            ref mut byte_count, ..
-        } => {
-            *byte_count += tr.retval as u64;
-        }
+    let mut r = pvm.sinkstart(&pro, &f);
+    {
+        let Rel::Inf(ref mut iref) = *r;
+        iref.byte_count += tr.retval as u64;
     }
     pvm.prop_rel(&r);
     Ok(())
@@ -158,7 +152,7 @@ fn posix_write(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
 fn posix_close(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     if let Some(fuuid) = tr.arg_objuuid1 {
         let f = pvm.declare::<File>(fuuid, None);
-        pvm.sinkend(&pro, &f, &tr.event);
+        pvm.sinkend(&pro, &f);
     }
     Ok(())
 }
@@ -234,15 +228,15 @@ fn posix_mmap(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVME
         if flags.contains(&String::from("PROT_WRITE")) {
             if let Some(share_flags) = tr.arg_sharing_flags.clone() {
                 if !share_flags.contains(&String::from("MAP_PRIVATE")) {
-                    pvm.sinkstart(&pro, &f, &tr.event);
+                    pvm.sinkstart(&pro, &f);
                 }
             } else {
-                pvm.sinkstart(&pro, &f, &tr.event);
+                pvm.sinkstart(&pro, &f);
             }
         }
 
         if flags.contains(&String::from("PROT_READ")) {
-            pvm.source(&pro, &f, &tr.event);
+            pvm.source(&pro, &f);
         }
     }
     Ok(())
@@ -253,7 +247,7 @@ fn posix_socketpair(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(
     let ruuid2 = tr_field!(tr, ret_objuuid2);
     let s1 = pvm.declare::<Socket>(ruuid1, None);
     let s2 = pvm.declare::<Socket>(ruuid2, None);
-    pvm.connect(&s1, &s2, ConnectDir::BiDirectional, &tr.event);
+    pvm.connect(&s1, &s2, ConnectDir::BiDirectional);
     Ok(())
 }
 
@@ -264,7 +258,7 @@ fn posix_pipe(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
     let rfd2 = tr_field!(tr, ret_fd2);
     let p1 = pvm.declare::<Pipe>(ruuid1, Some(PipeInit { fd: rfd1 }));
     let p2 = pvm.declare::<Pipe>(ruuid2, Some(PipeInit { fd: rfd2 }));
-    pvm.connect(&p1, &p2, ConnectDir::BiDirectional, &tr.event);
+    pvm.connect(&p1, &p2, ConnectDir::BiDirectional);
     Ok(())
 }
 
@@ -274,7 +268,7 @@ fn posix_sendmsg(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
     if socket_addr(&tr, &mut s)? {
         pvm.prop_node(&s);
     }
-    pvm.sinkstart(&pro, &s, &tr.event);
+    pvm.sinkstart(&pro, &s);
     Ok(())
 }
 
@@ -284,7 +278,7 @@ fn posix_sendto(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PV
     if socket_addr(&tr, &mut s)? {
         pvm.prop_node(&s);
     }
-    pvm.sinkstart(&pro, &s, &tr.event);
+    pvm.sinkstart(&pro, &s);
     Ok(())
 }
 
@@ -294,7 +288,7 @@ fn posix_recvmsg(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
     if socket_addr(&tr, &mut s)? {
         pvm.prop_node(&s);
     }
-    pvm.source(&pro, &s, &tr.event);
+    pvm.source(&pro, &s);
     Ok(())
 }
 
@@ -304,7 +298,7 @@ fn posix_recvfrom(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), 
     if socket_addr(&tr, &mut s)? {
         pvm.prop_node(&s);
     }
-    pvm.source(&pro, &s, &tr.event);
+    pvm.source(&pro, &s);
     Ok(())
 }
 
@@ -322,7 +316,7 @@ fn posix_chmod(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
     let fpath = tr_opt_field!(tr, upath1);
     let mut f = pvm.declare::<File>(fuuid, None);
     pvm.name(&mut f, fpath);
-    pvm.sink(&pro, &f, &tr.event);
+    pvm.sink(&pro, &f);
     Ok(())
 }
 
@@ -331,21 +325,21 @@ fn posix_chown(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
     let fpath = tr_opt_field!(tr, upath1);
     let mut f = pvm.declare::<File>(fuuid, None);
     pvm.name(&mut f, fpath);
-    pvm.sink(&pro, &f, &tr.event);
+    pvm.sink(&pro, &f);
     Ok(())
 }
 
 fn posix_fchmod(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let fuuid = tr_field!(tr, arg_objuuid1);
     let f = pvm.declare::<File>(fuuid, None);
-    pvm.sinkstart(&pro, &f, &tr.event);
+    pvm.sinkstart(&pro, &f);
     Ok(())
 }
 
 fn posix_fchown(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let fuuid = tr_field!(tr, arg_objuuid1);
     let f = pvm.declare::<File>(fuuid, None);
-    pvm.sinkstart(&pro, &f, &tr.event);
+    pvm.sinkstart(&pro, &f);
     Ok(())
 }
 
@@ -358,6 +352,8 @@ fn posix_posix_openpt(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result
 pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
     match tr {
         TraceEvent::Audit(box tr) => {
+            pvm.set_evt(tr.event.clone());
+            pvm.set_time(tr.time);
             let pro = pvm.declare::<Process>(
                 tr.subjprocuuid,
                 Some(ProcessInit {

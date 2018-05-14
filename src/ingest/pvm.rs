@@ -7,7 +7,8 @@ use std::{
 
 use data::{
     node_types::{EditInit, EditSession, EnumNode, File, FileInit}, Enumerable, Generable, HasID,
-    HasUUID, PVMOps, Rel, ID,
+    rel_types::{Inf, InfInit, PVMOps, Rel},
+    HasUUID, RelGenerable, ID,
 };
 use views::DBTr;
 
@@ -36,16 +37,17 @@ pub enum ConnectDir {
 }
 
 pub type NodeGuard = Loan<ID, Box<EnumNode>>;
-pub type RelGuard = Loan<ID, Rel>;
+pub type RelGuard = Loan<(&'static str, ID, ID), Rel>;
 
 pub struct PVM {
     db: DB,
     uuid_cache: HashMap<Uuid, ID>,
     node_cache: LendingLibrary<ID, Box<EnumNode>>,
-    rel_cache: LendingLibrary<ID, Rel>,
+    rel_cache: LendingLibrary<(&'static str, ID, ID), Rel>,
     id_counter: AtomicUsize,
-    inf_cache: HashMap<(ID, ID), ID>,
     open_cache: HashMap<Uuid, HashSet<Uuid>>,
+    cur_time: u64,
+    cur_evt: String,
     pub unparsed_events: HashSet<String>,
 }
 
@@ -57,10 +59,19 @@ impl PVM {
             node_cache: LendingLibrary::new(),
             rel_cache: LendingLibrary::new(),
             id_counter: AtomicUsize::new(0),
-            inf_cache: HashMap::new(),
             open_cache: HashMap::new(),
+            cur_time: 0,
+            cur_evt: String::new(),
             unparsed_events: HashSet::new(),
         }
+    }
+
+    pub fn set_time(&mut self, new_time: u64) {
+        self.cur_time = new_time;
+    }
+
+    pub fn set_evt(&mut self, new_evt: String) {
+        self.cur_evt = new_evt;
     }
 
     pub fn release(&mut self, uuid: &Uuid) {
@@ -73,26 +84,35 @@ impl PVM {
         ID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as i64)
     }
 
-    fn _inf(&mut self, src: &impl HasID, dst: &impl HasID, pvm_op: PVMOps, call: &str) -> RelGuard {
-        let id_pair = (src.get_db_id(), dst.get_db_id());
-        if self.inf_cache.contains_key(&id_pair) {
-            self.rel_cache.lend(&self.inf_cache[&id_pair]).unwrap()
+    fn _decl_rel<T: RelGenerable + Into<Rel>>(
+        &mut self,
+        src: ID,
+        dst: ID,
+        init: T::Init,
+    ) -> RelGuard {
+        let triple = (stringify!(T), src, dst);
+        if self.rel_cache.contains_key(&triple) {
+            self.rel_cache.lend(&triple).unwrap()
         } else {
             let id = self._nextid();
-            let rel = Rel::Inf {
-                id,
-                src: id_pair.0,
-                dst: id_pair.1,
-                pvm_op,
-                generating_call: call.to_string(),
-                byte_count: 0,
-            };
-            self.rel_cache.insert(id, rel);
-            self.inf_cache.insert(id_pair, id);
-            let r = self.rel_cache.lend(&id).unwrap();
+            let rel = T::new(id, src, dst, init).into();
+            self.rel_cache.insert(triple, rel);
+            let r = self.rel_cache.lend(&triple).unwrap();
             self.db.create_rel(&r);
             r
         }
+    }
+
+    fn _inf(&mut self, src: &impl HasID, dst: &impl HasID, pvm_op: PVMOps) -> RelGuard {
+        self._decl_rel::<Inf>(
+            src.get_db_id(),
+            dst.get_db_id(),
+            InfInit {
+                pvm_op,
+                generating_call: self.cur_evt.clone(),
+                byte_count: 0,
+            },
+        )
     }
 
     pub fn add<T>(&mut self, uuid: Uuid, init: Option<T::Init>) -> NodeGuard
@@ -121,11 +141,11 @@ impl PVM {
         }
     }
 
-    pub fn source(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) -> RelGuard {
-        self._inf(ent, act, PVMOps::Source, tag)
+    pub fn source(&mut self, act: &EnumNode, ent: &EnumNode) -> RelGuard {
+        self._inf(ent, act, PVMOps::Source)
     }
 
-    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) -> RelGuard {
+    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode) -> RelGuard {
         match ent {
             EnumNode::File(fref) => {
                 let f = self.add::<File>(
@@ -134,14 +154,14 @@ impl PVM {
                         name: fref.name.clone(),
                     }),
                 );
-                self._inf(fref, &**f, PVMOps::Version, tag);
-                self._inf(act, &**f, PVMOps::Sink, tag)
+                self._inf(fref, &**f, PVMOps::Version);
+                self._inf(act, &**f, PVMOps::Sink)
             }
-            _ => self._inf(act, ent, PVMOps::Sink, tag),
+            _ => self._inf(act, ent, PVMOps::Sink),
         }
     }
 
-    pub fn sinkstart(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) -> RelGuard {
+    pub fn sinkstart(&mut self, act: &EnumNode, ent: &EnumNode) -> RelGuard {
         match ent {
             EnumNode::File(fref) => {
                 let es = self.add::<EditSession>(
@@ -152,21 +172,21 @@ impl PVM {
                 );
                 self.open_cache
                     .insert(fref.get_uuid(), hashset!(act.get_uuid()));
-                self._inf(fref, &**es, PVMOps::Version, tag);
-                self._inf(act, &**es, PVMOps::Sink, tag)
+                self._inf(fref, &**es, PVMOps::Version);
+                self._inf(act, &**es, PVMOps::Sink)
             }
             EnumNode::EditSession(eref) => {
                 self.open_cache
                     .get_mut(&eref.get_uuid())
                     .unwrap()
                     .insert(act.get_uuid());
-                self._inf(act, eref, PVMOps::Sink, tag)
+                self._inf(act, eref, PVMOps::Sink)
             }
-            _ => self._inf(act, ent, PVMOps::Sink, tag),
+            _ => self._inf(act, ent, PVMOps::Sink),
         }
     }
 
-    pub fn sinkend(&mut self, act: &EnumNode, ent: &EnumNode, tag: &str) {
+    pub fn sinkend(&mut self, act: &EnumNode, ent: &EnumNode) {
         if let EnumNode::EditSession(ref eref) = *ent {
             self.open_cache
                 .get_mut(&eref.get_uuid())
@@ -179,7 +199,7 @@ impl PVM {
                         name: eref.name.clone(),
                     }),
                 );
-                self._inf(eref, &**f, PVMOps::Version, tag);
+                self._inf(eref, &**f, PVMOps::Version);
             }
         }
     }
@@ -216,10 +236,10 @@ impl PVM {
         self.db.update_rel(ent)
     }
 
-    pub fn connect(&mut self, first: &EnumNode, second: &EnumNode, dir: ConnectDir, tag: &str) {
-        self._inf(first, second, PVMOps::Connect, tag);
+    pub fn connect(&mut self, first: &EnumNode, second: &EnumNode, dir: ConnectDir) {
+        self._inf(first, second, PVMOps::Connect);
         if let ConnectDir::BiDirectional = dir {
-            self._inf(second, first, PVMOps::Connect, tag);
+            self._inf(second, first, PVMOps::Connect);
         }
     }
 

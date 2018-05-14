@@ -2,6 +2,7 @@ extern crate uuid;
 
 mod id;
 pub mod node_types;
+pub mod rel_types;
 
 use uuid::Uuid;
 
@@ -26,10 +27,26 @@ pub trait HasUUID {
     fn get_uuid(&self) -> Uuid;
 }
 
+pub trait HasSrc {
+    fn get_src(&self) -> ID;
+}
+
+pub trait HasDst {
+    fn get_dst(&self) -> ID;
+}
+
 pub trait Generable: HasID + HasUUID {
     type Init;
 
     fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
+    where
+        Self: Sized;
+}
+
+pub trait RelGenerable: HasID + HasSrc + HasDst {
+    type Init;
+
+    fn new(id: ID, src: ID, dst: ID, init: Self::Init) -> Self
     where
         Self: Sized;
 }
@@ -55,33 +72,5 @@ where
 impl Enumerable for EnumNode {
     fn enumerate(self) -> EnumNode {
         self
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum PVMOps {
-    Source,
-    Sink,
-    Connect,
-    Version,
-}
-
-#[derive(Clone, Debug)]
-pub enum Rel {
-    Inf {
-        id: ID,
-        src: ID,
-        dst: ID,
-        pvm_op: PVMOps,
-        generating_call: String,
-        byte_count: u64,
-    },
-}
-
-impl HasID for Rel {
-    fn get_db_id(&self) -> ID {
-        match self {
-            Rel::Inf { id, .. } => *id,
-        }
     }
 }
