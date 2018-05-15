@@ -7,7 +7,7 @@ mod ptty;
 mod socket;
 
 pub use self::{
-    editsession::EditSession, file::File, name::{Name, NameNode},
+    editsession::EditSession, file::{File, FileContainer}, name::{Name, NameNode},
     pipe::{Pipe, PipeInit}, process::{Process, ProcessInit}, ptty::Ptty,
     socket::{Socket, SocketClass, SocketInit},
 };
@@ -52,6 +52,7 @@ impl<T: Enumerable> From<T> for Node {
 pub enum DataNode {
     Proc(Process),
     File(File),
+    FileCont(FileContainer),
     Pipe(Pipe),
     EditSession(EditSession),
     Socket(Socket),
@@ -68,6 +69,7 @@ macro_rules! enumnode_trait {
                     DataNode::Pipe(p) => p.$F(),
                     DataNode::EditSession(e) => e.$F(),
                     DataNode::File(f) => f.$F(),
+                    DataNode::FileCont(f) => f.$F(),
                     DataNode::Socket(s) => s.$F(),
                     DataNode::Ptty(p) => p.$F(),
                 }
@@ -111,6 +113,7 @@ macro_rules! enum_denum {
 
 enum_denum!(DataNode::EditSession, EditSession);
 enum_denum!(DataNode::File, File);
+enum_denum!(DataNode::FileCont, FileContainer);
 enum_denum!(DataNode::Pipe, Pipe);
 enum_denum!(DataNode::Proc, Process);
 enum_denum!(DataNode::Socket, Socket);

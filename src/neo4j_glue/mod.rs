@@ -87,6 +87,7 @@ impl ToDBNode for Node {
             Node::Data(d) => match d {
                 DataNode::EditSession(_) => vec!["Node", "EditSession"],
                 DataNode::File(_) => vec!["Node", "File"],
+                DataNode::FileCont(_) => vec!["Node", "FileCont"],
                 DataNode::Pipe(_) => vec!["Node", "Pipe"],
                 DataNode::Proc(_) => vec!["Node", "Process"],
                 DataNode::Socket(_) => vec!["Node", "Socket"],
@@ -105,6 +106,7 @@ impl ToDBNode for Node {
                 let mut props = match d {
                     DataNode::EditSession(_) => hashmap!(),
                     DataNode::File(_) => hashmap!(),
+                    DataNode::FileCont(_) => hashmap!(),
                     DataNode::Pipe(p) => hashmap!("fd"    => Value::from(p.fd)),
                     DataNode::Proc(p) => hashmap!("cmdline" => Value::from(p.cmdline.clone()),
                                                   "pid"     => Value::from(p.pid),

@@ -6,7 +6,7 @@ use std::{
 };
 
 use data::{
-    node_types::{DataNode, EditSession, File, Name, NameNode},
+    node_types::{DataNode, EditSession, File, FileContainer, Name, NameNode},
     rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel}, Enumerable, Generable, HasID,
     HasUUID, RelGenerable, ID,
 };
@@ -48,6 +48,7 @@ pub struct PVM {
     id_counter: AtomicUsize,
     open_cache: HashMap<Uuid, HashSet<Uuid>>,
     name_cache: LendingLibrary<Name, NameNode>,
+    cont_cache: HashMap<Uuid, ID>,
     cur_time: u64,
     cur_evt: String,
     pub unparsed_events: HashSet<String>,
@@ -63,6 +64,7 @@ impl PVM {
             id_counter: AtomicUsize::new(0),
             open_cache: HashMap::new(),
             name_cache: LendingLibrary::new(),
+            cont_cache: HashMap::new(),
             cur_time: 0,
             cur_evt: String::new(),
             unparsed_events: HashSet::new(),
@@ -212,9 +214,37 @@ impl PVM {
         self.name_cache.lend(&name).unwrap()
     }
 
+    fn decl_fcont(&mut self, uuid: Uuid) -> NodeGuard {
+        let id = {
+            if !self.cont_cache.contains_key(&uuid) {
+                let id = self._nextid();
+                let node = Box::new(FileContainer::new(id, uuid).enumerate());
+                self.cont_cache.insert(uuid, id);
+                self.db.create_node(&*node);
+                self.node_cache.insert(id, node);
+                id
+            } else {
+                self.cont_cache[&uuid]
+            }
+        };
+        self.node_cache.lend(&id).unwrap()
+    }
+
     pub fn name(&mut self, obj: &DataNode, name: Name) {
         let n_node = self.decl_name(name);
-        self._named(obj, &*n_node);
+        match obj {
+            DataNode::File(f) => {
+                let cont = self.decl_fcont(f.get_uuid());
+                self._named(&**cont, &n_node);
+            }
+            DataNode::EditSession(f) => {
+                let cont = self.decl_fcont(f.get_uuid());
+                self._named(&**cont, &n_node);
+            }
+            _ => {
+                self._named(obj, &n_node);
+            }
+        }
     }
 
     pub fn prop_node(&mut self, ent: &DataNode) {

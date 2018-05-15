@@ -152,6 +152,7 @@ impl ToCSV for Node {
             Node::Data(d) => match d {
                 DataNode::EditSession(_) => "es.csv",
                 DataNode::File(_) => "file.csv",
+                DataNode::FileCont(_) => "file_c.csv",
                 DataNode::Pipe(_) => "pipe.csv",
                 DataNode::Proc(_) => "proc.csv",
                 DataNode::Ptty(_) => "ptty.csv",
@@ -169,6 +170,7 @@ impl ToCSV for Node {
             Node::Data(d) => match d {
                 DataNode::EditSession(_) => "Node;EditSession",
                 DataNode::File(_) => "Node;File",
+                DataNode::FileCont(_) => "Node;FileCont",
                 DataNode::Pipe(_) => "Node;Pipe",
                 DataNode::Proc(_) => "Node;Process",
                 DataNode::Ptty(_) => "Node;Ptty",
