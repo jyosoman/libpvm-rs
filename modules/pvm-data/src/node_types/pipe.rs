@@ -1,5 +1,5 @@
-use ::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid;
+use {Generable, HasID, HasUUID, ID};
 
 pub struct PipeInit {
     pub fd: i32,

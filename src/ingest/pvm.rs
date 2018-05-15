@@ -6,7 +6,7 @@ use std::{
 };
 
 use data::{
-    node_types::{DataNode, EditInit, EditSession, File, FileInit, NameNode},
+    node_types::{DataNode, EditSession, File, Name, NameNode},
     rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel}, Enumerable, Generable, HasID,
     HasUUID, RelGenerable, ID,
 };
@@ -38,6 +38,7 @@ pub enum ConnectDir {
 
 pub type NodeGuard = Loan<ID, Box<DataNode>>;
 pub type RelGuard = Loan<(&'static str, ID, ID), Rel>;
+type NameGuard = Loan<Name, NameNode>;
 
 pub struct PVM {
     db: DB,
@@ -46,6 +47,7 @@ pub struct PVM {
     rel_cache: LendingLibrary<(&'static str, ID, ID), Rel>,
     id_counter: AtomicUsize,
     open_cache: HashMap<Uuid, HashSet<Uuid>>,
+    name_cache: LendingLibrary<Name, NameNode>,
     cur_time: u64,
     cur_evt: String,
     pub unparsed_events: HashSet<String>,
@@ -60,6 +62,7 @@ impl PVM {
             rel_cache: LendingLibrary::new(),
             id_counter: AtomicUsize::new(0),
             open_cache: HashMap::new(),
+            name_cache: LendingLibrary::new(),
             cur_time: 0,
             cur_evt: String::new(),
             unparsed_events: HashSet::new(),
@@ -159,12 +162,7 @@ impl PVM {
     pub fn sink(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
         match ent {
             DataNode::File(fref) => {
-                let f = self.add::<File>(
-                    fref.get_uuid(),
-                    Some(FileInit {
-                        name: fref.name.clone(),
-                    }),
-                );
+                let f = self.add::<File>(fref.get_uuid(), None);
                 self._inf(fref, &**f, PVMOps::Version);
                 self._inf(act, &**f, PVMOps::Sink)
             }
@@ -175,12 +173,7 @@ impl PVM {
     pub fn sinkstart(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
         match ent {
             DataNode::File(fref) => {
-                let es = self.add::<EditSession>(
-                    fref.get_uuid(),
-                    Some(EditInit {
-                        name: fref.name.clone(),
-                    }),
-                );
+                let es = self.add::<EditSession>(fref.get_uuid(), None);
                 self.open_cache
                     .insert(fref.get_uuid(), hashset!(act.get_uuid()));
                 self._inf(fref, &**es, PVMOps::Version);
@@ -204,39 +197,24 @@ impl PVM {
                 .unwrap()
                 .remove(&act.get_uuid());
             if self.open_cache[&eref.get_uuid()].is_empty() {
-                let f = self.add::<File>(
-                    eref.get_uuid(),
-                    Some(FileInit {
-                        name: eref.name.clone(),
-                    }),
-                );
+                let f = self.add::<File>(eref.get_uuid(), None);
                 self._inf(eref, &**f, PVMOps::Version);
             }
         }
     }
 
-    pub fn name(&mut self, obj: &mut DataNode, name: String) {
-        match obj {
-            DataNode::File(fref) => {
-                if fref.name == "" {
-                    fref.name = name;
-                    self.db.update_node(fref);
-                }
-            }
-            DataNode::EditSession(eref) => {
-                if eref.name == "" {
-                    eref.name = name;
-                    self.db.update_node(eref);
-                }
-            }
-            DataNode::Ptty(pref) => {
-                if pref.name == "" {
-                    pref.name = name;
-                    self.db.update_node(pref);
-                }
-            }
-            _ => {}
+    fn decl_name(&mut self, name: Name) -> NameGuard {
+        if !self.name_cache.contains_key(&name) {
+            let n = NameNode::generate(self._nextid(), name.clone());
+            self.db.create_node(&n);
+            self.name_cache.insert(name.clone(), n);
         }
+        self.name_cache.lend(&name).unwrap()
+    }
+
+    pub fn name(&mut self, obj: &DataNode, name: Name) {
+        let n_node = self.decl_name(name);
+        self._named(obj, &*n_node);
     }
 
     pub fn prop_node(&mut self, ent: &DataNode) {

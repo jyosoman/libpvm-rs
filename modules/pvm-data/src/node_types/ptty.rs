@@ -1,15 +1,10 @@
-use ::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid;
-
-pub struct PttyInit {
-    pub name: String,
-}
+use {Generable, HasID, HasUUID, ID};
 
 #[derive(Clone, Debug)]
 pub struct Ptty {
     db_id: ID,
     uuid: Uuid,
-    pub name: String,
 }
 
 impl HasID for Ptty {
@@ -19,24 +14,13 @@ impl HasID for Ptty {
 }
 
 impl Generable for Ptty {
-    type Init = PttyInit;
+    type Init = !;
 
-    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
-        where
-            Self: Sized,
+    fn new(id: ID, uuid: Uuid, _init: Option<Self::Init>) -> Self
+    where
+        Self: Sized,
     {
-        match init {
-            Some(i) => Ptty {
-                db_id: id,
-                uuid,
-                name: i.name,
-            },
-            None => Ptty {
-                db_id: id,
-                uuid,
-                name: String::new(),
-            },
-        }
+        Ptty { db_id: id, uuid }
     }
 }
 

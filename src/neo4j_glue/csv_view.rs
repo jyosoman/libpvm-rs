@@ -141,8 +141,9 @@ impl View for CSVView {
 
 trait ToCSV {
     fn fname(&self) -> &'static str;
-    fn write_header<F: Write>(&self, f: &mut F);
-    fn write_self<F: Write>(&self, f: &mut F);
+    fn _lab(&self) -> &'static str;
+    fn write_header(&self, f: &mut impl Write);
+    fn write_self(&self, f: &mut impl Write);
 }
 
 impl ToCSV for Node {
@@ -158,94 +159,69 @@ impl ToCSV for Node {
             },
             Node::Name(n) => match n {
                 NameNode::Path(..) => "paths.csv",
-                NameNode::Net(..) => "nets.csv",
-            }
+                NameNode::Net(..) => "net.csv",
+            },
         }
     }
 
-    fn write_header<F: Write>(&self, f: &mut F) {
+    fn _lab(&self) -> &'static str {
         match self {
             Node::Data(d) => match d {
-                DataNode::EditSession(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
-                DataNode::File(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
-                DataNode::Pipe(_) => writeln!(f, "db_id:ID,:LABEL,uuid,fd:int").unwrap(),
-                DataNode::Proc(_) => {
-                    writeln!(f, "db_id:ID,:LABEL,uuid,cmdline,pid:int,thin:boolean").unwrap()
-                }
-                DataNode::Ptty(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
-                DataNode::Socket(_) => {
-                    writeln!(f, "db_id:ID,:LABEL,uuid,class:int,path,ip,port:int").unwrap()
-                }
+                DataNode::EditSession(_) => "Node;EditSession",
+                DataNode::File(_) => "Node;File",
+                DataNode::Pipe(_) => "Node;Pipe",
+                DataNode::Proc(_) => "Node;Process",
+                DataNode::Ptty(_) => "Node;Ptty",
+                DataNode::Socket(_) => "Node;Socket",
             },
             Node::Name(n) => match n {
-                NameNode::Path(..) => writeln!(f, "db_id:ID,:LABEL,path").unwrap(),
-                NameNode::Net(..) => writeln!(f, "db_id:ID,:LABEL,addr,port:int").unwrap(),
-            }
+                NameNode::Path(..) => "Node;Name;Path",
+                NameNode::Net(..) => "Node;Name;Net",
+            },
         }
     }
 
-    fn write_self<F: Write>(&self, f: &mut F) {
+    fn write_header(&self, f: &mut impl Write) {
+        write!(f, "db_id:ID,:LABEL").unwrap();
         match self {
-            Node::Data(d) => match d {
-                DataNode::EditSession(v) => writeln!(
-                    f,
-                    "{},Node;EditSession,{},\"{}\"",
-                    v.get_db_id(),
-                    v.get_uuid(),
-                    v.name
-                ).unwrap(),
-                DataNode::File(v) => writeln!(
-                    f,
-                    "{},Node;File,{},\"{}\"",
-                    v.get_db_id(),
-                    v.get_uuid(),
-                    v.name
-                ).unwrap(),
-                DataNode::Pipe(v) => {
-                    writeln!(f, "{},Node;Pipe,{},{}", v.get_db_id(), v.get_uuid(), v.fd).unwrap()
+            Node::Data(d) => {
+                write!(f, ",uuid").unwrap();
+                match d {
+                    DataNode::Pipe(_) => writeln!(f, ",fd:int").unwrap(),
+                    DataNode::Proc(_) => writeln!(f, ",cmdline,pid:int,thin:boolean").unwrap(),
+                    DataNode::Socket(_) => writeln!(f, ",class:int").unwrap(),
+                    _ => writeln!(f).unwrap(),
                 }
-                DataNode::Proc(v) => writeln!(
-                    f,
-                    "{},Node;Process,{},\"{}\",{},{}",
-                    v.get_db_id(),
-                    v.get_uuid(),
-                    v.cmdline.replace("\"", "\"\""),
-                    v.pid,
-                    v.thin
-                ).unwrap(),
-                DataNode::Ptty(v) => writeln!(
-                    f,
-                    "{},Node;Ptty,{},\"{}\"",
-                    v.get_db_id(),
-                    v.get_uuid(),
-                    v.name
-                ).unwrap(),
-                DataNode::Socket(v) => writeln!(
-                    f,
-                    "{},Node;Socket,{},{},\"{}\",\"{}\",{}",
-                    v.get_db_id(),
-                    v.get_uuid(),
-                    v.class as i64,
-                    v.path,
-                    v.ip,
-                    v.port
-                ).unwrap(),
             },
             Node::Name(n) => match n {
-                NameNode::Path(id, path) => writeln!(
-                    f,
-                    "{},Node;Name;Path,\"{}\"",
-                    id,
-                    path
-                ).unwrap(),
-                NameNode::Net(id, addr, port) => writeln!(
-                    f,
-                    "{},Node;Name;Net,\"{}\",{}",
-                    id,
-                    addr,
-                    port
-                ).unwrap(),
+                NameNode::Path(..) => writeln!(f, ",path").unwrap(),
+                NameNode::Net(..) => writeln!(f, ",addr,port:integer").unwrap(),
+            },
+        }
+    }
+
+    fn write_self(&self, f: &mut impl Write) {
+        write!(f, "{},{}", self.get_db_id(), self._lab()).unwrap();
+        match self {
+            Node::Data(d) => {
+                write!(f, ",{}", d.get_uuid()).unwrap();
+                match d {
+                    DataNode::Pipe(v) => writeln!(f, ",{}", v.fd).unwrap(),
+                    DataNode::Proc(v) => writeln!(
+                        f,
+                        ",\"{}\",{},{}",
+                        v.cmdline.replace("\"", "\"\""),
+                        v.pid,
+                        v.thin
+                    ).unwrap(),
+                    DataNode::Socket(v) => writeln!(f, ",{}", v.class as i64,).unwrap(),
+                    _ => writeln!(f).unwrap(),
+                }
             }
+            Node::Name(n) => match n {
+                NameNode::Path(_, path) => writeln!(f, ",\"{}\"", path).unwrap(),
+                NameNode::Net(_, addr, port) => writeln!(f, ",\"{}\",{}", addr, port).unwrap(),
+            },
         }
     }
 }
@@ -258,7 +234,14 @@ impl ToCSV for Rel {
         }
     }
 
-    fn write_header<F: Write>(&self, f: &mut F) {
+    fn _lab(&self) -> &'static str {
+        match self {
+            Rel::Inf(_) => "INF",
+            Rel::Named(_) => "NAMED",
+        }
+    }
+
+    fn write_header(&self, f: &mut impl Write) {
         write!(f, "db_id,:START_ID,:END_ID,:TYPE").unwrap();
         match self {
             Rel::Inf(_) => writeln!(f, ",pvm_op,generating_call,byte_count:int").unwrap(),
@@ -266,21 +249,22 @@ impl ToCSV for Rel {
         }
     }
 
-    fn write_self<F: Write>(&self, f: &mut F) {
+    fn write_self(&self, f: &mut impl Write) {
         write!(
             f,
-            "{},{},{}",
+            "{},{},{},{}",
             self.get_db_id(),
             self.get_src(),
             self.get_dst(),
+            self._lab(),
         ).unwrap();
         match self {
             Rel::Inf(i) => writeln!(
                 f,
-                ",INF,{:?},\"{}\",{}",
+                ",{:?},\"{}\",{}",
                 i.pvm_op, i.generating_call, i.byte_count
             ).unwrap(),
-            Rel::Named(n) => writeln!(f, ",NAMED,{},\"{}\"", n.start, n.generating_call).unwrap(),
+            Rel::Named(n) => writeln!(f, ",{},\"{}\"", n.start, n.generating_call).unwrap(),
         }
     }
 }

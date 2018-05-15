@@ -1,15 +1,10 @@
-use ::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid;
+use {Generable, HasID, HasUUID, ID};
 
 #[derive(Clone, Debug)]
 pub struct EditSession {
     db_id: ID,
     uuid: Uuid,
-    pub name: String,
-}
-
-pub struct EditInit {
-    pub name: String,
 }
 
 impl HasID for EditSession {
@@ -19,24 +14,13 @@ impl HasID for EditSession {
 }
 
 impl Generable for EditSession {
-    type Init = EditInit;
+    type Init = !;
 
-    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
+    fn new(id: ID, uuid: Uuid, _init: Option<Self::Init>) -> Self
     where
         Self: Sized,
     {
-        match init {
-            Some(i) => EditSession {
-                db_id: id,
-                uuid,
-                name: i.name,
-            },
-            None => EditSession {
-                db_id: id,
-                uuid,
-                name: String::new(),
-            },
-        }
+        EditSession { db_id: id, uuid }
     }
 }
 

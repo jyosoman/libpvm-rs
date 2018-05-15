@@ -1,5 +1,5 @@
-use ::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid;
+use {Generable, HasID, HasUUID, ID};
 
 #[derive(Clone, Copy, Debug)]
 pub enum SocketClass {
@@ -24,16 +24,10 @@ pub struct Socket {
     db_id: ID,
     uuid: Uuid,
     pub class: SocketClass,
-    pub path: String,
-    pub ip: String,
-    pub port: u16,
 }
 
 pub struct SocketInit {
     pub class: SocketClass,
-    pub path: String,
-    pub ip: String,
-    pub port: u16,
 }
 
 impl HasID for Socket {
@@ -54,17 +48,11 @@ impl Generable for Socket {
                 db_id: id,
                 uuid,
                 class: i.class,
-                path: i.path,
-                ip: i.ip,
-                port: i.port,
             },
             None => Socket {
                 db_id: id,
                 uuid,
                 class: SocketClass::Unknown,
-                path: String::new(),
-                ip: String::new(),
-                port: 0,
             },
         }
     }

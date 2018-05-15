@@ -1,3 +1,5 @@
+#![feature(never_type)]
+
 extern crate uuid;
 
 mod id;

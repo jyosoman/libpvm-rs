@@ -1,6 +1,6 @@
 use super::pvm::{ConnectDir, NodeGuard, PVMError, PVM};
 use data::{
-    node_types::{DataNode, File, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket, SocketClass, SocketInit}, rel_types::Rel,
+    node_types::{File, Name, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket}, rel_types::Rel,
     Denumerate,
 };
 use trace::{AuditEvent, TraceEvent};
@@ -23,25 +23,6 @@ macro_rules! tr_opt_field {
     };
 }
 
-fn socket_addr(tr: &AuditEvent, s: &mut DataNode) -> Result<bool, PVMError> {
-    if let DataNode::Socket(ref mut s) = s {
-        if let SocketClass::Unknown = s.class {
-            if let Some(ref pth) = tr.upath1.clone() {
-                s.class = SocketClass::AfUnix;
-                s.path = pth.clone();
-                return Ok(true);
-            } else if let Some(prt) = tr.port {
-                let addr = tr_opt_field!(tr, address);
-                s.class = SocketClass::AfInet;
-                s.port = prt;
-                s.ip = addr;
-                return Ok(true);
-            }
-        }
-    }
-    Ok(false)
-}
-
 fn proc_exec(tr: &AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let cmdline = tr_opt_field!(tr, cmdline);
     let binuuid = tr_field!(tr, arg_objuuid1);
@@ -49,11 +30,11 @@ fn proc_exec(tr: &AuditEvent, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
     let lduuid = tr_field!(tr, arg_objuuid2);
     let ldname = tr_opt_field!(tr, upath2);
 
-    let mut bin = pvm.declare::<File>(binuuid, None);
-    pvm.name(&mut bin, binname);
+    let bin = pvm.declare::<File>(binuuid, None);
+    pvm.name(&bin, Name::Path(binname));
 
-    let mut ld = pvm.declare::<File>(lduuid, None);
-    pvm.name(&mut ld, ldname);
+    let ld = pvm.declare::<File>(lduuid, None);
+    pvm.name(&ld, Name::Path(ldname));
 
     if Process::denumerate(&pro).thin {
         {
@@ -105,8 +86,8 @@ fn posix_open(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
     if let Some(fuuid) = tr.ret_objuuid1 {
         let fname = tr_opt_field!(tr, upath1);
 
-        let mut f = pvm.declare::<File>(fuuid, None);
-        pvm.name(&mut f, fname);
+        let f = pvm.declare::<File>(fuuid, None);
+        pvm.name(&f, Name::Path(fname));
     }
     Ok(())
 }
@@ -114,10 +95,10 @@ fn posix_open(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
 fn posix_read(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let fuuid = tr_field!(tr, arg_objuuid1);
 
-    let mut f = pvm.declare::<File>(fuuid, None);
+    let f = pvm.declare::<File>(fuuid, None);
     if let Some(pth) = tr.fdpath.clone() {
         if pth != "<unknown>" {
-            pvm.name(&mut f, pth);
+            pvm.name(&f, Name::Path(pth));
         }
     }
     let mut r = pvm.source(&pro, &f);
@@ -131,10 +112,10 @@ fn posix_read(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVME
 fn posix_write(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let fuuid = tr_field!(tr, arg_objuuid1);
 
-    let mut f = pvm.declare::<File>(fuuid, None);
+    let f = pvm.declare::<File>(fuuid, None);
     if let Some(pth) = tr.fdpath.clone() {
         if pth != "<unknown>" {
-            pvm.name(&mut f, pth);
+            pvm.name(&f, Name::Path(pth));
         }
     }
     let mut r = pvm.sinkstart(&pro, &f);
@@ -167,9 +148,12 @@ fn posix_listen(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
 
 fn posix_bind(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let suuid = tr_field!(tr, arg_objuuid1);
-    let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(&tr, &mut s)? {
-        pvm.prop_node(&s);
+    let s = pvm.declare::<Socket>(suuid, None);
+    if let Some(pth) = tr.upath1.clone() {
+        pvm.name(&s, Name::Path(pth));
+    } else if let Some(prt) = tr.port {
+        let addr = tr_opt_field!(tr, address);
+        pvm.name(&s, Name::Net(addr, prt));
     }
     Ok(())
 }
@@ -178,47 +162,33 @@ fn posix_accept(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
     let luuid = tr_field!(tr, arg_objuuid1);
     let ruuid = tr_field!(tr, ret_objuuid1);
     pvm.declare::<Socket>(luuid, None);
+    let r = pvm.declare::<Socket>(ruuid, None);
     if let Some(pth) = tr.upath1.clone() {
-        pvm.declare::<Socket>(
-            ruuid,
-            Some(SocketInit {
-                class: SocketClass::AfUnix,
-                path: pth,
-                port: 0,
-                ip: String::new(),
-            }),
-        );
+        pvm.name(&r, Name::Path(pth));
     } else if let Some(prt) = tr.port {
         let addr = tr_opt_field!(tr, address);
-        pvm.declare::<Socket>(
-            ruuid,
-            Some(SocketInit {
-                class: SocketClass::AfInet,
-                path: String::new(),
-                port: prt,
-                ip: addr,
-            }),
-        );
-    } else {
-        pvm.declare::<Socket>(ruuid, None);
+        pvm.name(&r, Name::Net(addr, prt));
     }
     Ok(())
 }
 
 fn posix_connect(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let suuid = tr_field!(tr, arg_objuuid1);
-    let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(&tr, &mut s)? {
-        pvm.prop_node(&s);
+    let s = pvm.declare::<Socket>(suuid, None);
+    if let Some(pth) = tr.upath1.clone() {
+        pvm.name(&s, Name::Path(pth));
+    } else if let Some(prt) = tr.port {
+        let addr = tr_opt_field!(tr, address);
+        pvm.name(&s, Name::Net(addr, prt));
     }
     Ok(())
 }
 
 fn posix_mmap(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let fuuid = tr_field!(tr, arg_objuuid1);
-    let mut f = pvm.declare::<File>(fuuid, None);
+    let f = pvm.declare::<File>(fuuid, None);
     if let Some(fdpath) = tr.fdpath.clone() {
-        pvm.name(&mut f, fdpath);
+        pvm.name(&f, Name::Path(fdpath));
     }
     if let Some(flags) = tr.arg_mem_flags.clone() {
         if flags.contains(&String::from("PROT_WRITE")) {
@@ -260,9 +230,12 @@ fn posix_pipe(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
 
 fn posix_sendmsg(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let suuid = tr_field!(tr, arg_objuuid1);
-    let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(&tr, &mut s)? {
-        pvm.prop_node(&s);
+    let s = pvm.declare::<Socket>(suuid, None);
+    if let Some(pth) = tr.upath1.clone() {
+        pvm.name(&s, Name::Path(pth));
+    } else if let Some(prt) = tr.port {
+        let addr = tr_opt_field!(tr, address);
+        pvm.name(&s, Name::Net(addr, prt));
     }
     pvm.sinkstart(&pro, &s);
     Ok(())
@@ -270,9 +243,12 @@ fn posix_sendmsg(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
 
 fn posix_sendto(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let suuid = tr_field!(tr, arg_objuuid1);
-    let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(&tr, &mut s)? {
-        pvm.prop_node(&s);
+    let s = pvm.declare::<Socket>(suuid, None);
+    if let Some(pth) = tr.upath1.clone() {
+        pvm.name(&s, Name::Path(pth));
+    } else if let Some(prt) = tr.port {
+        let addr = tr_opt_field!(tr, address);
+        pvm.name(&s, Name::Net(addr, prt));
     }
     pvm.sinkstart(&pro, &s);
     Ok(())
@@ -280,9 +256,12 @@ fn posix_sendto(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PV
 
 fn posix_recvmsg(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let suuid = tr_field!(tr, arg_objuuid1);
-    let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(&tr, &mut s)? {
-        pvm.prop_node(&s);
+    let s = pvm.declare::<Socket>(suuid, None);
+    if let Some(pth) = tr.upath1.clone() {
+        pvm.name(&s, Name::Path(pth));
+    } else if let Some(prt) = tr.port {
+        let addr = tr_opt_field!(tr, address);
+        pvm.name(&s, Name::Net(addr, prt));
     }
     pvm.source(&pro, &s);
     Ok(())
@@ -290,9 +269,12 @@ fn posix_recvmsg(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
 
 fn posix_recvfrom(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let suuid = tr_field!(tr, arg_objuuid1);
-    let mut s = pvm.declare::<Socket>(suuid, None);
-    if socket_addr(&tr, &mut s)? {
-        pvm.prop_node(&s);
+    let s = pvm.declare::<Socket>(suuid, None);
+    if let Some(pth) = tr.upath1.clone() {
+        pvm.name(&s, Name::Path(pth));
+    } else if let Some(prt) = tr.port {
+        let addr = tr_opt_field!(tr, address);
+        pvm.name(&s, Name::Net(addr, prt));
     }
     pvm.source(&pro, &s);
     Ok(())
@@ -300,9 +282,9 @@ fn posix_recvfrom(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), 
 
 fn posix_chdir(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let duuid = tr_field!(tr, arg_objuuid1);
-    let mut d = pvm.declare::<File>(duuid, None);
+    let d = pvm.declare::<File>(duuid, None);
     if let Some(dpath) = tr.upath1.clone() {
-        pvm.name(&mut d, dpath);
+        pvm.name(&d, Name::Path(dpath));
     }
     Ok(())
 }
@@ -310,8 +292,8 @@ fn posix_chdir(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PV
 fn posix_chmod(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let fuuid = tr_field!(tr, arg_objuuid1);
     let fpath = tr_opt_field!(tr, upath1);
-    let mut f = pvm.declare::<File>(fuuid, None);
-    pvm.name(&mut f, fpath);
+    let f = pvm.declare::<File>(fuuid, None);
+    pvm.name(&f, Name::Path(fpath));
     pvm.sink(&pro, &f);
     Ok(())
 }
@@ -319,8 +301,8 @@ fn posix_chmod(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
 fn posix_chown(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
     let fuuid = tr_field!(tr, arg_objuuid1);
     let fpath = tr_opt_field!(tr, upath1);
-    let mut f = pvm.declare::<File>(fuuid, None);
-    pvm.name(&mut f, fpath);
+    let f = pvm.declare::<File>(fuuid, None);
+    pvm.name(&f, Name::Path(fpath));
     pvm.sink(&pro, &f);
     Ok(())
 }

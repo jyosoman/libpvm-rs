@@ -9,8 +9,8 @@ use neo4j::{Node as NeoNode, Value};
 
 use data::{
     node_types::{
-        DataNode, EditInit, EditSession, NameNode, Node, File, FileInit, Pipe, PipeInit, Process, ProcessInit,
-        Ptty, PttyInit, Socket, SocketClass, SocketInit,
+        DataNode, EditSession, File, NameNode, Node, Pipe, PipeInit, Process,
+        ProcessInit, Ptty, Socket, SocketClass, SocketInit,
     },
     rel_types::{PVMOps, Rel}, Enumerable, Generable, HasDst, HasID, HasSrc, HasUUID, ID,
 };
@@ -91,28 +91,26 @@ impl ToDBNode for Node {
                 DataNode::Proc(_) => vec!["Node", "Process"],
                 DataNode::Socket(_) => vec!["Node", "Socket"],
                 DataNode::Ptty(_) => vec!["Node", "Ptty"],
-            }
+            },
             Node::Name(n) => match n {
                 NameNode::Path(..) => vec!["Node", "Name", "Path"],
                 NameNode::Net(..) => vec!["Node", "Name", "Net"],
-            }
+            },
         }
     }
+    
     fn get_props(&self) -> HashMap<&'static str, Value> {
         match self {
             Node::Data(d) => {
                 let mut props = match d {
-                    DataNode::EditSession(e) => hashmap!("name"  => Value::from(e.name.clone())),
-                    DataNode::File(f) => hashmap!("name"  => Value::from(f.name.clone())),
+                    DataNode::EditSession(_) => hashmap!(),
+                    DataNode::File(_) => hashmap!(),
                     DataNode::Pipe(p) => hashmap!("fd"    => Value::from(p.fd)),
                     DataNode::Proc(p) => hashmap!("cmdline" => Value::from(p.cmdline.clone()),
                                                   "pid"     => Value::from(p.pid),
                                                   "thin"    => Value::from(p.thin)),
-                    DataNode::Socket(s) => hashmap!("class"  => Value::from(s.class as i64),
-                                                    "path" => Value::from(s.path.clone()),
-                                                    "ip" => Value::from(s.ip.clone()),
-                                                    "port" => Value::from(s.port)),
-                    DataNode::Ptty(p) => hashmap!("name"  => Value::from(p.name.clone())),
+                    DataNode::Socket(s) => hashmap!("class"  => Value::from(s.class as i64)),
+                    DataNode::Ptty(_) => hashmap!(),
                 };
                 props.insert("uuid", d.get_uuid().into_val());
                 props
@@ -121,7 +119,7 @@ impl ToDBNode for Node {
                 NameNode::Path(_, path) => hashmap!("path" => Value::from(path.clone())),
                 NameNode::Net(_, addr, port) => hashmap!("addr" => Value::from(addr.clone()),
                                                          "port" => Value::from(*port)),
-            }
+            },
         }
     }
 }
@@ -186,15 +184,15 @@ impl FromDB for DataNode {
         if g.labs.contains(&String::from("Process")) {
             Ok(Process::new(id, uuid, Some(g.into_init()?)).enumerate())
         } else if g.labs.contains(&String::from("File")) {
-            Ok(File::new(id, uuid, Some(g.into_init()?)).enumerate())
+            Ok(File::new(id, uuid, None).enumerate())
         } else if g.labs.contains(&String::from("EditSession")) {
-            Ok(EditSession::new(id, uuid, Some(g.into_init()?)).enumerate())
+            Ok(EditSession::new(id, uuid, None).enumerate())
         } else if g.labs.contains(&String::from("Socket")) {
             Ok(Socket::new(id, uuid, Some(g.into_init()?)).enumerate())
         } else if g.labs.contains(&String::from("Pipe")) {
             Ok(Pipe::new(id, uuid, Some(g.into_init()?)).enumerate())
         } else if g.labs.contains(&String::from("Ptty")) {
-            Ok(Ptty::new(id, uuid, Some(g.into_init()?)).enumerate())
+            Ok(Ptty::new(id, uuid, None).enumerate())
         } else {
             Err("Node doesn't match any known type.")
         }
@@ -203,28 +201,6 @@ impl FromDB for DataNode {
 
 trait IntoInit<T> {
     fn into_init(self) -> Result<T, &'static str>;
-}
-
-impl IntoInit<FileInit> for NeoNode {
-    fn into_init(mut self) -> Result<FileInit, &'static str> {
-        Ok(FileInit {
-            name: self.props
-                .remove("name")
-                .and_then(Value::into_string)
-                .ok_or("name property is missing or not a string")?,
-        })
-    }
-}
-
-impl IntoInit<EditInit> for NeoNode {
-    fn into_init(mut self) -> Result<EditInit, &'static str> {
-        Ok(EditInit {
-            name: self.props
-                .remove("name")
-                .and_then(Value::into_string)
-                .ok_or("name property is missing or not a string")?,
-        })
-    }
 }
 
 impl IntoInit<PipeInit> for NeoNode {
@@ -265,29 +241,6 @@ impl IntoInit<SocketInit> for NeoNode {
                 .and_then(Value::into_int)
                 .and_then(SocketClass::from_int)
                 .ok_or("class property is missing or not an Integer")?,
-            path: self.props
-                .remove("path")
-                .and_then(Value::into_string)
-                .ok_or("path property is missing or not a string")?,
-            ip: self.props
-                .remove("ip")
-                .and_then(Value::into_string)
-                .ok_or("ip property is missing or not a string")?,
-            port: self.props
-                .remove("port")
-                .and_then(Value::into_int)
-                .ok_or("port property is missing or not an Integer")?,
-        })
-    }
-}
-
-impl IntoInit<PttyInit> for NeoNode {
-    fn into_init(mut self) -> Result<PttyInit, &'static str> {
-        Ok(PttyInit {
-            name: self.props
-                .remove("name")
-                .and_then(Value::into_string)
-                .ok_or("name property is missing or not a string")?,
         })
     }
 }

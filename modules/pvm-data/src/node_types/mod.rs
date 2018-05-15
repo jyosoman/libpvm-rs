@@ -6,13 +6,11 @@ mod process;
 mod ptty;
 mod socket;
 
-pub use self::{editsession::{EditInit, EditSession},
-               file::{File, FileInit},
-               name::{Name, NameNode},
-               pipe::{Pipe, PipeInit},
-               process::{Process, ProcessInit},
-               ptty::{Ptty, PttyInit},
-               socket::{Socket, SocketClass, SocketInit}};
+pub use self::{
+    editsession::EditSession, file::File, name::{Name, NameNode},
+    pipe::{Pipe, PipeInit}, process::{Process, ProcessInit}, ptty::Ptty,
+    socket::{Socket, SocketClass, SocketInit},
+};
 
 use super::{Denumerate, Enumerable, HasID, HasUUID, ID};
 use uuid::Uuid;

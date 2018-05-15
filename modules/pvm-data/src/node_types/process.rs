@@ -1,5 +1,5 @@
-use ::{Generable, HasID, HasUUID, ID};
 use uuid::Uuid;
+use {Generable, HasID, HasUUID, ID};
 
 #[derive(Clone, Debug)]
 pub struct Process {
