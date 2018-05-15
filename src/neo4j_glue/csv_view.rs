@@ -254,6 +254,7 @@ impl ToCSV for Rel {
     fn fname(&self) -> &'static str {
         match self {
             Rel::Inf(_) => "inf.csv",
+            Rel::Named(_) => "named.csv",
         }
     }
 
@@ -261,6 +262,7 @@ impl ToCSV for Rel {
         write!(f, "db_id,:START_ID,:END_ID,:TYPE").unwrap();
         match self {
             Rel::Inf(_) => writeln!(f, ",pvm_op,generating_call,byte_count:int").unwrap(),
+            Rel::Named(_) => writeln!(f, ",start:int,generating_call").unwrap(),
         }
     }
 
@@ -278,6 +280,7 @@ impl ToCSV for Rel {
                 ",INF,{:?},\"{}\",{}",
                 i.pvm_op, i.generating_call, i.byte_count
             ).unwrap(),
+            Rel::Named(n) => writeln!(f, ",NAMED,{},\"{}\"", n.start, n.generating_call).unwrap(),
         }
     }
 }

@@ -6,8 +6,8 @@ use std::{
 };
 
 use data::{
-    node_types::{DataNode, EditInit, EditSession, File, FileInit},
-    rel_types::{Inf, InfInit, PVMOps, Rel}, Enumerable, Generable, HasID,
+    node_types::{DataNode, EditInit, EditSession, File, FileInit, NameNode},
+    rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel}, Enumerable, Generable, HasID,
     HasUUID, RelGenerable, ID,
 };
 use views::DBTr;
@@ -111,6 +111,17 @@ impl PVM {
                 pvm_op,
                 generating_call: self.cur_evt.clone(),
                 byte_count: 0,
+            },
+        )
+    }
+
+    fn _named(&mut self, src: &impl HasID, dst: &NameNode) -> RelGuard {
+        self._decl_rel::<Named>(
+            src.get_db_id(),
+            dst.get_db_id(),
+            NamedInit {
+                start: self.cur_time,
+                generating_call: self.cur_evt.clone(),
             },
         )
     }

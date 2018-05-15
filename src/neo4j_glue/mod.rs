@@ -147,6 +147,19 @@ impl ToDBRel for Rel {
                         .into(),
                 )
             }
+            Rel::Named(n) => {
+                let props: HashMap<&str, Value> = hashmap!("db_id" => n.get_db_id().into_val(),
+                                                           "generating_call" => Value::from(n.generating_call.clone()),
+                                                           "start" => Value::from(n.start));
+                (
+                    n.get_db_id(),
+                    hashmap!("src" => n.get_src().into_val(),
+                             "dst" => n.get_dst().into_val(),
+                             "type" => Value::from("NAMED"),
+                             "props" => Value::from(props))
+                        .into(),
+                )
+            }
         }
     }
 }
