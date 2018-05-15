@@ -6,7 +6,7 @@ use std::{
     os::unix::io::{FromRawFd, RawFd}, ptr, slice,
 };
 
-use cfg::{self, CfgMode, AdvancedConfig};
+use cfg::{self, AdvancedConfig, CfgMode};
 use engine;
 
 #[repr(C)]
@@ -110,9 +110,10 @@ fn string_from_c_char(str_p: *const c_char) -> Option<String> {
 pub unsafe extern "C" fn opus_init(cfg: Config) -> *mut OpusHdl {
     let r_cfg = cfg::Config {
         cfg_mode: cfg.cfg_mode,
-        db_server: string_from_c_char(cfg.db_server).unwrap_or("localhost:7687".to_string()),
-        db_user: string_from_c_char(cfg.db_user).unwrap_or("neo4j".to_string()),
-        db_password: string_from_c_char(cfg.db_password).unwrap_or("opus".to_string()),
+        db_server: string_from_c_char(cfg.db_server)
+            .unwrap_or_else(|| "localhost:7687".to_string()),
+        db_user: string_from_c_char(cfg.db_user).unwrap_or_else(|| "neo4j".to_string()),
+        db_password: string_from_c_char(cfg.db_password).unwrap_or_else(|| "opus".to_string()),
         suppress_default_views: cfg.suppress_default_views,
         cfg_detail: if cfg.cfg_detail.is_null() {
             Option::None

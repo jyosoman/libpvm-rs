@@ -99,7 +99,8 @@ impl Engine {
 
     pub fn ingest_stream(&mut self, stream: IOStream) -> Result<(), &'static str> {
         if let Some(ref mut pipeline) = self.pipeline {
-            Ok(ingest_stream(stream, &mut pipeline.pvm))
+            ingest_stream(stream, &mut pipeline.pvm);
+            Ok(())
         } else {
             Err("Pipeline not running")
         }

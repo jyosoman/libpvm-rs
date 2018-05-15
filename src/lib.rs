@@ -23,7 +23,7 @@ extern crate tokio_core;
 extern crate uuid;
 extern crate zip;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 macro_rules! timeit {
     ($E:expr) => {{

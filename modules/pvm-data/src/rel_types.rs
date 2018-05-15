@@ -48,8 +48,8 @@ impl RelGenerable for Inf {
     type Init = InfInit;
 
     fn new(id: ID, src: ID, dst: ID, init: <Self as RelGenerable>::Init) -> Self
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         Inf {
             id,
