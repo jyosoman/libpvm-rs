@@ -6,8 +6,8 @@ use std::{
 };
 
 use data::{
-    node_types::{EditInit, EditSession, EnumNode, File, FileInit}, Enumerable, Generable, HasID,
-    rel_types::{Inf, InfInit, PVMOps, Rel},
+    node_types::{DataNode, EditInit, EditSession, File, FileInit},
+    rel_types::{Inf, InfInit, PVMOps, Rel}, Enumerable, Generable, HasID,
     HasUUID, RelGenerable, ID,
 };
 use views::DBTr;
@@ -36,13 +36,13 @@ pub enum ConnectDir {
     BiDirectional,
 }
 
-pub type NodeGuard = Loan<ID, Box<EnumNode>>;
+pub type NodeGuard = Loan<ID, Box<DataNode>>;
 pub type RelGuard = Loan<(&'static str, ID, ID), Rel>;
 
 pub struct PVM {
     db: DB,
     uuid_cache: HashMap<Uuid, ID>,
-    node_cache: LendingLibrary<ID, Box<EnumNode>>,
+    node_cache: LendingLibrary<ID, Box<DataNode>>,
     rel_cache: LendingLibrary<(&'static str, ID, ID), Rel>,
     id_counter: AtomicUsize,
     open_cache: HashMap<Uuid, HashSet<Uuid>>,
@@ -141,13 +141,13 @@ impl PVM {
         }
     }
 
-    pub fn source(&mut self, act: &EnumNode, ent: &EnumNode) -> RelGuard {
+    pub fn source(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
         self._inf(ent, act, PVMOps::Source)
     }
 
-    pub fn sink(&mut self, act: &EnumNode, ent: &EnumNode) -> RelGuard {
+    pub fn sink(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
         match ent {
-            EnumNode::File(fref) => {
+            DataNode::File(fref) => {
                 let f = self.add::<File>(
                     fref.get_uuid(),
                     Some(FileInit {
@@ -161,9 +161,9 @@ impl PVM {
         }
     }
 
-    pub fn sinkstart(&mut self, act: &EnumNode, ent: &EnumNode) -> RelGuard {
+    pub fn sinkstart(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
         match ent {
-            EnumNode::File(fref) => {
+            DataNode::File(fref) => {
                 let es = self.add::<EditSession>(
                     fref.get_uuid(),
                     Some(EditInit {
@@ -175,7 +175,7 @@ impl PVM {
                 self._inf(fref, &**es, PVMOps::Version);
                 self._inf(act, &**es, PVMOps::Sink)
             }
-            EnumNode::EditSession(eref) => {
+            DataNode::EditSession(eref) => {
                 self.open_cache
                     .get_mut(&eref.get_uuid())
                     .unwrap()
@@ -186,8 +186,8 @@ impl PVM {
         }
     }
 
-    pub fn sinkend(&mut self, act: &EnumNode, ent: &EnumNode) {
-        if let EnumNode::EditSession(ref eref) = *ent {
+    pub fn sinkend(&mut self, act: &DataNode, ent: &DataNode) {
+        if let DataNode::EditSession(eref) = ent {
             self.open_cache
                 .get_mut(&eref.get_uuid())
                 .unwrap()
@@ -204,21 +204,21 @@ impl PVM {
         }
     }
 
-    pub fn name(&mut self, obj: &mut EnumNode, name: String) {
+    pub fn name(&mut self, obj: &mut DataNode, name: String) {
         match obj {
-            EnumNode::File(fref) => {
+            DataNode::File(fref) => {
                 if fref.name == "" {
                     fref.name = name;
                     self.db.update_node(fref);
                 }
             }
-            EnumNode::EditSession(eref) => {
+            DataNode::EditSession(eref) => {
                 if eref.name == "" {
                     eref.name = name;
                     self.db.update_node(eref);
                 }
             }
-            EnumNode::Ptty(pref) => {
+            DataNode::Ptty(pref) => {
                 if pref.name == "" {
                     pref.name = name;
                     self.db.update_node(pref);
@@ -228,7 +228,7 @@ impl PVM {
         }
     }
 
-    pub fn prop_node(&mut self, ent: &EnumNode) {
+    pub fn prop_node(&mut self, ent: &DataNode) {
         self.db.update_node(ent)
     }
 
@@ -236,7 +236,7 @@ impl PVM {
         self.db.update_rel(ent)
     }
 
-    pub fn connect(&mut self, first: &EnumNode, second: &EnumNode, dir: ConnectDir) {
+    pub fn connect(&mut self, first: &DataNode, second: &DataNode, dir: ConnectDir) {
         self._inf(first, second, PVMOps::Connect);
         if let ConnectDir::BiDirectional = dir {
             self._inf(second, first, PVMOps::Connect);

@@ -1,23 +1,23 @@
 extern crate pvm_cfg as cfg;
 extern crate pvm_data as data;
 
-use std::{collections::HashMap,
-          fmt::Debug,
-          sync::{mpsc, Arc, Mutex},
-          thread::{spawn, JoinHandle}};
+use std::{
+    collections::HashMap, fmt::Debug, sync::{mpsc, Arc, Mutex}, thread::{spawn, JoinHandle},
+};
 
-use data::{node_types::EnumNode, rel_types::Rel};
+use data::{node_types::Node, rel_types::Rel};
 
 use cfg::Config;
 
 #[derive(Clone, Debug)]
 pub enum DBTr {
-    CreateNode(EnumNode),
+    CreateNode(Node),
     CreateRel(Rel),
-    UpdateNode(EnumNode),
+    UpdateNode(Node),
     UpdateRel(Rel),
 }
 
+#[derive(Debug)]
 pub struct ViewInst {
     pub id: usize,
     pub vtype: usize,
@@ -42,8 +42,8 @@ impl ViewInst {
 
 pub trait View: Debug {
     fn new(id: usize) -> Self
-        where
-            Self: Sized;
+    where
+        Self: Sized;
     fn id(&self) -> usize;
     fn name(&self) -> &'static str;
     fn desc(&self) -> &'static str;
@@ -57,6 +57,7 @@ pub trait View: Debug {
     ) -> ViewInst;
 }
 
+#[derive(Debug)]
 pub struct ViewCoordinator {
     views: HashMap<usize, Box<View>>,
     insts: Vec<ViewInst>,

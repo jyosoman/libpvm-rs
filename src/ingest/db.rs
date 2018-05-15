@@ -1,6 +1,6 @@
 use std::sync::mpsc::SyncSender;
 
-use data::{Enumerable, rel_types::Rel};
+use data::{node_types::Node, rel_types::Rel};
 use views::DBTr;
 
 pub struct DB {
@@ -12,9 +12,9 @@ impl DB {
         DB { persist_pipe: pipe }
     }
 
-    pub fn create_node(&mut self, node: impl Enumerable) {
+    pub fn create_node(&mut self, node: impl Into<Node>) {
         self.persist_pipe
-            .send(DBTr::CreateNode(node.enumerate()))
+            .send(DBTr::CreateNode(node.into()))
             .expect("Database worker closed queue unexpectadly")
     }
 
@@ -24,9 +24,9 @@ impl DB {
             .expect("Database worker closed queue unexpectadly");
     }
 
-    pub fn update_node(&mut self, node: impl Enumerable) {
+    pub fn update_node(&mut self, node: impl Into<Node>) {
         self.persist_pipe
-            .send(DBTr::UpdateNode(node.enumerate()))
+            .send(DBTr::UpdateNode(node.into()))
             .expect("Database worker closed queue unexpectadly")
     }
 

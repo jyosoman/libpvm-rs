@@ -6,7 +6,7 @@ use zip::{write::FileOptions, ZipWriter};
 
 use cfg::Config;
 use data::{
-    node_types::EnumNode, rel_types::Rel, HasDst, HasID, HasSrc, HasUUID, ID,
+    node_types::{Node, DataNode}, rel_types::Rel, HasDst, HasID, HasSrc, HasUUID, ID,
 };
 use views::{DBTr, View, ViewInst};
 
@@ -77,7 +77,7 @@ impl View for CSVView {
             writeln!(out, ":LABEL,pvm_version:int,source").unwrap();
             writeln!(out, "DBInfo,2,libPVM-{}", ::VERSION).unwrap();
 
-            let mut nodes: HashMap<&'static str, HashMap<ID, EnumNode>> = HashMap::new();
+            let mut nodes: HashMap<&'static str, HashMap<ID, Node>> = HashMap::new();
             let mut rels: HashMap<&'static str, HashMap<ID, Rel>> = HashMap::new();
 
             for evt in stream {
@@ -145,78 +145,84 @@ trait ToCSV {
     fn write_self<F: Write>(&self, f: &mut F);
 }
 
-impl ToCSV for EnumNode {
+impl ToCSV for Node {
     fn fname(&self) -> &'static str {
         match self {
-            EnumNode::EditSession(_) => "es.csv",
-            EnumNode::File(_) => "file.csv",
-            EnumNode::Pipe(_) => "pipe.csv",
-            EnumNode::Proc(_) => "proc.csv",
-            EnumNode::Ptty(_) => "ptty.csv",
-            EnumNode::Socket(_) => "socket.csv",
+            Node::Data(d) => match d {
+                DataNode::EditSession(_) => "es.csv",
+                DataNode::File(_) => "file.csv",
+                DataNode::Pipe(_) => "pipe.csv",
+                DataNode::Proc(_) => "proc.csv",
+                DataNode::Ptty(_) => "ptty.csv",
+                DataNode::Socket(_) => "socket.csv",
+            }
         }
     }
 
     fn write_header<F: Write>(&self, f: &mut F) {
         match self {
-            EnumNode::EditSession(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
-            EnumNode::File(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
-            EnumNode::Pipe(_) => writeln!(f, "db_id:ID,:LABEL,uuid,fd:int").unwrap(),
-            EnumNode::Proc(_) => {
-                writeln!(f, "db_id:ID,:LABEL,uuid,cmdline,pid:int,thin:boolean").unwrap()
-            }
-            EnumNode::Ptty(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
-            EnumNode::Socket(_) => {
-                writeln!(f, "db_id:ID,:LABEL,uuid,class:int,path,ip,port:int").unwrap()
+            Node::Data(d) => match d {
+                DataNode::EditSession(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
+                DataNode::File(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
+                DataNode::Pipe(_) => writeln!(f, "db_id:ID,:LABEL,uuid,fd:int").unwrap(),
+                DataNode::Proc(_) => {
+                    writeln!(f, "db_id:ID,:LABEL,uuid,cmdline,pid:int,thin:boolean").unwrap()
+                }
+                DataNode::Ptty(_) => writeln!(f, "db_id:ID,:LABEL,uuid,name").unwrap(),
+                DataNode::Socket(_) => {
+                    writeln!(f, "db_id:ID,:LABEL,uuid,class:int,path,ip,port:int").unwrap()
+                }
             }
         }
     }
 
     fn write_self<F: Write>(&self, f: &mut F) {
         match self {
-            EnumNode::EditSession(v) => writeln!(
-                f,
-                "{},Node;EditSession,{},\"{}\"",
-                v.get_db_id(),
-                v.get_uuid(),
-                v.name
-            ).unwrap(),
-            EnumNode::File(v) => writeln!(
-                f,
-                "{},Node;File,{},\"{}\"",
-                v.get_db_id(),
-                v.get_uuid(),
-                v.name
-            ).unwrap(),
-            EnumNode::Pipe(v) => {
-                writeln!(f, "{},Node;Pipe,{},{}", v.get_db_id(), v.get_uuid(), v.fd).unwrap()
+            Node::Data(d) => match d {
+                DataNode::EditSession(v) => writeln!(
+                    f,
+                    "{},Node;EditSession,{},\"{}\"",
+                    v.get_db_id(),
+                    v.get_uuid(),
+                    v.name
+                ).unwrap(),
+                DataNode::File(v) => writeln!(
+                    f,
+                    "{},Node;File,{},\"{}\"",
+                    v.get_db_id(),
+                    v.get_uuid(),
+                    v.name
+                ).unwrap(),
+                DataNode::Pipe(v) => {
+                    writeln!(f, "{},Node;Pipe,{},{}", v.get_db_id(), v.get_uuid(), v.fd).unwrap()
+                }
+                DataNode::Proc(v) => writeln!(
+                    f,
+                    "{},Node;Process,{},\"{}\",{},{}",
+                    v.get_db_id(),
+                    v.get_uuid(),
+                    v.cmdline.replace("\"", "\"\""),
+                    v.pid,
+                    v.thin
+                ).unwrap(),
+                DataNode::Ptty(v) => writeln!(
+                    f,
+                    "{},Node;Ptty,{},\"{}\"",
+                    v.get_db_id(),
+                    v.get_uuid(),
+                    v.name
+                ).unwrap(),
+                DataNode::Socket(v) => writeln!(
+                    f,
+                    "{},Node;Socket,{},{},\"{}\",\"{}\",{}",
+                    v.get_db_id(),
+                    v.get_uuid(),
+                    v.class as i64,
+                    v.path,
+                    v.ip,
+                    v.port
+                ).unwrap(),
             }
-            EnumNode::Proc(v) => writeln!(
-                f,
-                "{},Node;Process,{},\"{}\",{},{}",
-                v.get_db_id(),
-                v.get_uuid(),
-                v.cmdline.replace("\"", "\"\""),
-                v.pid,
-                v.thin
-            ).unwrap(),
-            EnumNode::Ptty(v) => writeln!(
-                f,
-                "{},Node;Ptty,{},\"{}\"",
-                v.get_db_id(),
-                v.get_uuid(),
-                v.name
-            ).unwrap(),
-            EnumNode::Socket(v) => writeln!(
-                f,
-                "{},Node;Socket,{},{},\"{}\",\"{}\",{}",
-                v.get_db_id(),
-                v.get_uuid(),
-                v.class as i64,
-                v.path,
-                v.ip,
-                v.port
-            ).unwrap(),
         }
     }
 }

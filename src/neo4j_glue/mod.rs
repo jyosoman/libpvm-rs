@@ -5,11 +5,11 @@ pub use self::{csv_view::CSVView, neo4j_view::Neo4JView};
 
 use std::collections::HashMap;
 
-use neo4j::{Node, Value};
+use neo4j::{Node as NeoNode, Value};
 
 use data::{
     node_types::{
-        EditInit, EditSession, EnumNode, File, FileInit, Pipe, PipeInit, Process, ProcessInit,
+        DataNode, EditInit, EditSession, Node, File, FileInit, Pipe, PipeInit, Process, ProcessInit,
         Ptty, PttyInit, Socket, SocketClass, SocketInit,
     },
     rel_types::{PVMOps, Rel}, Enumerable, Generable, HasDst, HasID, HasSrc, HasUUID, ID,
@@ -71,41 +71,48 @@ impl IntoID for Value {
     }
 }
 
-pub trait ToDBNode: HasID + HasUUID {
+pub trait ToDBNode: HasID {
     fn get_labels(&self) -> Vec<&'static str>;
     fn get_props(&self) -> HashMap<&'static str, Value>;
     fn to_db(&self) -> (ID, Vec<&'static str>, HashMap<&'static str, Value>) {
         let mut props = self.get_props();
         props.insert("db_id", self.get_db_id().into_val());
-        props.insert("uuid", self.get_uuid().into_val());
         (self.get_db_id(), self.get_labels(), props)
     }
 }
 
-impl ToDBNode for EnumNode {
+impl ToDBNode for Node {
     fn get_labels(&self) -> Vec<&'static str> {
         match self {
-            EnumNode::EditSession(_) => vec!["Node", "EditSession"],
-            EnumNode::File(_) => vec!["Node", "File"],
-            EnumNode::Pipe(_) => vec!["Node", "Pipe"],
-            EnumNode::Proc(_) => vec!["Node", "Process"],
-            EnumNode::Socket(_) => vec!["Node", "Socket"],
-            EnumNode::Ptty(_) => vec!["Node", "Ptty"],
+            Node::Data(d) => match d {
+                DataNode::EditSession(_) => vec!["Node", "EditSession"],
+                DataNode::File(_) => vec!["Node", "File"],
+                DataNode::Pipe(_) => vec!["Node", "Pipe"],
+                DataNode::Proc(_) => vec!["Node", "Process"],
+                DataNode::Socket(_) => vec!["Node", "Socket"],
+                DataNode::Ptty(_) => vec!["Node", "Ptty"],
+            }
         }
     }
     fn get_props(&self) -> HashMap<&'static str, Value> {
         match self {
-            EnumNode::EditSession(e) => hashmap!("name"  => Value::from(e.name.clone())),
-            EnumNode::File(f) => hashmap!("name"  => Value::from(f.name.clone())),
-            EnumNode::Pipe(p) => hashmap!("fd"    => Value::from(p.fd)),
-            EnumNode::Proc(p) => hashmap!("cmdline" => Value::from(p.cmdline.clone()),
-                                          "pid"     => Value::from(p.pid),
-                                          "thin"    => Value::from(p.thin)),
-            EnumNode::Socket(s) => hashmap!("class"  => Value::from(s.class as i64),
-                                            "path" => Value::from(s.path.clone()),
-                                            "ip" => Value::from(s.ip.clone()),
-                                            "port" => Value::from(s.port)),
-            EnumNode::Ptty(p) => hashmap!("name"  => Value::from(p.name.clone())),
+            Node::Data(d) => {
+                let mut props = match d {
+                    DataNode::EditSession(e) => hashmap!("name"  => Value::from(e.name.clone())),
+                    DataNode::File(f) => hashmap!("name"  => Value::from(f.name.clone())),
+                    DataNode::Pipe(p) => hashmap!("fd"    => Value::from(p.fd)),
+                    DataNode::Proc(p) => hashmap!("cmdline" => Value::from(p.cmdline.clone()),
+                                                  "pid"     => Value::from(p.pid),
+                                                  "thin"    => Value::from(p.thin)),
+                    DataNode::Socket(s) => hashmap!("class"  => Value::from(s.class as i64),
+                                                    "path" => Value::from(s.path.clone()),
+                                                    "ip" => Value::from(s.ip.clone()),
+                                                    "port" => Value::from(s.port)),
+                    DataNode::Ptty(p) => hashmap!("name"  => Value::from(p.name.clone())),
+                };
+                props.insert("uuid", d.get_uuid().into_val());
+                props
+            }
         }
     }
 }
@@ -141,9 +148,9 @@ pub trait FromDB {
         Self: Sized;
 }
 
-impl FromDB for EnumNode {
+impl FromDB for DataNode {
     fn from_value(val: Value) -> Result<Self, &'static str> {
-        let mut g = Node::from_value(val)?;
+        let mut g = NeoNode::from_value(val)?;
 
         let id = g.props
             .remove("db_id")
@@ -176,7 +183,7 @@ trait IntoInit<T> {
     fn into_init(self) -> Result<T, &'static str>;
 }
 
-impl IntoInit<FileInit> for Node {
+impl IntoInit<FileInit> for NeoNode {
     fn into_init(mut self) -> Result<FileInit, &'static str> {
         Ok(FileInit {
             name: self.props
@@ -187,7 +194,7 @@ impl IntoInit<FileInit> for Node {
     }
 }
 
-impl IntoInit<EditInit> for Node {
+impl IntoInit<EditInit> for NeoNode {
     fn into_init(mut self) -> Result<EditInit, &'static str> {
         Ok(EditInit {
             name: self.props
@@ -198,7 +205,7 @@ impl IntoInit<EditInit> for Node {
     }
 }
 
-impl IntoInit<PipeInit> for Node {
+impl IntoInit<PipeInit> for NeoNode {
     fn into_init(mut self) -> Result<PipeInit, &'static str> {
         Ok(PipeInit {
             fd: self.props
@@ -209,7 +216,7 @@ impl IntoInit<PipeInit> for Node {
     }
 }
 
-impl IntoInit<ProcessInit> for Node {
+impl IntoInit<ProcessInit> for NeoNode {
     fn into_init(mut self) -> Result<ProcessInit, &'static str> {
         Ok(ProcessInit {
             cmdline: self.props
@@ -228,7 +235,7 @@ impl IntoInit<ProcessInit> for Node {
     }
 }
 
-impl IntoInit<SocketInit> for Node {
+impl IntoInit<SocketInit> for NeoNode {
     fn into_init(mut self) -> Result<SocketInit, &'static str> {
         Ok(SocketInit {
             class: self.props
@@ -252,7 +259,7 @@ impl IntoInit<SocketInit> for Node {
     }
 }
 
-impl IntoInit<PttyInit> for Node {
+impl IntoInit<PttyInit> for NeoNode {
     fn into_init(mut self) -> Result<PttyInit, &'static str> {
         Ok(PttyInit {
             name: self.props

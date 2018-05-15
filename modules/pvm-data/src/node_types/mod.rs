@@ -16,7 +16,26 @@ use super::{Denumerate, Enumerable, HasID, HasUUID, ID};
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
-pub enum EnumNode {
+pub enum Node {
+    Data(DataNode),
+}
+
+impl HasID for Node {
+    fn get_db_id(&self) -> ID {
+        match *self {
+            Node::Data(ref d) => d.get_db_id(),
+        }
+    }
+}
+
+impl<T: Enumerable> From<T> for Node {
+    fn from(val: T) -> Self {
+        Node::Data(val.enumerate())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum DataNode {
     Proc(Process),
     File(File),
     Pipe(Pipe),
@@ -28,15 +47,15 @@ pub enum EnumNode {
 macro_rules! enumnode_trait {
     ($TR: ty,
      $($F:ident() -> $T: ty),*) => {
-        impl $TR for EnumNode {
+        impl $TR for DataNode {
             $(fn $F(&self) -> $T {
                 match self {
-                    EnumNode::Proc(p) => p.$F(),
-                    EnumNode::Pipe(p) => p.$F(),
-                    EnumNode::EditSession(e) => e.$F(),
-                    EnumNode::File(f) => f.$F(),
-                    EnumNode::Socket(s) => s.$F(),
-                    EnumNode::Ptty(p) => p.$F(),
+                    DataNode::Proc(p) => p.$F(),
+                    DataNode::Pipe(p) => p.$F(),
+                    DataNode::EditSession(e) => e.$F(),
+                    DataNode::File(f) => f.$F(),
+                    DataNode::Socket(s) => s.$F(),
+                    DataNode::Ptty(p) => p.$F(),
                 }
             })*
         }
@@ -52,20 +71,20 @@ enumnode_trait!(HasUUID,
 macro_rules! enum_denum {
     ($V:path, $T:ty) => {
         impl Enumerable for $T {
-            fn enumerate(self) -> EnumNode {
+            fn enumerate(self) -> DataNode {
                 $V(self)
             }
         }
 
         impl Denumerate for $T {
-            fn denumerate(val: &EnumNode) -> &Self {
+            fn denumerate(val: &DataNode) -> &Self {
                 if let $V(ref ed) = *val {
                     ed
                 } else {
                     panic!("{:?} is not an {}", val, stringify!($T))
                 }
             }
-            fn denumerate_mut(val: &mut EnumNode) -> &mut Self {
+            fn denumerate_mut(val: &mut DataNode) -> &mut Self {
                 if let $V(ref mut ed) = *val {
                     ed
                 } else {
@@ -76,9 +95,9 @@ macro_rules! enum_denum {
     };
 }
 
-enum_denum!(EnumNode::EditSession, EditSession);
-enum_denum!(EnumNode::File, File);
-enum_denum!(EnumNode::Pipe, Pipe);
-enum_denum!(EnumNode::Proc, Process);
-enum_denum!(EnumNode::Socket, Socket);
-enum_denum!(EnumNode::Ptty, Ptty);
+enum_denum!(DataNode::EditSession, EditSession);
+enum_denum!(DataNode::File, File);
+enum_denum!(DataNode::Pipe, Pipe);
+enum_denum!(DataNode::Proc, Process);
+enum_denum!(DataNode::Socket, Socket);
+enum_denum!(DataNode::Ptty, Ptty);

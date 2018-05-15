@@ -1,9 +1,7 @@
 use super::pvm::{ConnectDir, NodeGuard, PVMError, PVM};
 use data::{
-    node_types::{
-        EnumNode, File, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket, SocketClass, SocketInit,
-    },
-    Denumerate, rel_types::Rel,
+    node_types::{DataNode, File, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket, SocketClass, SocketInit}, rel_types::Rel,
+    Denumerate,
 };
 use trace::{AuditEvent, TraceEvent};
 
@@ -25,8 +23,8 @@ macro_rules! tr_opt_field {
     };
 }
 
-fn socket_addr(tr: &AuditEvent, s: &mut EnumNode) -> Result<bool, PVMError> {
-    if let EnumNode::Socket(ref mut s) = *s {
+fn socket_addr(tr: &AuditEvent, s: &mut DataNode) -> Result<bool, PVMError> {
+    if let DataNode::Socket(ref mut s) = s {
         if let SocketClass::Unknown = s.class {
             if let Some(ref pth) = tr.upath1.clone() {
                 s.class = SocketClass::AfUnix;

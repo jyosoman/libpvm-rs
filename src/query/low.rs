@@ -1,4 +1,4 @@
-use data::node_types::EnumNode;
+use data::node_types::DataNode;
 
 use neo4j::{Neo4jDB, Neo4jOperations};
 
@@ -6,7 +6,7 @@ use neo4j_glue::{FromDB, IntoVal};
 
 use uuid::Uuid;
 
-pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid) -> Vec<EnumNode> {
+pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid) -> Vec<DataNode> {
     cypher
         .run(
             "MATCH (n {uuid: {uuid}})
@@ -15,7 +15,7 @@ pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid) -> Vec<EnumNode> {
         )
         .unwrap()
         .first()
-        .map(|data| EnumNode::from_value(data).unwrap())
+        .map(|data| DataNode::from_value(data).unwrap())
         .collect()
 }
 
