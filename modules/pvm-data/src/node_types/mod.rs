@@ -1,5 +1,6 @@
 mod editsession;
 mod file;
+mod name;
 mod pipe;
 mod process;
 mod ptty;
@@ -7,6 +8,7 @@ mod socket;
 
 pub use self::{editsession::{EditInit, EditSession},
                file::{File, FileInit},
+               name::{Name, NameNode},
                pipe::{Pipe, PipeInit},
                process::{Process, ProcessInit},
                ptty::{Ptty, PttyInit},
@@ -18,13 +20,27 @@ use uuid::Uuid;
 #[derive(Clone, Debug)]
 pub enum Node {
     Data(DataNode),
+    Name(NameNode),
 }
 
 impl HasID for Node {
     fn get_db_id(&self) -> ID {
         match *self {
             Node::Data(ref d) => d.get_db_id(),
+            Node::Name(ref n) => n.get_db_id(),
         }
+    }
+}
+
+impl From<NameNode> for Node {
+    fn from(val: NameNode) -> Self {
+        Node::Name(val)
+    }
+}
+
+impl<'a> From<&'a NameNode> for Node {
+    fn from(val: &'a NameNode) -> Self {
+        Node::Name(val.clone())
     }
 }
 

@@ -9,7 +9,7 @@ use neo4j::{Node as NeoNode, Value};
 
 use data::{
     node_types::{
-        DataNode, EditInit, EditSession, Node, File, FileInit, Pipe, PipeInit, Process, ProcessInit,
+        DataNode, EditInit, EditSession, NameNode, Node, File, FileInit, Pipe, PipeInit, Process, ProcessInit,
         Ptty, PttyInit, Socket, SocketClass, SocketInit,
     },
     rel_types::{PVMOps, Rel}, Enumerable, Generable, HasDst, HasID, HasSrc, HasUUID, ID,
@@ -92,6 +92,10 @@ impl ToDBNode for Node {
                 DataNode::Socket(_) => vec!["Node", "Socket"],
                 DataNode::Ptty(_) => vec!["Node", "Ptty"],
             }
+            Node::Name(n) => match n {
+                NameNode::Path(..) => vec!["Node", "Name", "Path"],
+                NameNode::Net(..) => vec!["Node", "Name", "Net"],
+            }
         }
     }
     fn get_props(&self) -> HashMap<&'static str, Value> {
@@ -112,6 +116,11 @@ impl ToDBNode for Node {
                 };
                 props.insert("uuid", d.get_uuid().into_val());
                 props
+            }
+            Node::Name(n) => match n {
+                NameNode::Path(_, path) => hashmap!("path" => Value::from(path.clone())),
+                NameNode::Net(_, addr, port) => hashmap!("addr" => Value::from(addr.clone()),
+                                                         "port" => Value::from(*port)),
             }
         }
     }

@@ -6,7 +6,7 @@ use zip::{write::FileOptions, ZipWriter};
 
 use cfg::Config;
 use data::{
-    node_types::{Node, DataNode}, rel_types::Rel, HasDst, HasID, HasSrc, HasUUID, ID,
+    node_types::{DataNode, NameNode, Node}, rel_types::Rel, HasDst, HasID, HasSrc, HasUUID, ID,
 };
 use views::{DBTr, View, ViewInst};
 
@@ -155,6 +155,10 @@ impl ToCSV for Node {
                 DataNode::Proc(_) => "proc.csv",
                 DataNode::Ptty(_) => "ptty.csv",
                 DataNode::Socket(_) => "socket.csv",
+            },
+            Node::Name(n) => match n {
+                NameNode::Path(..) => "paths.csv",
+                NameNode::Net(..) => "nets.csv",
             }
         }
     }
@@ -172,6 +176,10 @@ impl ToCSV for Node {
                 DataNode::Socket(_) => {
                     writeln!(f, "db_id:ID,:LABEL,uuid,class:int,path,ip,port:int").unwrap()
                 }
+            },
+            Node::Name(n) => match n {
+                NameNode::Path(..) => writeln!(f, "db_id:ID,:LABEL,path").unwrap(),
+                NameNode::Net(..) => writeln!(f, "db_id:ID,:LABEL,addr,port:int").unwrap(),
             }
         }
     }
@@ -221,6 +229,21 @@ impl ToCSV for Node {
                     v.path,
                     v.ip,
                     v.port
+                ).unwrap(),
+            },
+            Node::Name(n) => match n {
+                NameNode::Path(id, path) => writeln!(
+                    f,
+                    "{},Node;Name;Path,\"{}\"",
+                    id,
+                    path
+                ).unwrap(),
+                NameNode::Net(id, addr, port) => writeln!(
+                    f,
+                    "{},Node;Name;Net,\"{}\",{}",
+                    id,
+                    addr,
+                    port
                 ).unwrap(),
             }
         }
