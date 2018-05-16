@@ -86,7 +86,7 @@ impl PVM {
     }
 
     fn _nextid(&mut self) -> ID {
-        ID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as i64)
+        ID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as u64)
     }
 
     fn _decl_rel<T: RelGenerable + Into<Rel>>(

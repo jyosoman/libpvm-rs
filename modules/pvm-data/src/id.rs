@@ -1,13 +1,13 @@
 use std::fmt::Display;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct ID(i64);
+pub struct ID(u64);
 
 impl ID {
-    pub fn new(val: i64) -> ID {
+    pub fn new(val: u64) -> ID {
         ID(val)
     }
-    pub fn inner(self) -> i64 {
+    pub fn inner(self) -> u64 {
         self.0
     }
 }

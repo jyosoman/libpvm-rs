@@ -3,14 +3,14 @@ mod neo4j_view;
 
 pub use self::{csv_view::CSVView, neo4j_view::Neo4JView};
 
-use std::collections::HashMap;
+use std::{collections::HashMap, mem};
 
 use neo4j::{Node as NeoNode, Value};
 
 use data::{
     node_types::{
-        DataNode, EditSession, File, NameNode, Node, Pipe, PipeInit, Process,
-        ProcessInit, Ptty, Socket, SocketClass, SocketInit,
+        DataNode, EditSession, File, NameNode, Node, Pipe, PipeInit, Process, ProcessInit, Ptty,
+        Socket, SocketClass, SocketInit,
     },
     rel_types::{PVMOps, Rel}, Enumerable, Generable, HasDst, HasID, HasSrc, HasUUID, ID,
 };
@@ -42,7 +42,7 @@ impl IntoVal for Uuid {
 
 impl IntoVal for ID {
     fn into_val(self) -> Value {
-        Value::Integer(self.inner())
+        Value::Integer(unsafe { mem::transmute::<u64, i64>(self.inner()) })
     }
 }
 
@@ -65,7 +65,7 @@ pub trait IntoID {
 impl IntoID for Value {
     fn into_id(self) -> Option<ID> {
         match self {
-            Value::Integer(i) => Some(ID::new(i)),
+            Value::Integer(i) => Some(ID::new(unsafe { mem::transmute::<i64, u64>(i) })),
             _ => None,
         }
     }
@@ -99,7 +99,7 @@ impl ToDBNode for Node {
             },
         }
     }
-    
+
     fn get_props(&self) -> HashMap<&'static str, Value> {
         match self {
             Node::Data(d) => {
