@@ -37,20 +37,16 @@ pub trait HasDst {
     fn get_dst(&self) -> ID;
 }
 
-pub trait Generable: HasID + HasUUID {
+pub trait Generable: HasID + HasUUID + Sized {
     type Init;
 
-    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
-    where
-        Self: Sized;
+    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self;
 }
 
-pub trait RelGenerable: HasID + HasSrc + HasDst {
+pub trait RelGenerable: HasID + HasSrc + HasDst + Sized {
     type Init;
 
-    fn new(id: ID, src: ID, dst: ID, init: Self::Init) -> Self
-    where
-        Self: Sized;
+    fn new(id: ID, src: ID, dst: ID, init: Self::Init) -> Self;
 }
 
 impl<'a, T> Enumerable for &'a T

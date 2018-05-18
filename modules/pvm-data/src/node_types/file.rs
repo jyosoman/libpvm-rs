@@ -22,10 +22,7 @@ impl HasID for File {
 impl Generable for File {
     type Init = !;
 
-    fn new(id: ID, uuid: Uuid, _init: Option<Self::Init>) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(id: ID, uuid: Uuid, _init: Option<Self::Init>) -> Self {
         File { db_id: id, uuid }
     }
 }

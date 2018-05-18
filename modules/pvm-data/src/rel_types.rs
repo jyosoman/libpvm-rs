@@ -47,10 +47,7 @@ impl HasDst for Inf {
 impl RelGenerable for Inf {
     type Init = InfInit;
 
-    fn new(id: ID, src: ID, dst: ID, init: <Self as RelGenerable>::Init) -> Self
-        where
-            Self: Sized,
-    {
+    fn new(id: ID, src: ID, dst: ID, init: Self::Init) -> Self {
         Inf {
             id,
             src,
@@ -104,10 +101,7 @@ impl HasDst for Named {
 impl RelGenerable for Named {
     type Init = NamedInit;
 
-    fn new(id: ID, src: ID, dst: ID, init: <Self as RelGenerable>::Init) -> Self
-        where
-            Self: Sized,
-    {
+    fn new(id: ID, src: ID, dst: ID, init: Self::Init) -> Self {
         Named {
             id,
             src,

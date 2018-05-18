@@ -25,10 +25,7 @@ impl HasID for Process {
 impl Generable for Process {
     type Init = ProcessInit;
 
-    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self {
         match init {
             Some(i) => Process {
                 db_id: id,

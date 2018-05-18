@@ -16,10 +16,7 @@ impl HasID for Ptty {
 impl Generable for Ptty {
     type Init = !;
 
-    fn new(id: ID, uuid: Uuid, _init: Option<Self::Init>) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(id: ID, uuid: Uuid, _init: Option<Self::Init>) -> Self {
         Ptty { db_id: id, uuid }
     }
 }

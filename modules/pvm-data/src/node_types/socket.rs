@@ -39,10 +39,7 @@ impl HasID for Socket {
 impl Generable for Socket {
     type Init = SocketInit;
 
-    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self {
         match init {
             Some(i) => Socket {
                 db_id: id,

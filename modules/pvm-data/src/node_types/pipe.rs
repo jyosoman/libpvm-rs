@@ -21,10 +21,7 @@ impl HasID for Pipe {
 impl Generable for Pipe {
     type Init = PipeInit;
 
-    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self {
         match init {
             Some(i) => Pipe {
                 db_id: id,

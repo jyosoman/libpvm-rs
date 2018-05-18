@@ -16,10 +16,7 @@ impl HasID for EditSession {
 impl Generable for EditSession {
     type Init = !;
 
-    fn new(id: ID, uuid: Uuid, _init: Option<Self::Init>) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(id: ID, uuid: Uuid, _init: Option<Self::Init>) -> Self {
         EditSession { db_id: id, uuid }
     }
 }
