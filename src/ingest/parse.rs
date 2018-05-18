@@ -103,7 +103,7 @@ fn posix_read(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVME
     }
     let mut r = pvm.source(&pro, &f);
     if let Rel::Inf(ref mut iref) = *r {
-        iref.byte_count += tr.retval as u64;
+        iref.byte_count += tr.retval as i64;
     }
     pvm.prop_rel(&r);
     Ok(())
@@ -120,7 +120,7 @@ fn posix_write(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
     }
     let mut r = pvm.sinkstart(&pro, &f);
     if let Rel::Inf(ref mut iref) = *r {
-        iref.byte_count += tr.retval as u64;
+        iref.byte_count += tr.retval as i64;
     }
     pvm.prop_rel(&r);
     Ok(())

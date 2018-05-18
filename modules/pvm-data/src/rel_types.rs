@@ -18,14 +18,14 @@ pub struct Inf {
     dst: ID,
     pub pvm_op: PVMOps,
     pub generating_call: String,
-    pub byte_count: u64,
+    pub byte_count: i64,
 }
 
 #[derive(Debug)]
 pub struct InfInit {
     pub pvm_op: PVMOps,
     pub generating_call: String,
-    pub byte_count: u64,
+    pub byte_count: i64,
 }
 
 impl HasID for Inf {
