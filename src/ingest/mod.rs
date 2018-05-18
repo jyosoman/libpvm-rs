@@ -64,7 +64,7 @@ pub fn ingest_stream(stream: impl Read, pvm: &mut PVM) {
                 if let Err(e) = parse::parse_trace(&tr, pvm) {
                     eprintln!("Line: {}", n + 1);
                     eprintln!("PVM Parsing error: {}", e);
-                    eprintln!("{:?}", tr);
+                    eprintln!("{}", tr);
                 }
             }
         }
