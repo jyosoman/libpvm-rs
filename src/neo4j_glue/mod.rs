@@ -182,11 +182,13 @@ impl FromDB for DataNode {
     fn from_value(val: Value) -> Result<Self, &'static str> {
         let mut g = NeoNode::from_value(val)?;
 
-        let id = g.props
+        let id = g
+            .props
             .remove("db_id")
             .and_then(Value::into_id)
             .ok_or("db_id property is missing or not an Integer")?;
-        let uuid = g.props
+        let uuid = g
+            .props
             .remove("uuid")
             .and_then(Value::into_uuid)
             .ok_or("uuid property is missing or not a UUID5")?;
@@ -216,7 +218,8 @@ trait IntoInit<T> {
 impl IntoInit<PipeInit> for NeoNode {
     fn into_init(mut self) -> Result<PipeInit, &'static str> {
         Ok(PipeInit {
-            fd: self.props
+            fd: self
+                .props
                 .remove("fd")
                 .and_then(Value::into_int)
                 .ok_or("fd property is missing or not an Integer")?,
@@ -227,15 +230,18 @@ impl IntoInit<PipeInit> for NeoNode {
 impl IntoInit<ProcessInit> for NeoNode {
     fn into_init(mut self) -> Result<ProcessInit, &'static str> {
         Ok(ProcessInit {
-            cmdline: self.props
+            cmdline: self
+                .props
                 .remove("cmdline")
                 .and_then(Value::into_string)
                 .ok_or("cmdline property is missing or not a String")?,
-            pid: self.props
+            pid: self
+                .props
                 .remove("pid")
                 .and_then(Value::into_int)
                 .ok_or("pid property is missing or not an Integer")?,
-            thin: self.props
+            thin: self
+                .props
                 .remove("thin")
                 .and_then(Value::into_bool)
                 .ok_or("thin property is missing or not a bool")?,
@@ -246,7 +252,8 @@ impl IntoInit<ProcessInit> for NeoNode {
 impl IntoInit<SocketInit> for NeoNode {
     fn into_init(mut self) -> Result<SocketInit, &'static str> {
         Ok(SocketInit {
-            class: self.props
+            class: self
+                .props
                 .remove("class")
                 .and_then(Value::into_int)
                 .and_then(SocketClass::from_int)

@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, fs::File, io::Write, sync::{mpsc::Receiver, Arc}, thread,
+    collections::HashMap, fs::File, io::Write, mem, sync::{mpsc::Receiver, Arc}, thread,
 };
 
 use zip::{write::FileOptions, ZipWriter};
@@ -139,6 +139,14 @@ impl View for CSVView {
     }
 }
 
+fn format_id(v: ID) -> i64 {
+    format_u64(v.inner())
+}
+
+fn format_u64(v: u64) -> i64 {
+    unsafe { mem::transmute::<u64, i64>(v) }
+}
+
 trait ToCSV {
     fn fname(&self) -> &'static str;
     fn _lab(&self) -> &'static str;
@@ -203,7 +211,7 @@ impl ToCSV for Node {
     }
 
     fn write_self(&self, f: &mut impl Write) {
-        write!(f, "{},{}", self.get_db_id(), self._lab()).unwrap();
+        write!(f, "{},{}", format_id(self.get_db_id()), self._lab()).unwrap();
         match self {
             Node::Data(d) => {
                 write!(f, ",{}", d.get_uuid()).unwrap();
@@ -255,9 +263,9 @@ impl ToCSV for Rel {
         write!(
             f,
             "{},{},{},{}",
-            self.get_db_id(),
-            self.get_src(),
-            self.get_dst(),
+            format_id(self.get_db_id()),
+            format_id(self.get_src()),
+            format_id(self.get_dst()),
             self._lab(),
         ).unwrap();
         match self {
