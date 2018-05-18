@@ -1,4 +1,6 @@
-use {id::ID, HasDst, HasID, HasSrc, RelGenerable};
+use chrono::{DateTime, Utc};
+
+use {HasDst, HasID, HasSrc, RelGenerable, ID};
 
 #[derive(Clone, Copy, Debug)]
 pub enum PVMOps {
@@ -71,13 +73,13 @@ pub struct Named {
     src: ID,
     dst: ID,
     pub generating_call: String,
-    pub start: u64,
+    pub start: DateTime<Utc>,
 }
 
 #[derive(Debug)]
 pub struct NamedInit {
     pub generating_call: String,
-    pub start: u64,
+    pub start: DateTime<Utc>,
 }
 
 impl HasID for Named {

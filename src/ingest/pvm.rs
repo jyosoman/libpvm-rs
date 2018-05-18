@@ -12,6 +12,7 @@ use data::{
 };
 use views::DBTr;
 
+use chrono::{DateTime, Utc};
 use lending_library::{LendingLibrary, Loan};
 use uuid::Uuid;
 
@@ -49,7 +50,7 @@ pub struct PVM {
     open_cache: HashMap<Uuid, HashSet<Uuid>>,
     name_cache: LendingLibrary<Name, NameNode>,
     cont_cache: HashMap<Uuid, ID>,
-    cur_time: u64,
+    cur_time: DateTime<Utc>,
     cur_evt: String,
     pub unparsed_events: HashSet<String>,
 }
@@ -65,13 +66,13 @@ impl PVM {
             open_cache: HashMap::new(),
             name_cache: LendingLibrary::new(),
             cont_cache: HashMap::new(),
-            cur_time: 0,
+            cur_time: Utc::now(),
             cur_evt: String::new(),
             unparsed_events: HashSet::new(),
         }
     }
 
-    pub fn set_time(&mut self, new_time: u64) {
+    pub fn set_time(&mut self, new_time: DateTime<Utc>) {
         self.cur_time = new_time;
     }
 

@@ -1,5 +1,6 @@
 #![feature(never_type)]
 
+extern crate chrono;
 extern crate uuid;
 
 mod id;

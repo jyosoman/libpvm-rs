@@ -5,6 +5,7 @@ extern crate pvm_cfg as cfg;
 extern crate pvm_data as data;
 extern crate pvm_views as views;
 
+extern crate chrono;
 extern crate futures_cpupool;
 extern crate lending_library;
 extern crate libc;

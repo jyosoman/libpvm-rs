@@ -17,6 +17,8 @@ use data::{
 
 use uuid::Uuid;
 
+use chrono::{DateTime, Utc};
+
 pub trait Val2UUID {
     fn into_uuid(self) -> Option<Uuid>;
 }
@@ -43,6 +45,12 @@ impl IntoVal for Uuid {
 impl IntoVal for ID {
     fn into_val(self) -> Value {
         Value::Integer(unsafe { mem::transmute::<u64, i64>(self.inner()) })
+    }
+}
+
+impl IntoVal for DateTime<Utc> {
+    fn into_val(self) -> Value {
+        Value::Integer(self.timestamp_nanos())
     }
 }
 
@@ -150,7 +158,7 @@ impl ToDBRel for Rel {
             Rel::Named(n) => {
                 let props: HashMap<&str, Value> = hashmap!("db_id" => n.get_db_id().into_val(),
                                                            "generating_call" => Value::from(n.generating_call.clone()),
-                                                           "start" => Value::from(n.start));
+                                                           "start" => n.start.into_val());
                 (
                     n.get_db_id(),
                     hashmap!("src" => n.get_src().into_val(),

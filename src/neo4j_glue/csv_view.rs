@@ -194,7 +194,7 @@ impl ToCSV for Node {
                     DataNode::Socket(_) => writeln!(f, ",class:int").unwrap(),
                     _ => writeln!(f).unwrap(),
                 }
-            },
+            }
             Node::Name(n) => match n {
                 NameNode::Path(..) => writeln!(f, ",path").unwrap(),
                 NameNode::Net(..) => writeln!(f, ",addr,port:integer").unwrap(),
@@ -266,7 +266,12 @@ impl ToCSV for Rel {
                 ",{:?},\"{}\",{}",
                 i.pvm_op, i.generating_call, i.byte_count
             ).unwrap(),
-            Rel::Named(n) => writeln!(f, ",{},\"{}\"", n.start, n.generating_call).unwrap(),
+            Rel::Named(n) => writeln!(
+                f,
+                ",{},\"{}\"",
+                n.start.timestamp_nanos(),
+                n.generating_call
+            ).unwrap(),
         }
     }
 }

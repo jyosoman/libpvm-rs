@@ -1,10 +1,12 @@
+use chrono::{serde::ts_nano_seconds, DateTime, Utc};
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
 pub struct AuditEvent {
     pub event: String,
     pub host: Option<Uuid>,
-    pub time: u64,
+    #[serde(with = "ts_nano_seconds")]
+    pub time: DateTime<Utc>,
     pub pid: i32,
     pub ppid: i32,
     pub tid: i32,
@@ -36,7 +38,8 @@ pub struct AuditEvent {
 pub struct FBTEvent {
     pub event: String,
     pub host: Uuid,
-    pub time: u64,
+    #[serde(with = "ts_nano_seconds")]
+    pub time: DateTime<Utc>,
     pub so_uuid: Uuid,
     pub lport: i32,
     pub fport: i32,
