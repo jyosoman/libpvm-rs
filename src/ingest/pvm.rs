@@ -260,6 +260,7 @@ impl PVM {
             _ => {
                 self._named(obj, &n_node)
             }
+        }
     }
 
     pub fn unname(&mut self, obj: &DataNode, name: Name) -> RelGuard {
