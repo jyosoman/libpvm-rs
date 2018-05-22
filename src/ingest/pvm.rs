@@ -163,6 +163,15 @@ impl PVM {
         self._inf(ent, act, PVMOps::Source)
     }
 
+    pub fn source_nbytes<T:Into<i64>>(&mut self, act: &DataNode, ent: &DataNode, bytes: T) -> RelGuard {
+        let mut r = self.source(act, ent);
+        if let Rel::Inf(ref mut iref) = *r {
+            iref.byte_count += bytes.into();
+        }
+        self.prop_rel(&r);
+        r
+    }
+
     pub fn sink(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
         match ent {
             DataNode::File(fref) => {
@@ -192,6 +201,15 @@ impl PVM {
             }
             _ => self._inf(act, ent, PVMOps::Sink),
         }
+    }
+
+    pub fn sinkstart_nbytes<T:Into<i64>>(&mut self, act: &DataNode, ent: &DataNode, bytes: T) -> RelGuard {
+        let mut r = self.sinkstart(act, ent);
+        if let Rel::Inf(ref mut iref) = *r {
+            iref.byte_count += bytes.into();
+        }
+        self.prop_rel(&r);
+        r
     }
 
     pub fn sinkend(&mut self, act: &DataNode, ent: &DataNode) {

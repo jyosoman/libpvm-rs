@@ -1,7 +1,6 @@
 use super::pvm::{ConnectDir, NodeGuard, PVMError, PVM};
 use data::{
-    node_types::{File, Name, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket}, rel_types::Rel,
-    Denumerate,
+    node_types::{File, Name, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket}, Denumerate,
 };
 use trace::{AuditEvent, TraceEvent};
 
@@ -101,11 +100,7 @@ fn posix_read(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVME
             pvm.name(&f, Name::Path(pth));
         }
     }
-    let mut r = pvm.source(&pro, &f);
-    if let Rel::Inf(ref mut iref) = *r {
-        iref.byte_count += tr.retval as i64;
-    }
-    pvm.prop_rel(&r);
+    pvm.source_nbytes(&pro, &f, tr.retval);
     Ok(())
 }
 
@@ -118,11 +113,7 @@ fn posix_write(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVM
             pvm.name(&f, Name::Path(pth));
         }
     }
-    let mut r = pvm.sinkstart(&pro, &f);
-    if let Rel::Inf(ref mut iref) = *r {
-        iref.byte_count += tr.retval as i64;
-    }
-    pvm.prop_rel(&r);
+    pvm.sinkstart_nbytes(&pro, &f, tr.retval);
     Ok(())
 }
 
@@ -237,7 +228,7 @@ fn posix_sendmsg(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
         let addr = tr_opt_field!(tr, address);
         pvm.name(&s, Name::Net(addr, prt));
     }
-    pvm.sinkstart(&pro, &s);
+    pvm.sinkstart_nbytes(&pro, &s, tr.retval);
     Ok(())
 }
 
@@ -250,7 +241,7 @@ fn posix_sendto(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PV
         let addr = tr_opt_field!(tr, address);
         pvm.name(&s, Name::Net(addr, prt));
     }
-    pvm.sinkstart(&pro, &s);
+    pvm.sinkstart_nbytes(&pro, &s, tr.retval);
     Ok(())
 }
 
@@ -263,7 +254,7 @@ fn posix_recvmsg(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), P
         let addr = tr_opt_field!(tr, address);
         pvm.name(&s, Name::Net(addr, prt));
     }
-    pvm.source(&pro, &s);
+    pvm.source_nbytes(&pro, &s, tr.retval);
     Ok(())
 }
 
@@ -276,7 +267,7 @@ fn posix_recvfrom(tr: &AuditEvent, pro: NodeGuard, pvm: &mut PVM) -> Result<(), 
         let addr = tr_opt_field!(tr, address);
         pvm.name(&s, Name::Net(addr, prt));
     }
-    pvm.source(&pro, &s);
+    pvm.source_nbytes(&pro, &s, tr.retval);
     Ok(())
 }
 
