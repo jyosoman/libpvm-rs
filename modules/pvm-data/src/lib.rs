@@ -11,15 +11,14 @@ use uuid::Uuid;
 
 pub use self::id::ID;
 
-use self::node_types::DataNode;
-
 pub trait Enumerable {
-    fn enumerate(self) -> DataNode;
+    type Target;
+    fn enumerate(self) -> Self::Target;
 }
 
-pub trait Denumerate {
-    fn denumerate(val: &DataNode) -> &Self;
-    fn denumerate_mut(val: &mut DataNode) -> &mut Self;
+pub trait Denumerate: Enumerable {
+    fn denumerate(val: &<Self as Enumerable>::Target) -> &Self;
+    fn denumerate_mut(val: &mut <Self as Enumerable>::Target) -> &mut Self;
 }
 
 pub trait HasID {
@@ -54,22 +53,18 @@ impl<'a, T> Enumerable for &'a T
 where
     T: Enumerable + Clone,
 {
-    fn enumerate(self) -> DataNode {
+    type Target = <T as Enumerable>::Target;
+    fn enumerate(self) -> Self::Target {
         <T as Enumerable>::enumerate((*self).clone())
     }
 }
 
 impl<'a, T> Enumerable for &'a mut T
-where
-    T: Enumerable + Clone,
+    where
+        T: Enumerable + Clone,
 {
-    fn enumerate(self) -> DataNode {
+    type Target = <T as Enumerable>::Target;
+    fn enumerate(self) -> Self::Target {
         <T as Enumerable>::enumerate((*self).clone())
-    }
-}
-
-impl Enumerable for DataNode {
-    fn enumerate(self) -> DataNode {
-        self
     }
 }

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use {HasDst, HasID, HasSrc, RelGenerable, ID};
+use {Denumerate, Enumerable, HasDst, HasID, HasSrc, RelGenerable, ID};
 
 #[derive(Clone, Copy, Debug)]
 pub enum PVMOps {
@@ -61,12 +61,6 @@ impl RelGenerable for Inf {
     }
 }
 
-impl From<Inf> for Rel {
-    fn from(val: Inf) -> Self {
-        Rel::Inf(val)
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct Named {
     id: ID,
@@ -117,16 +111,17 @@ impl RelGenerable for Named {
     }
 }
 
-impl From<Named> for Rel {
-    fn from(val: Named) -> Self {
-        Rel::Named(val)
-    }
-}
-
 #[derive(Clone, Debug)]
 pub enum Rel {
     Inf(Inf),
     Named(Named),
+}
+
+impl Enumerable for Rel {
+    type Target = Rel;
+    fn enumerate(self) -> Rel {
+        self
+    }
 }
 
 macro_rules! rel_trait {
@@ -146,3 +141,34 @@ macro_rules! rel_trait {
 rel_trait!(HasID, get_db_id() -> ID);
 rel_trait!(HasSrc, get_src() -> ID);
 rel_trait!(HasDst, get_dst() -> ID);
+
+macro_rules! enum_denum {
+    ($V:path, $T:ty) => {
+        impl Enumerable for $T {
+            type Target = Rel;
+            fn enumerate(self) -> Self::Target {
+                $V(self)
+            }
+        }
+
+        impl Denumerate for $T {
+            fn denumerate(val: &Rel) -> &Self {
+                if let $V(ref ed) = *val {
+                    ed
+                } else {
+                    panic!("{:?} is not an {}", val, stringify!($T))
+                }
+            }
+            fn denumerate_mut(val: &mut Rel) -> &mut Self {
+                if let $V(ref mut ed) = *val {
+                    ed
+                } else {
+                    panic!("{:?} is not an {}", val, stringify!($T))
+                }
+            }
+        }
+    };
+}
+
+enum_denum!(Rel::Inf, Inf);
+enum_denum!(Rel::Named, Named);

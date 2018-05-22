@@ -30,21 +30,24 @@ impl HasID for Node {
     }
 }
 
-impl From<NameNode> for Node {
-    fn from(val: NameNode) -> Self {
-        Node::Name(val)
+impl Enumerable for Node {
+    type Target = Node;
+    fn enumerate(self) -> Node {
+        self
     }
 }
 
-impl<'a> From<&'a NameNode> for Node {
-    fn from(val: &'a NameNode) -> Self {
-        Node::Name(val.clone())
+impl Enumerable for NameNode {
+    type Target = Node;
+    fn enumerate(self) -> Node {
+        Node::Name(self)
     }
 }
 
-impl<T: Enumerable> From<T> for Node {
-    fn from(val: T) -> Self {
-        Node::Data(val.enumerate())
+impl Enumerable for DataNode {
+    type Target = Node;
+    fn enumerate(self) -> Node {
+        Node::Data(self)
     }
 }
 
@@ -87,7 +90,8 @@ enumnode_trait!(HasUUID,
 macro_rules! enum_denum {
     ($V:path, $T:ty) => {
         impl Enumerable for $T {
-            fn enumerate(self) -> DataNode {
+            type Target = DataNode;
+            fn enumerate(self) -> Self::Target {
                 $V(self)
             }
         }

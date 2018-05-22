@@ -1,6 +1,6 @@
 use std::sync::mpsc::SyncSender;
 
-use data::{node_types::Node, rel_types::Rel};
+use data::{Enumerable, node_types::Node, rel_types::Rel};
 use views::DBTr;
 
 pub struct DB {
@@ -12,27 +12,27 @@ impl DB {
         DB { persist_pipe: pipe }
     }
 
-    pub fn create_node(&mut self, node: impl Into<Node>) {
+    pub fn create_node<N: Enumerable<Target = Node>>(&mut self, node: N) {
         self.persist_pipe
-            .send(DBTr::CreateNode(node.into()))
+            .send(DBTr::CreateNode(node.enumerate()))
             .expect("Database worker closed queue unexpectadly")
     }
 
-    pub fn create_rel(&mut self, rel: &Rel) {
+    pub fn create_rel<R: Enumerable<Target = Rel>>(&mut self, rel: R) {
         self.persist_pipe
-            .send(DBTr::CreateRel(rel.clone()))
+            .send(DBTr::CreateRel(rel.enumerate()))
             .expect("Database worker closed queue unexpectadly");
     }
 
-    pub fn update_node(&mut self, node: impl Into<Node>) {
+    pub fn update_node<N: Enumerable<Target = Node>>(&mut self, node: N) {
         self.persist_pipe
-            .send(DBTr::UpdateNode(node.into()))
+            .send(DBTr::UpdateNode(node.enumerate()))
             .expect("Database worker closed queue unexpectadly")
     }
 
-    pub fn update_rel(&mut self, rel: &Rel) {
+    pub fn update_rel<R: Enumerable<Target = Rel>>(&mut self, rel: R) {
         self.persist_pipe
-            .send(DBTr::UpdateRel(rel.clone()))
+            .send(DBTr::UpdateRel(rel.enumerate()))
             .expect("Database worker closed queue unexpectadly")
     }
 }

@@ -8,7 +8,7 @@ use std::{
 use data::{
     node_types::{DataNode, EditSession, File, FileContainer, Name, NameNode},
     rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel}, Enumerable, Generable, HasID,
-    HasUUID, RelGenerable, ID,
+    Denumerate, HasUUID, RelGenerable, ID,
 };
 use views::DBTr;
 
@@ -90,7 +90,7 @@ impl PVM {
         ID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as u64)
     }
 
-    fn _decl_rel<T: RelGenerable + Into<Rel>>(
+    fn _decl_rel<T: RelGenerable + Enumerable<Target = Rel>>(
         &mut self,
         src: ID,
         dst: ID,
@@ -101,10 +101,10 @@ impl PVM {
             self.rel_cache.lend(&triple).unwrap()
         } else {
             let id = self._nextid();
-            let rel = T::new(id, src, dst, init).into();
+            let rel = T::new(id, src, dst, init).enumerate();
             self.rel_cache.insert(triple, rel);
             let r = self.rel_cache.lend(&triple).unwrap();
-            self.db.create_rel(&r);
+            self.db.create_rel(&*r);
             r
         }
     }
@@ -135,7 +135,7 @@ impl PVM {
 
     pub fn add<T>(&mut self, uuid: Uuid, init: Option<T::Init>) -> NodeGuard
     where
-        T: Generable + Enumerable,
+        T: Generable + Enumerable<Target = DataNode>,
     {
         let id = self._nextid();
         let node = Box::new(T::new(id, uuid, init).enumerate());
@@ -150,7 +150,7 @@ impl PVM {
 
     pub fn declare<T>(&mut self, uuid: Uuid, init: Option<T::Init>) -> NodeGuard
     where
-        T: Generable + Enumerable,
+        T: Generable + Enumerable<Target = DataNode>,
     {
         if !self.uuid_cache.contains_key(&uuid) {
             self.add::<T>(uuid, init)
@@ -165,9 +165,7 @@ impl PVM {
 
     pub fn source_nbytes<T:Into<i64>>(&mut self, act: &DataNode, ent: &DataNode, bytes: T) -> RelGuard {
         let mut r = self.source(act, ent);
-        if let Rel::Inf(ref mut iref) = *r {
-            iref.byte_count += bytes.into();
-        }
+        Inf::denumerate_mut(&mut r).byte_count += bytes.into();
         self.prop_rel(&r);
         r
     }
@@ -205,9 +203,7 @@ impl PVM {
 
     pub fn sinkstart_nbytes<T:Into<i64>>(&mut self, act: &DataNode, ent: &DataNode, bytes: T) -> RelGuard {
         let mut r = self.sinkstart(act, ent);
-        if let Rel::Inf(ref mut iref) = *r {
-            iref.byte_count += bytes.into();
-        }
+        Inf::denumerate_mut(&mut r).byte_count += bytes.into();
         self.prop_rel(&r);
         r
     }
@@ -270,7 +266,7 @@ impl PVM {
         let mut rel = self.name(obj, name);
         if let Rel::Named(ref mut n_rel) = *rel {
             n_rel.end = self.cur_time;
-            self.db.update_rel(&rel);
+            self.db.update_rel(&*rel);
         }
         rel
     }
