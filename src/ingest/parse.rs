@@ -327,6 +327,38 @@ fn posix_posix_openpt(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result
     Ok(())
 }
 
+fn posix_link(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let fuuid = tr_field!(tr, arg_objuuid1);
+    let upath1 = tr_opt_field!(tr, upath1);
+    let upath2 = tr_opt_field!(tr, upath2);
+    let f = pvm.declare::<File>(fuuid, None);
+    pvm.name(&f, Name::Path(upath1));
+    pvm.name(&f, Name::Path(upath2));
+    Ok(())
+}
+
+fn posix_rename(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let src_uuid = tr_field!(tr, arg_objuuid1);
+    let src = tr_opt_field!(tr, upath1);
+    let dst = tr_opt_field!(tr, upath2);
+    let fsrc = pvm.declare::<File>(src_uuid, None);
+    pvm.unname(&fsrc, Name::Path(src));
+    if let Some(ovr_uuid) = tr.arg_objuuid2 {
+        let fovr = pvm.declare::<File>(ovr_uuid, None);
+        pvm.unname(&fovr, Name::Path(dst.clone()));
+    }
+    pvm.name(&fsrc, Name::Path(dst));
+    Ok(())
+}
+
+fn posix_unlink(tr: &AuditEvent, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    let fuuid = tr_field!(tr, arg_objuuid1);
+    let upath1 = tr_opt_field!(tr, upath1);
+    let f = pvm.declare::<File>(fuuid, None);
+    pvm.unname(&f, Name::Path(upath1));
+    Ok(())
+}
+
 pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
     match tr {
         TraceEvent::Audit(box tr) => {
@@ -355,6 +387,7 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
                 }
                 "audit:event:aue_fchmod:" => posix_fchmod(tr, pro, pvm),
                 "audit:event:aue_fchown:" => posix_fchown(tr, pro, pvm),
+                "audit:event:aue_link:" => posix_link(tr, pro, pvm),
                 "audit:event:aue_listen:" => posix_listen(tr, pro, pvm),
                 "audit:event:aue_mmap:" => posix_mmap(tr, pro, pvm),
                 "audit:event:aue_open_rwtc:" | "audit:event:aue_openat_rwtc:" => {
@@ -365,10 +398,12 @@ pub fn parse_trace(tr: &TraceEvent, pvm: &mut PVM) -> Result<(), PVMError> {
                 "audit:event:aue_read:" | "audit:event:aue_pread:" => posix_read(tr, pro, pvm),
                 "audit:event:aue_recvmsg:" => posix_recvmsg(tr, pro, pvm),
                 "audit:event:aue_recvfrom:" => posix_recvfrom(tr, pro, pvm),
+                "audit:event:aue_rename:" => posix_rename(tr, pro, pvm),
                 "audit:event:aue_sendmsg:" => posix_sendmsg(tr, pro, pvm),
                 "audit:event:aue_sendto:" => posix_sendto(tr, pro, pvm),
                 "audit:event:aue_socket:" => posix_socket(tr, pro, pvm),
                 "audit:event:aue_socketpair:" => posix_socketpair(tr, pro, pvm),
+                "audit:event:aue_unlink:" => posix_unlink(tr, pro, pvm),
                 "audit:event:aue_write:"
                 | "audit:event:aue_pwrite:"
                 | "audit:event:aue_writev:" => posix_write(tr, pro, pvm),
