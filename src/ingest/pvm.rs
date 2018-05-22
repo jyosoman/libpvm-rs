@@ -12,7 +12,7 @@ use data::{
 };
 use views::DBTr;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 use lending_library::{LendingLibrary, Loan};
 use uuid::Uuid;
 
@@ -66,7 +66,7 @@ impl PVM {
             open_cache: HashMap::new(),
             name_cache: LendingLibrary::new(),
             cont_cache: HashMap::new(),
-            cur_time: Utc::now(),
+            cur_time: Utc.timestamp(0, 0),
             cur_evt: String::new(),
             unparsed_events: HashSet::new(),
         }
@@ -127,6 +127,7 @@ impl PVM {
             dst.get_db_id(),
             NamedInit {
                 start: self.cur_time,
+                end: Utc.timestamp(0, 0),
                 generating_call: self.cur_evt.clone(),
             },
         )
@@ -231,21 +232,29 @@ impl PVM {
         self.node_cache.lend(&id).unwrap()
     }
 
-    pub fn name(&mut self, obj: &DataNode, name: Name) {
+    pub fn name(&mut self, obj: &DataNode, name: Name) -> RelGuard {
         let n_node = self.decl_name(name);
         match obj {
             DataNode::File(f) => {
                 let cont = self.decl_fcont(f.get_uuid());
-                self._named(&**cont, &n_node);
+                self._named(&**cont, &n_node)
             }
             DataNode::EditSession(f) => {
                 let cont = self.decl_fcont(f.get_uuid());
-                self._named(&**cont, &n_node);
+                self._named(&**cont, &n_node)
             }
             _ => {
-                self._named(obj, &n_node);
+                self._named(obj, &n_node)
             }
+    }
+
+    pub fn unname(&mut self, obj: &DataNode, name: Name) -> RelGuard {
+        let mut rel = self.name(obj, name);
+        if let Rel::Named(ref mut n_rel) = *rel {
+            n_rel.end = self.cur_time;
+            self.db.update_rel(&rel);
         }
+        rel
     }
 
     pub fn prop_node(&mut self, ent: &DataNode) {

@@ -74,12 +74,14 @@ pub struct Named {
     dst: ID,
     pub generating_call: String,
     pub start: DateTime<Utc>,
+    pub end: DateTime<Utc>,
 }
 
 #[derive(Debug)]
 pub struct NamedInit {
     pub generating_call: String,
     pub start: DateTime<Utc>,
+    pub end: DateTime<Utc>,
 }
 
 impl HasID for Named {
@@ -109,6 +111,7 @@ impl RelGenerable for Named {
             src,
             dst,
             start: init.start,
+            end: init.end,
             generating_call: init.generating_call,
         }
     }
