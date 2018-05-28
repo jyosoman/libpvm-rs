@@ -1,4 +1,4 @@
-use chrono::{serde::ts_nano_seconds, DateTime, Utc};
+use chrono::{serde::ts_nanoseconds, DateTime, Utc};
 use std::fmt;
 use uuid::Uuid;
 
@@ -37,7 +37,7 @@ fn format_opt_uuid(v: &Option<Uuid>) -> Option<String> {
 pub struct AuditEvent {
     pub event: String,
     pub host: Option<Uuid>,
-    #[serde(with = "ts_nano_seconds")]
+    #[serde(with = "ts_nanoseconds")]
     pub time: DateTime<Utc>,
     pub pid: i32,
     pub ppid: i32,
@@ -489,7 +489,7 @@ impl AuditEvent {
 pub struct FBTEvent {
     pub event: String,
     pub host: Uuid,
-    #[serde(with = "ts_nano_seconds")]
+    #[serde(with = "ts_nanoseconds")]
     pub time: DateTime<Utc>,
     pub so_uuid: Uuid,
     pub lport: i32,
