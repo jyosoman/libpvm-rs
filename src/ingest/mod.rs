@@ -1,20 +1,26 @@
 mod db;
 pub mod pvm;
 
-use std::io::{BufRead, BufReader, Read};
+use std::{
+    fmt::Display, io::{BufRead, BufReader, Read},
+};
 
 use rayon::prelude::*;
 use serde_json;
 
-use self::pvm::PVM;
+use serde::de::DeserializeOwned;
 
-use trace::TraceEvent;
+use self::pvm::{PVMError, PVM};
 
 const BATCH_SIZE: usize = 0x80_000;
 
-pub fn ingest_stream<R: Read>(stream: R, pvm: &mut PVM) {
+pub trait Parseable: DeserializeOwned + Display + Send {
+    fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError>;
+}
+
+pub fn ingest_stream<R: Read, T: Parseable>(stream: R, pvm: &mut PVM) {
     let mut pre_vec: Vec<(usize, String)> = Vec::with_capacity(BATCH_SIZE);
-    let mut post_vec: Vec<(usize, Option<TraceEvent>)> = Vec::with_capacity(BATCH_SIZE);
+    let mut post_vec: Vec<(usize, Option<T>)> = Vec::with_capacity(BATCH_SIZE);
     let mut lines = BufReader::new(stream).lines().enumerate();
 
     loop {

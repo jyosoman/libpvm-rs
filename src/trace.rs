@@ -5,7 +5,9 @@ use uuid::Uuid;
 use data::{
     node_types::{File, Name, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket}, Denumerate,
 };
-use ingest::pvm::{ConnectDir, NodeGuard, PVMError, PVM};
+use ingest::{
+    pvm::{ConnectDir, NodeGuard, PVMError, PVM}, Parseable,
+};
 
 macro_rules! field {
     ($TR:ident, $F:ident) => {
@@ -537,8 +539,8 @@ impl fmt::Display for TraceEvent {
     }
 }
 
-impl TraceEvent {
-    pub fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
+impl Parseable for TraceEvent {
+    fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
         match self {
             TraceEvent::Audit(box tr) => tr.parse(pvm),
             TraceEvent::FBT(_) => Ok(()),
