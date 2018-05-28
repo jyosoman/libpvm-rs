@@ -1,5 +1,4 @@
 mod db;
-mod parse;
 pub mod pvm;
 
 use std::io::{BufRead, BufReader, Read};
@@ -61,7 +60,7 @@ pub fn ingest_stream(stream: impl Read, pvm: &mut PVM) {
 
         for (n, tr) in post_vec.drain(..) {
             if let Some(tr) = tr {
-                if let Err(e) = parse::parse_trace(&tr, pvm) {
+                if let Err(e) = tr.parse(pvm) {
                     eprintln!("Line: {}", n + 1);
                     eprintln!("PVM Parsing error: {}", e);
                     eprintln!("{}", tr);
