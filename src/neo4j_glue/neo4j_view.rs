@@ -61,19 +61,24 @@ impl View for Neo4JView {
             let mut rel_up_node = 0;
             let mut rel_up_rel = 0;
 
-            db.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
-            db.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
-            db.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
-            db.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
-            db.run_unchecked("CREATE INDEX ON :Pipe(uuid)", HashMap::new());
-            db.run_unchecked("CREATE INDEX ON :Socket(uuid)", HashMap::new());
+            let mut tr = db.transaction();
 
-            db.run_unchecked(
+            tr.run_unchecked("CREATE INDEX ON :Node(db_id)", HashMap::new());
+            tr.run_unchecked("CREATE INDEX ON :Process(uuid)", HashMap::new());
+            tr.run_unchecked("CREATE INDEX ON :File(uuid)", HashMap::new());
+            tr.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
+            tr.run_unchecked("CREATE INDEX ON :Pipe(uuid)", HashMap::new());
+            tr.run_unchecked("CREATE INDEX ON :Socket(uuid)", HashMap::new());
+
+            tr.commit_and_refresh().unwrap();
+
+            tr.run_unchecked(
                 "MERGE (:DBInfo {pvm_version: 2, source: $src})",
                 hashmap!("src" => Value::from(format!("libPVM-{}", ::VERSION))),
             );
 
-            let mut tr = db.transaction();
+            tr.commit_and_refresh().unwrap();
+
             for evt in stream {
                 match *evt {
                     DBTr::CreateNode(ref node) => {
