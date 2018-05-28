@@ -7,8 +7,8 @@ use std::{
 
 use data::{
     node_types::{DataNode, EditSession, File, FileContainer, Name, NameNode},
-    rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel}, Enumerable, Generable, HasID,
-    Denumerate, HasUUID, RelGenerable, ID,
+    rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel}, Denumerate, Enumerable, Generable,
+    HasID, HasUUID, RelGenerable, ID,
 };
 use views::DBTr;
 
@@ -163,7 +163,12 @@ impl PVM {
         self._inf(ent, act, PVMOps::Source)
     }
 
-    pub fn source_nbytes<T:Into<i64>>(&mut self, act: &DataNode, ent: &DataNode, bytes: T) -> RelGuard {
+    pub fn source_nbytes<T: Into<i64>>(
+        &mut self,
+        act: &DataNode,
+        ent: &DataNode,
+        bytes: T,
+    ) -> RelGuard {
         let mut r = self.source(act, ent);
         Inf::denumerate_mut(&mut r).byte_count += bytes.into();
         self.prop_rel(&r);
@@ -201,7 +206,12 @@ impl PVM {
         }
     }
 
-    pub fn sinkstart_nbytes<T:Into<i64>>(&mut self, act: &DataNode, ent: &DataNode, bytes: T) -> RelGuard {
+    pub fn sinkstart_nbytes<T: Into<i64>>(
+        &mut self,
+        act: &DataNode,
+        ent: &DataNode,
+        bytes: T,
+    ) -> RelGuard {
         let mut r = self.sinkstart(act, ent);
         Inf::denumerate_mut(&mut r).byte_count += bytes.into();
         self.prop_rel(&r);
@@ -257,9 +267,7 @@ impl PVM {
                 let cont = self.decl_fcont(f.get_uuid());
                 self._named(&**cont, &n_node)
             }
-            _ => {
-                self._named(obj, &n_node)
-            }
+            _ => self._named(obj, &n_node),
         }
     }
 

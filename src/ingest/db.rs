@@ -1,6 +1,6 @@
 use std::sync::mpsc::SyncSender;
 
-use data::{Enumerable, node_types::Node, rel_types::Rel};
+use data::{node_types::Node, rel_types::Rel, Enumerable};
 use views::DBTr;
 
 pub struct DB {
