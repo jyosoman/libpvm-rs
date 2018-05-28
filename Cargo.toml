@@ -14,15 +14,10 @@ path = "src/lib.rs"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-futures = "*"
-futures-cpupool = "*"
 lending-library = "0.1.*"
-tokio-io = "*"
-tokio-core = "*"
 serde = "*"
 serde_json = "*"
 serde_derive = "*"
-num_cpus = "1.0"
 libc = "*"
 nix = "0.9.0"
 rayon = "0.8.2"

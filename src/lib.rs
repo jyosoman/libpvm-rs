@@ -6,21 +6,17 @@ extern crate pvm_data as data;
 extern crate pvm_views as views;
 
 extern crate chrono;
-extern crate futures_cpupool;
 extern crate lending_library;
 extern crate libc;
 #[macro_use]
 extern crate maplit;
 extern crate neo4j;
-extern crate num_cpus;
 extern crate rayon;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate futures;
 extern crate nix;
 extern crate serde_json;
-extern crate tokio_core;
 extern crate uuid;
 extern crate zip;
 
