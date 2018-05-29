@@ -104,6 +104,20 @@ impl fmt::Display for AuditEvent {
 }
 
 impl AuditEvent {
+    fn sock_name(&self) -> Result<Name, PVMError> {
+        if let Some(pth) = self.upath1.clone() {
+            Ok(Name::Path(pth))
+        } else if let Some(prt) = self.port {
+            let addr = opt_field!(self, address);
+            Ok(Name::Net(addr, prt))
+        } else {
+            Err(PVMError::MissingField {
+                evt: self.event.clone(),
+                field: "upath1, port",
+            })
+        }
+    }
+
     fn posix_exec(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let cmdline = opt_field!(self, cmdline);
         let binuuid = field!(self, arg_objuuid1);
@@ -222,12 +236,7 @@ impl AuditEvent {
     fn posix_bind(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self, arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
-        if let Some(pth) = self.upath1.clone() {
-            pvm.name(&s, Name::Path(pth));
-        } else if let Some(prt) = self.port {
-            let addr = opt_field!(self, address);
-            pvm.name(&s, Name::Net(addr, prt));
-        }
+        pvm.name(&s, self.sock_name()?);
         Ok(())
     }
 
@@ -236,24 +245,14 @@ impl AuditEvent {
         let ruuid = field!(self, ret_objuuid1);
         pvm.declare::<Socket>(luuid, None);
         let r = pvm.declare::<Socket>(ruuid, None);
-        if let Some(pth) = self.upath1.clone() {
-            pvm.name(&r, Name::Path(pth));
-        } else if let Some(prt) = self.port {
-            let addr = opt_field!(self, address);
-            pvm.name(&r, Name::Net(addr, prt));
-        }
+        pvm.name(&r, self.sock_name()?);
         Ok(())
     }
 
     fn posix_connect(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self, arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
-        if let Some(pth) = self.upath1.clone() {
-            pvm.name(&s, Name::Path(pth));
-        } else if let Some(prt) = self.port {
-            let addr = opt_field!(self, address);
-            pvm.name(&s, Name::Net(addr, prt));
-        }
+        pvm.name(&s, self.sock_name()?);
         Ok(())
     }
 
@@ -304,12 +303,7 @@ impl AuditEvent {
     fn posix_sendmsg(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self, arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
-        if let Some(pth) = self.upath1.clone() {
-            pvm.name(&s, Name::Path(pth));
-        } else if let Some(prt) = self.port {
-            let addr = opt_field!(self, address);
-            pvm.name(&s, Name::Net(addr, prt));
-        }
+        pvm.name(&s, self.sock_name()?);
         pvm.sinkstart_nbytes(&pro, &s, self.retval);
         Ok(())
     }
@@ -317,12 +311,7 @@ impl AuditEvent {
     fn posix_sendto(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self, arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
-        if let Some(pth) = self.upath1.clone() {
-            pvm.name(&s, Name::Path(pth));
-        } else if let Some(prt) = self.port {
-            let addr = opt_field!(self, address);
-            pvm.name(&s, Name::Net(addr, prt));
-        }
+        pvm.name(&s, self.sock_name()?);
         pvm.sinkstart_nbytes(&pro, &s, self.retval);
         Ok(())
     }
@@ -330,12 +319,7 @@ impl AuditEvent {
     fn posix_recvmsg(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self, arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
-        if let Some(pth) = self.upath1.clone() {
-            pvm.name(&s, Name::Path(pth));
-        } else if let Some(prt) = self.port {
-            let addr = opt_field!(self, address);
-            pvm.name(&s, Name::Net(addr, prt));
-        }
+        pvm.name(&s, self.sock_name()?);
         pvm.source_nbytes(&pro, &s, self.retval);
         Ok(())
     }
@@ -343,12 +327,7 @@ impl AuditEvent {
     fn posix_recvfrom(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self, arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
-        if let Some(pth) = self.upath1.clone() {
-            pvm.name(&s, Name::Path(pth));
-        } else if let Some(prt) = self.port {
-            let addr = opt_field!(self, address);
-            pvm.name(&s, Name::Net(addr, prt));
-        }
+        pvm.name(&s, self.sock_name()?);
         pvm.source_nbytes(&pro, &s, self.retval);
         Ok(())
     }
