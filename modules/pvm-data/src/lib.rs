@@ -60,8 +60,8 @@ where
 }
 
 impl<'a, T> Enumerable for &'a mut T
-    where
-        T: Enumerable + Clone,
+where
+    T: Enumerable + Clone,
 {
     type Target = <T as Enumerable>::Target;
     fn enumerate(self) -> Self::Target {

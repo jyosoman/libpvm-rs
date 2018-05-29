@@ -178,12 +178,11 @@ impl AuditEvent {
     }
 
     fn posix_open(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        if let Some(fuuid) = self.ret_objuuid1 {
-            let fname = opt_field!(self, upath1);
+        let fuuid = field!(self, ret_objuuid1);
+        let fname = opt_field!(self, upath1);
 
-            let f = pvm.declare::<File>(fuuid, None);
-            pvm.name(&f, Name::Path(fname));
-        }
+        let f = pvm.declare::<File>(fuuid, None);
+        pvm.name(&f, Name::Path(fname));
         Ok(())
     }
 
