@@ -13,6 +13,13 @@ name = "opus"
 path = "src/lib.rs"
 crate-type = ["rlib", "cdylib"]
 
+[workspace]
+members = [
+    "modules/pvm-cfg",
+    "modules/pvm-data",
+    "modules/pvm-views",
+]
+
 [dependencies]
 lending-library = "0.1.*"
 serde = "*"
