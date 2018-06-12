@@ -1,15 +1,19 @@
 #![feature(never_type)]
 
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate chrono;
 extern crate uuid;
 
 mod id;
+mod meta_store;
 pub mod node_types;
 pub mod rel_types;
 
 use uuid::Uuid;
 
-pub use self::id::ID;
+pub use self::{id::ID, meta_store::MetaStore};
 
 pub trait Enumerable {
     type Target;
