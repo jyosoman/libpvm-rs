@@ -110,6 +110,15 @@ pub struct AuditEvent {
     pub arg_sharing_flags: Option<Vec<String>>,
     pub address: Option<String>,
     pub port: Option<u16>,
+    pub arg_uid: Option<i64>,
+    pub arg_euid: Option<i64>,
+    pub arg_ruid: Option<i64>,
+    pub arg_suid: Option<i64>,
+    pub arg_gid: Option<i64>,
+    pub arg_egid: Option<i64>,
+    pub arg_rgid: Option<i64>,
+    pub arg_sgid: Option<i64>,
+    pub login: Option<String>,
 }
 
 impl fmt::Display for AuditEvent {
@@ -145,6 +154,15 @@ impl fmt::Display for AuditEvent {
             self.arg_sharing_flags,
             self.address,
             self.port,
+            self.arg_uid,
+            self.arg_euid,
+            self.arg_ruid,
+            self.arg_suid,
+            self.arg_gid,
+            self.arg_egid,
+            self.arg_rgid,
+            self.arg_sgid,
+            self.login,
         );
         ret.finish()
     }
@@ -457,6 +475,114 @@ impl AuditEvent {
         Ok(())
     }
 
+    fn posix_setuid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let uid = ref_field!(self.arg_uid);
+        let pref = Process::denumerate_mut(&mut pro);
+        pref.meta.update("euid", uid, &self.time, true);
+        pref.meta.update("ruid", uid, &self.time, true);
+        pref.meta.update("suid", uid, &self.time, true);
+        pvm.prop(&pro);
+        Ok(())
+    }
+
+    fn posix_seteuid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let euid = ref_field!(self.arg_euid);
+        let pref = Process::denumerate_mut(&mut pro);
+        pref.meta.update("euid", euid, &self.time, true);
+        pvm.prop(&pro);
+        Ok(())
+    }
+
+    fn posix_setreuid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let ruid = ref_field!(self.arg_ruid);
+        let euid = ref_field!(self.arg_euid);
+        let pref = Process::denumerate_mut(&mut pro);
+        if *ruid != -1 {
+            pref.meta.update("ruid", ruid, &self.time, true);
+        }
+        if *euid != -1 {
+            pref.meta.update("euid", euid, &self.time, true);
+        }
+        pvm.prop(&pro);
+        Ok(())
+    }
+
+    fn posix_setresuid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let ruid = ref_field!(self.arg_ruid);
+        let euid = ref_field!(self.arg_euid);
+        let suid = ref_field!(self.arg_suid);
+        let pref = Process::denumerate_mut(&mut pro);
+        if *ruid != -1 {
+            pref.meta.update("ruid", ruid, &self.time, true);
+        }
+        if *euid != -1 {
+            pref.meta.update("euid", euid, &self.time, true);
+        }
+        if *suid != -1 {
+            pref.meta.update("suid", suid, &self.time, true);
+        }
+        pvm.prop(&pro);
+        Ok(())
+    }
+
+    fn posix_setgid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let gid = ref_field!(self.arg_gid);
+        let pref = Process::denumerate_mut(&mut pro);
+        pref.meta.update("egid", gid, &self.time, true);
+        pref.meta.update("rgid", gid, &self.time, true);
+        pref.meta.update("sgid", gid, &self.time, true);
+        pvm.prop(&pro);
+        Ok(())
+    }
+
+    fn posix_setegid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let egid = ref_field!(self.arg_egid);
+        let pref = Process::denumerate_mut(&mut pro);
+        pref.meta.update("egid", egid, &self.time, true);
+        pvm.prop(&pro);
+        Ok(())
+    }
+
+    fn posix_setregid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let rgid = ref_field!(self.arg_rgid);
+        let egid = ref_field!(self.arg_egid);
+        let pref = Process::denumerate_mut(&mut pro);
+        if *rgid != -1 {
+            pref.meta.update("rgid", rgid, &self.time, true);
+        }
+        if *egid != -1 {
+            pref.meta.update("egid", egid, &self.time, true);
+        }
+        pvm.prop(&pro);
+        Ok(())
+    }
+
+    fn posix_setresgid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let rgid = ref_field!(self.arg_rgid);
+        let egid = ref_field!(self.arg_egid);
+        let sgid = ref_field!(self.arg_sgid);
+        let pref = Process::denumerate_mut(&mut pro);
+        if *rgid != -1 {
+            pref.meta.update("rgid", rgid, &self.time, true);
+        }
+        if *egid != -1 {
+            pref.meta.update("egid", egid, &self.time, true);
+        }
+        if *sgid != -1 {
+            pref.meta.update("sgid", sgid, &self.time, true);
+        }
+        pvm.prop(&pro);
+        Ok(())
+    }
+
+    fn posix_setlogin(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+        let login = ref_field!(self.login);
+        let pref = Process::denumerate_mut(&mut pro);
+        pref.meta.update("login_name", login, &self.time, true);
+        pvm.prop(&pro);
+        Ok(())
+    }
+
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
         pvm.set_evt(self.event.clone());
         pvm.set_time(self.time);
@@ -493,6 +619,15 @@ impl AuditEvent {
             "audit:event:aue_rename:" => self.posix_rename(pro, pvm),
             "audit:event:aue_sendmsg:" => self.posix_sendmsg(pro, pvm),
             "audit:event:aue_sendto:" => self.posix_sendto(pro, pvm),
+            "audit:event:aue_setegid:" => self.posix_setegid(pro, pvm),
+            "audit:event:aue_seteuid:" => self.posix_seteuid(pro, pvm),
+            "audit:event:aue_setlogin:" => self.posix_setlogin(pro, pvm),
+            "audit:event:aue_setgid:" => self.posix_setgid(pro, pvm),
+            "audit:event:aue_setregid:" => self.posix_setregid(pro, pvm),
+            "audit:event:aue_setresgid:" => self.posix_setresgid(pro, pvm),
+            "audit:event:aue_setresuid:" => self.posix_setresuid(pro, pvm),
+            "audit:event:aue_setreuid:" => self.posix_setreuid(pro, pvm),
+            "audit:event:aue_setuid:" => self.posix_setuid(pro, pvm),
             "audit:event:aue_socket:" => self.posix_socket(pro, pvm),
             "audit:event:aue_socketpair:" => self.posix_socketpair(pro, pvm),
             "audit:event:aue_unlink:" => self.posix_unlink(pro, pvm),
