@@ -1,19 +1,11 @@
 use uuid::Uuid;
-use {Generable, HasID, HasUUID, ID};
+use {meta_store::MetaStore, Generable, HasID, HasUUID, ID};
 
 #[derive(Clone, Debug)]
 pub struct Process {
     db_id: ID,
     uuid: Uuid,
-    pub pid: i32,
-    pub cmdline: String,
-    pub thin: bool,
-}
-
-pub struct ProcessInit {
-    pub pid: i32,
-    pub cmdline: String,
-    pub thin: bool,
+    pub meta: MetaStore,
 }
 
 impl HasID for Process {
@@ -23,23 +15,19 @@ impl HasID for Process {
 }
 
 impl Generable for Process {
-    type Init = ProcessInit;
+    type Init = MetaStore;
 
     fn new(id: ID, uuid: Uuid, init: Option<Self::Init>) -> Self {
         match init {
             Some(i) => Process {
                 db_id: id,
                 uuid,
-                cmdline: i.cmdline,
-                pid: i.pid,
-                thin: i.thin,
+                meta: i,
             },
             None => Process {
                 db_id: id,
                 uuid,
-                cmdline: String::new(),
-                pid: 0,
-                thin: true,
+                meta: MetaStore::new(),
             },
         }
     }

@@ -7,8 +7,12 @@ mod ptty;
 mod socket;
 
 pub use self::{
-    editsession::EditSession, file::{File, FileContainer}, name::{Name, NameNode},
-    pipe::{Pipe, PipeInit}, process::{Process, ProcessInit}, ptty::Ptty,
+    editsession::EditSession,
+    file::{File, FileContainer},
+    name::{Name, NameNode},
+    pipe::{Pipe, PipeInit},
+    process::Process,
+    ptty::Ptty,
     socket::{Socket, SocketClass, SocketInit},
 };
 

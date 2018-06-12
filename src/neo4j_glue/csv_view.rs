@@ -198,7 +198,6 @@ impl ToCSV for Node {
                 write!(f, ",uuid").unwrap();
                 match d {
                     DataNode::Pipe(_) => writeln!(f, ",fd:int").unwrap(),
-                    DataNode::Proc(_) => writeln!(f, ",cmdline,pid:int,thin:boolean").unwrap(),
                     DataNode::Socket(_) => writeln!(f, ",class:int").unwrap(),
                     _ => writeln!(f).unwrap(),
                 }
@@ -217,13 +216,6 @@ impl ToCSV for Node {
                 write!(f, ",{}", d.get_uuid()).unwrap();
                 match d {
                     DataNode::Pipe(v) => writeln!(f, ",{}", v.fd).unwrap(),
-                    DataNode::Proc(v) => writeln!(
-                        f,
-                        ",\"{}\",{},{}",
-                        v.cmdline.replace("\"", "\"\""),
-                        v.pid,
-                        v.thin
-                    ).unwrap(),
                     DataNode::Socket(v) => writeln!(f, ",{}", v.class as i64,).unwrap(),
                     _ => writeln!(f).unwrap(),
                 }

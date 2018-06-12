@@ -3,15 +3,26 @@ use std::fmt;
 use uuid::Uuid;
 
 use data::{
-    node_types::{File, Name, Pipe, PipeInit, Process, ProcessInit, Ptty, Socket}, Denumerate,
+    node_types::{File, Name, Pipe, PipeInit, Process, Ptty, Socket},
+    Denumerate, MetaStore,
 };
 use ingest::{
-    pvm::{ConnectDir, NodeGuard, PVMError, PVM}, Parseable,
+    pvm::{ConnectDir, NodeGuard, PVMError, PVM},
+    Parseable,
 };
 
 macro_rules! field {
     ($TR:ident, $F:ident) => {
         $TR.$F.ok_or(PVMError::MissingField {
+            evt: $TR.event.clone(),
+            field: stringify!($F),
+        })?
+    };
+}
+
+macro_rules! ref_field {
+    ($TR:ident, $F:ident) => {
+        $TR.$F.as_ref().ok_or(PVMError::MissingField {
             evt: $TR.event.clone(),
             field: stringify!($F),
         })?
@@ -119,7 +130,7 @@ impl AuditEvent {
     }
 
     fn posix_exec(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let cmdline = opt_field!(self, cmdline);
+        let cmdline = ref_field!(self, cmdline);
         let binuuid = field!(self, arg_objuuid1);
         let binname = opt_field!(self, upath1);
         let lduuid = field!(self, arg_objuuid2);
@@ -131,28 +142,13 @@ impl AuditEvent {
         let ld = pvm.declare::<File>(lduuid, None);
         pvm.name(&ld, Name::Path(ldname));
 
-        if Process::denumerate(&pro).thin {
-            {
-                let pref = Process::denumerate_mut(&mut pro);
-                pref.cmdline = cmdline;
-                pref.thin = false;
-            }
-            pvm.prop_node(&pro);
-            pvm.source(&pro, &bin);
-            pvm.source(&pro, &ld);
-        } else {
-            let next = pvm.add::<Process>(
-                self.subjprocuuid,
-                Some(ProcessInit {
-                    pid: self.pid,
-                    cmdline,
-                    thin: false,
-                }),
-            );
-            pvm.source(&next, &pro);
-            pvm.source(&next, &bin);
-            pvm.source(&next, &ld);
-        }
+        let pref = Process::denumerate_mut(&mut pro);
+        pref.meta.update("cmdline", cmdline, &self.time, true);
+
+        pvm.prop(&pro);
+        pvm.source(&pro, &bin);
+        pvm.source(&pro, &ld);
+
         Ok(())
     }
 
@@ -160,14 +156,13 @@ impl AuditEvent {
         let ret_objuuid1 = field!(self, ret_objuuid1);
 
         let mut ch = pvm.declare::<Process>(ret_objuuid1, None);
-        {
-            let pref = Process::denumerate(&pro);
-            let chref = Process::denumerate_mut(&mut ch);
-            chref.pid = self.retval;
-            chref.cmdline = pref.cmdline.clone();
-            chref.thin = true;
-        }
-        pvm.prop_node(&ch);
+
+        let pref = Process::denumerate(&pro);
+        let chref = Process::denumerate_mut(&mut ch);
+        chref.meta.merge(&pref.meta.snapshot(&self.time));
+        chref.meta.update("pid", &self.retval, &self.time, false);
+
+        pvm.prop(&ch);
         pvm.source(&ch, &pro);
         Ok(())
     }
@@ -413,14 +408,10 @@ impl AuditEvent {
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
         pvm.set_evt(self.event.clone());
         pvm.set_time(self.time);
-        let pro = pvm.declare::<Process>(
-            self.subjprocuuid,
-            Some(ProcessInit {
-                pid: self.pid,
-                cmdline: self.exec.clone(),
-                thin: true,
-            }),
-        );
+        let mut m = MetaStore::new();
+        m.update("cmdline", &self.exec[..], &self.time, true);
+        m.update("pid", &self.pid, &self.time, false);
+        let pro = pvm.declare::<Process>(self.subjprocuuid, Some(m));
         match &self.event[..] {
             "audit:event:aue_accept:" => self.posix_accept(pro, pvm),
             "audit:event:aue_bind:" => self.posix_bind(pro, pvm),
