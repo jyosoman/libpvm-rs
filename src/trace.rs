@@ -38,39 +38,72 @@ macro_rules! clone_field {
     };
 }
 
-fn format_uuid(v: &Uuid) -> String {
-    v.hyphenated().to_string()
+trait MapFmt {
+    fn entry(&self, f: &mut fmt::DebugMap, key: &str);
 }
 
-fn format_opt_uuid(v: &Option<Uuid>) -> Option<String> {
-    v.map(|u| format_uuid(&u))
+impl<T: fmt::Debug> MapFmt for T {
+    default fn entry(&self, f: &mut fmt::DebugMap, key: &str) {
+        f.entry(&key, self);
+    }
+}
+
+impl<T: MapFmt + fmt::Debug> MapFmt for Option<T> {
+    fn entry(&self, f: &mut fmt::DebugMap, key: &str) {
+        if let Some(v) = self {
+            v.entry(f, key);
+        }
+    }
+}
+
+impl MapFmt for Uuid {
+    fn entry(&self, f: &mut fmt::DebugMap, key: &str) {
+        f.entry(&key, &self.hyphenated().to_string());
+    }
+}
+
+impl MapFmt for DateTime<Utc> {
+    fn entry(&self, f: &mut fmt::DebugMap, key: &str) {
+        f.entry(&key, &self.to_rfc3339());
+    }
+}
+
+macro_rules! fields_to_map {
+    ($ret:ident; ) => {};
+    ($ret:ident; $s:ident.$f:ident) => {
+        $s.$f.entry(&mut $ret, &stringify!($f));
+    };
+    ($ret:ident; $s:ident.$f:ident, $($tail:tt)*) => {
+        fields_to_map!($ret; $s.$f);
+        fields_to_map!($ret; $($tail)*)
+    };
 }
 
 #[derive(Deserialize, Debug)]
 pub struct AuditEvent {
     pub event: String,
-    pub host: Option<Uuid>,
     #[serde(with = "ts_nanoseconds")]
     pub time: DateTime<Utc>,
     pub pid: i32,
     pub ppid: i32,
     pub tid: i32,
     pub uid: i32,
-    pub cpu_id: Option<i32>,
     pub exec: String,
+    pub retval: i32,
+    pub subjprocuuid: Uuid,
+    pub subjthruuid: Uuid,
+    pub host: Option<Uuid>,
+    pub fd: Option<i32>,
+    pub cpu_id: Option<i32>,
     pub cmdline: Option<String>,
     pub upath1: Option<String>,
     pub upath2: Option<String>,
-    pub fd: Option<i32>,
     pub flags: Option<i32>,
     pub fdpath: Option<String>,
-    pub subjprocuuid: Uuid,
-    pub subjthruuid: Uuid,
     pub arg_objuuid1: Option<Uuid>,
     pub arg_objuuid2: Option<Uuid>,
     pub ret_objuuid1: Option<Uuid>,
     pub ret_objuuid2: Option<Uuid>,
-    pub retval: i32,
     pub ret_fd1: Option<i32>,
     pub ret_fd2: Option<i32>,
     pub arg_mem_flags: Option<Vec<String>>,
@@ -81,36 +114,39 @@ pub struct AuditEvent {
 
 impl fmt::Display for AuditEvent {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_map()
-            .entry(&"event", &self.event)
-            .entry(&"host", &format_opt_uuid(&self.host))
-            .entry(&"time", &self.time.to_rfc3339())
-            .entry(&"pid", &self.pid)
-            .entry(&"ppid", &self.ppid)
-            .entry(&"tid", &self.tid)
-            .entry(&"uid", &self.uid)
-            .entry(&"cpu_id", &self.cpu_id)
-            .entry(&"exec", &self.exec)
-            .entry(&"cmdline", &self.cmdline)
-            .entry(&"upath1", &self.upath1)
-            .entry(&"upath2", &self.upath2)
-            .entry(&"fd", &self.fd)
-            .entry(&"flags", &self.flags)
-            .entry(&"fdpath", &self.fdpath)
-            .entry(&"subjprocuuid", &format_uuid(&self.subjprocuuid))
-            .entry(&"subjthruuid", &format_uuid(&self.subjthruuid))
-            .entry(&"arg_objuuid1", &format_opt_uuid(&self.arg_objuuid1))
-            .entry(&"arg_objuuid2", &format_opt_uuid(&self.arg_objuuid2))
-            .entry(&"ret_objuuid1", &format_opt_uuid(&self.ret_objuuid1))
-            .entry(&"ret_objuuid2", &format_opt_uuid(&self.ret_objuuid2))
-            .entry(&"retval", &self.retval)
-            .entry(&"ret_fd1", &self.ret_fd1)
-            .entry(&"ret_fd2", &self.ret_fd2)
-            .entry(&"arg_mem_flags", &self.arg_mem_flags)
-            .entry(&"arg_sharing_flags", &self.arg_sharing_flags)
-            .entry(&"address", &self.address)
-            .entry(&"port", &self.port)
-            .finish()
+        let mut ret = f.debug_map();
+        fields_to_map!(
+            ret;
+            self.event,
+            self.time,
+            self.pid,
+            self.ppid,
+            self.tid,
+            self.uid,
+            self.exec,
+            self.retval,
+            self.subjprocuuid,
+            self.subjthruuid,
+            self.host,
+            self.cpu_id,
+            self.cmdline,
+            self.upath1,
+            self.upath2,
+            self.fd,
+            self.flags,
+            self.fdpath,
+            self.arg_objuuid1,
+            self.arg_objuuid2,
+            self.ret_objuuid1,
+            self.ret_objuuid2,
+            self.ret_fd1,
+            self.ret_fd2,
+            self.arg_mem_flags,
+            self.arg_sharing_flags,
+            self.address,
+            self.port,
+        );
+        ret.finish()
     }
 }
 
@@ -471,16 +507,19 @@ pub struct FBTEvent {
 
 impl fmt::Display for FBTEvent {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_map()
-            .entry(&"event", &self.event)
-            .entry(&"host", &format_uuid(&self.host))
-            .entry(&"time", &self.time.to_rfc3339())
-            .entry(&"so_uuid", &format_uuid(&self.so_uuid))
-            .entry(&"lport", &self.lport)
-            .entry(&"fport", &self.fport)
-            .entry(&"laddr", &self.laddr)
-            .entry(&"faddr", &self.faddr)
-            .finish()
+        let mut ret = f.debug_map();
+        fields_to_map!(
+            ret;
+            self.event,
+            self.host,
+            self.time,
+            self.so_uuid,
+            self.lport,
+            self.fport,
+            self.laddr,
+            self.faddr
+        );
+        ret.finish()
     }
 }
 
