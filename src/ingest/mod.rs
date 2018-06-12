@@ -2,7 +2,8 @@ mod db;
 pub mod pvm;
 
 use std::{
-    fmt::Display, io::{BufRead, BufReader, Read},
+    fmt::Display,
+    io::{BufRead, BufReader, Read},
 };
 
 use rayon::prelude::*;

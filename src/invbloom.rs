@@ -4,7 +4,8 @@
  */
 
 use std::{
-    collections::hash_map::DefaultHasher, hash::{Hash, Hasher},
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
     sync::atomic::{AtomicUsize, Ordering},
 };
 

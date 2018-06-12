@@ -2,7 +2,10 @@ extern crate pvm_cfg as cfg;
 extern crate pvm_data as data;
 
 use std::{
-    collections::HashMap, fmt::Debug, sync::{mpsc, Arc, Mutex}, thread::{spawn, JoinHandle},
+    collections::HashMap,
+    fmt::Debug,
+    sync::{mpsc, Arc, Mutex},
+    thread::{spawn, JoinHandle},
 };
 
 use data::{node_types::Node, rel_types::Rel};

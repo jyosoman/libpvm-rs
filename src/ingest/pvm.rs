@@ -1,14 +1,16 @@
 use std::{
-    collections::{HashMap, HashSet}, fmt::{Display, Formatter, Result as FMTResult},
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter, Result as FMTResult},
     sync::{
-        atomic::{AtomicUsize, Ordering}, mpsc::SyncSender,
+        atomic::{AtomicUsize, Ordering},
+        mpsc::SyncSender,
     },
 };
 
 use data::{
     node_types::{DataNode, EditSession, File, FileContainer, Name, NameNode},
-    rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel}, Denumerate, Enumerable, Generable,
-    HasID, HasUUID, RelGenerable, ID,
+    rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel},
+    Denumerate, Enumerable, Generable, HasID, HasUUID, RelGenerable, ID,
 };
 use views::DBTr;
 

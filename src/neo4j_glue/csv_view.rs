@@ -1,12 +1,19 @@
 use std::{
-    collections::HashMap, fs::File, io::Write, mem, sync::{mpsc::Receiver, Arc}, thread,
+    collections::HashMap,
+    fs::File,
+    io::Write,
+    mem,
+    sync::{mpsc::Receiver, Arc},
+    thread,
 };
 
 use zip::{write::FileOptions, ZipWriter};
 
 use cfg::Config;
 use data::{
-    node_types::{DataNode, NameNode, Node}, rel_types::Rel, HasDst, HasID, HasSrc, HasUUID, ID,
+    node_types::{DataNode, NameNode, Node},
+    rel_types::Rel,
+    HasDst, HasID, HasSrc, HasUUID, ID,
 };
 use views::{DBTr, View, ViewInst};
 
