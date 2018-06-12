@@ -171,7 +171,7 @@ impl PVM {
     ) -> RelGuard {
         let mut r = self.source(act, ent);
         Inf::denumerate_mut(&mut r).byte_count += bytes.into();
-        self.prop_rel(&r);
+        self.db.update_rel(&*r);
         r
     }
 
@@ -214,7 +214,7 @@ impl PVM {
     ) -> RelGuard {
         let mut r = self.sinkstart(act, ent);
         Inf::denumerate_mut(&mut r).byte_count += bytes.into();
-        self.prop_rel(&r);
+        self.db.update_rel(&*r);
         r
     }
 
@@ -280,12 +280,8 @@ impl PVM {
         rel
     }
 
-    pub fn prop_node(&mut self, ent: &DataNode) {
+    pub fn prop(&mut self, ent: &DataNode) {
         self.db.update_node(ent)
-    }
-
-    pub fn prop_rel(&mut self, ent: &Rel) {
-        self.db.update_rel(ent)
     }
 
     pub fn connect(&mut self, first: &DataNode, second: &DataNode, dir: ConnectDir) {
