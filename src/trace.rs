@@ -12,7 +12,7 @@ use ingest::{
 };
 
 macro_rules! field {
-    ($TR:ident, $F:ident) => {
+    ($TR:ident. $F:ident) => {
         $TR.$F.ok_or(PVMError::MissingField {
             evt: $TR.event.clone(),
             field: stringify!($F),
@@ -21,7 +21,7 @@ macro_rules! field {
 }
 
 macro_rules! ref_field {
-    ($TR:ident, $F:ident) => {
+    ($TR:ident. $F:ident) => {
         $TR.$F.as_ref().ok_or(PVMError::MissingField {
             evt: $TR.event.clone(),
             field: stringify!($F),
@@ -29,8 +29,8 @@ macro_rules! ref_field {
     };
 }
 
-macro_rules! opt_field {
-    ($TR:ident, $F:ident) => {
+macro_rules! clone_field {
+    ($TR:ident. $F:ident) => {
         $TR.$F.clone().ok_or(PVMError::MissingField {
             evt: $TR.event.clone(),
             field: stringify!($F),
@@ -119,7 +119,7 @@ impl AuditEvent {
         if let Some(pth) = self.upath1.clone() {
             Ok(Name::Path(pth))
         } else if let Some(prt) = self.port {
-            let addr = opt_field!(self, address);
+            let addr = clone_field!(self.address);
             Ok(Name::Net(addr, prt))
         } else {
             Err(PVMError::MissingField {
@@ -130,11 +130,11 @@ impl AuditEvent {
     }
 
     fn posix_exec(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let cmdline = ref_field!(self, cmdline);
-        let binuuid = field!(self, arg_objuuid1);
-        let binname = opt_field!(self, upath1);
-        let lduuid = field!(self, arg_objuuid2);
-        let ldname = opt_field!(self, upath2);
+        let cmdline = ref_field!(self.cmdline);
+        let binuuid = field!(self.arg_objuuid1);
+        let binname = clone_field!(self.upath1);
+        let lduuid = field!(self.arg_objuuid2);
+        let ldname = clone_field!(self.upath2);
 
         let bin = pvm.declare::<File>(binuuid, None);
         pvm.name(&bin, Name::Path(binname));
@@ -153,7 +153,7 @@ impl AuditEvent {
     }
 
     fn posix_fork(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let ret_objuuid1 = field!(self, ret_objuuid1);
+        let ret_objuuid1 = field!(self.ret_objuuid1);
 
         let mut ch = pvm.declare::<Process>(ret_objuuid1, None);
 
@@ -173,8 +173,8 @@ impl AuditEvent {
     }
 
     fn posix_open(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, ret_objuuid1);
-        let fname = opt_field!(self, upath1);
+        let fuuid = field!(self.ret_objuuid1);
+        let fname = clone_field!(self.upath1);
 
         let f = pvm.declare::<File>(fuuid, None);
         pvm.name(&f, Name::Path(fname));
@@ -182,7 +182,7 @@ impl AuditEvent {
     }
 
     fn posix_read(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
+        let fuuid = field!(self.arg_objuuid1);
 
         let f = pvm.declare::<File>(fuuid, None);
         if let Some(pth) = self.fdpath.clone() {
@@ -195,7 +195,7 @@ impl AuditEvent {
     }
 
     fn posix_write(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
+        let fuuid = field!(self.arg_objuuid1);
 
         let f = pvm.declare::<File>(fuuid, None);
         if let Some(pth) = self.fdpath.clone() {
@@ -216,27 +216,27 @@ impl AuditEvent {
     }
 
     fn posix_socket(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let suuid = field!(self, ret_objuuid1);
+        let suuid = field!(self.ret_objuuid1);
         pvm.declare::<Socket>(suuid, None);
         Ok(())
     }
 
     fn posix_listen(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let suuid = field!(self, arg_objuuid1);
+        let suuid = field!(self.arg_objuuid1);
         pvm.declare::<Socket>(suuid, None);
         Ok(())
     }
 
     fn posix_bind(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let suuid = field!(self, arg_objuuid1);
+        let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         pvm.name(&s, self.sock_name()?);
         Ok(())
     }
 
     fn posix_accept(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let luuid = field!(self, arg_objuuid1);
-        let ruuid = field!(self, ret_objuuid1);
+        let luuid = field!(self.arg_objuuid1);
+        let ruuid = field!(self.ret_objuuid1);
         pvm.declare::<Socket>(luuid, None);
         let r = pvm.declare::<Socket>(ruuid, None);
         pvm.name(&r, self.sock_name()?);
@@ -244,14 +244,14 @@ impl AuditEvent {
     }
 
     fn posix_connect(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let suuid = field!(self, arg_objuuid1);
+        let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         pvm.name(&s, self.sock_name()?);
         Ok(())
     }
 
     fn posix_mmap(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
+        let fuuid = field!(self.arg_objuuid1);
         let f = pvm.declare::<File>(fuuid, None);
         if let Some(fdpath) = self.fdpath.clone() {
             pvm.name(&f, Name::Path(fdpath));
@@ -275,8 +275,8 @@ impl AuditEvent {
     }
 
     fn posix_socketpair(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let ruuid1 = field!(self, ret_objuuid1);
-        let ruuid2 = field!(self, ret_objuuid2);
+        let ruuid1 = field!(self.ret_objuuid1);
+        let ruuid2 = field!(self.ret_objuuid2);
         let s1 = pvm.declare::<Socket>(ruuid1, None);
         let s2 = pvm.declare::<Socket>(ruuid2, None);
         pvm.connect(&s1, &s2, ConnectDir::BiDirectional);
@@ -284,10 +284,10 @@ impl AuditEvent {
     }
 
     fn posix_pipe(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let ruuid1 = field!(self, ret_objuuid1);
-        let rfd1 = field!(self, ret_fd1);
-        let ruuid2 = field!(self, ret_objuuid2);
-        let rfd2 = field!(self, ret_fd2);
+        let ruuid1 = field!(self.ret_objuuid1);
+        let rfd1 = field!(self.ret_fd1);
+        let ruuid2 = field!(self.ret_objuuid2);
+        let rfd2 = field!(self.ret_fd2);
         let p1 = pvm.declare::<Pipe>(ruuid1, Some(PipeInit { fd: rfd1 }));
         let p2 = pvm.declare::<Pipe>(ruuid2, Some(PipeInit { fd: rfd2 }));
         pvm.connect(&p1, &p2, ConnectDir::BiDirectional);
@@ -295,7 +295,7 @@ impl AuditEvent {
     }
 
     fn posix_sendmsg(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let suuid = field!(self, arg_objuuid1);
+        let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         pvm.name(&s, self.sock_name()?);
         pvm.sinkstart_nbytes(&pro, &s, self.retval);
@@ -303,7 +303,7 @@ impl AuditEvent {
     }
 
     fn posix_sendto(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let suuid = field!(self, arg_objuuid1);
+        let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         pvm.name(&s, self.sock_name()?);
         pvm.sinkstart_nbytes(&pro, &s, self.retval);
@@ -311,7 +311,7 @@ impl AuditEvent {
     }
 
     fn posix_recvmsg(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let suuid = field!(self, arg_objuuid1);
+        let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         pvm.name(&s, self.sock_name()?);
         pvm.source_nbytes(&pro, &s, self.retval);
@@ -319,7 +319,7 @@ impl AuditEvent {
     }
 
     fn posix_recvfrom(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let suuid = field!(self, arg_objuuid1);
+        let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         pvm.name(&s, self.sock_name()?);
         pvm.source_nbytes(&pro, &s, self.retval);
@@ -327,7 +327,7 @@ impl AuditEvent {
     }
 
     fn posix_chdir(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let duuid = field!(self, arg_objuuid1);
+        let duuid = field!(self.arg_objuuid1);
         let d = pvm.declare::<File>(duuid, None);
         if let Some(dpath) = self.upath1.clone() {
             pvm.name(&d, Name::Path(dpath));
@@ -336,8 +336,8 @@ impl AuditEvent {
     }
 
     fn posix_chmod(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
-        let fpath = opt_field!(self, upath1);
+        let fuuid = field!(self.arg_objuuid1);
+        let fpath = clone_field!(self.upath1);
         let f = pvm.declare::<File>(fuuid, None);
         pvm.name(&f, Name::Path(fpath));
         pvm.sink(&pro, &f);
@@ -345,8 +345,8 @@ impl AuditEvent {
     }
 
     fn posix_chown(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
-        let fpath = opt_field!(self, upath1);
+        let fuuid = field!(self.arg_objuuid1);
+        let fpath = clone_field!(self.upath1);
         let f = pvm.declare::<File>(fuuid, None);
         pvm.name(&f, Name::Path(fpath));
         pvm.sink(&pro, &f);
@@ -354,29 +354,29 @@ impl AuditEvent {
     }
 
     fn posix_fchmod(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
+        let fuuid = field!(self.arg_objuuid1);
         let f = pvm.declare::<File>(fuuid, None);
         pvm.sinkstart(&pro, &f);
         Ok(())
     }
 
     fn posix_fchown(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
+        let fuuid = field!(self.arg_objuuid1);
         let f = pvm.declare::<File>(fuuid, None);
         pvm.sinkstart(&pro, &f);
         Ok(())
     }
 
     fn posix_posix_openpt(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let ttyuuid = field!(self, ret_objuuid1);
+        let ttyuuid = field!(self.ret_objuuid1);
         pvm.declare::<Ptty>(ttyuuid, None);
         Ok(())
     }
 
     fn posix_link(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
-        let upath1 = opt_field!(self, upath1);
-        let upath2 = opt_field!(self, upath2);
+        let fuuid = field!(self.arg_objuuid1);
+        let upath1 = clone_field!(self.upath1);
+        let upath2 = clone_field!(self.upath2);
         let f = pvm.declare::<File>(fuuid, None);
         pvm.name(&f, Name::Path(upath1));
         pvm.name(&f, Name::Path(upath2));
@@ -384,9 +384,9 @@ impl AuditEvent {
     }
 
     fn posix_rename(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let src_uuid = field!(self, arg_objuuid1);
-        let src = opt_field!(self, upath1);
-        let dst = opt_field!(self, upath2);
+        let src_uuid = field!(self.arg_objuuid1);
+        let src = clone_field!(self.upath1);
+        let dst = clone_field!(self.upath2);
         let fsrc = pvm.declare::<File>(src_uuid, None);
         pvm.unname(&fsrc, Name::Path(src));
         if let Some(ovr_uuid) = self.arg_objuuid2 {
@@ -398,8 +398,8 @@ impl AuditEvent {
     }
 
     fn posix_unlink(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
-        let fuuid = field!(self, arg_objuuid1);
-        let upath1 = opt_field!(self, upath1);
+        let fuuid = field!(self.arg_objuuid1);
+        let upath1 = clone_field!(self.upath1);
         let f = pvm.declare::<File>(fuuid, None);
         pvm.unname(&f, Name::Path(upath1));
         Ok(())
