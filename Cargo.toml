@@ -31,7 +31,7 @@ rayon = "0.8.2"
 maplit = "*"
 uuid = { version = "0.6", features = ["serde"] }
 zip = "0.3.1"
-chrono = { path = "modules/chrono", features = ["serde"] }
+chrono = { version = ">=0.4.3", features = ["serde"] }
 neo4j = {path = "modules/rusty-bolt/neo4j" }
 pvm-cfg = { path = "modules/pvm-cfg" }
 pvm-data = { path = "modules/pvm-data" }

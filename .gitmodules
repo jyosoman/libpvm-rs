@@ -4,6 +4,3 @@
 [submodule "modules/cbindgen"]
 	path = modules/cbindgen
 	url = git@github.com:HarkonenBade/cbindgen.git
-[submodule "modules/chrono"]
-	path = modules/chrono
-	url = git@github.com:HarkonenBade/chrono.git
