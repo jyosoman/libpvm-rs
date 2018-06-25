@@ -6,7 +6,7 @@ authors = ["Lucian Carata <lc525@cam.ac.uk>",
 build = "build.rs"
 
 [build-dependencies]
-cbindgen = { path = "modules/cbindgen" }
+cbindgen = { git = "https://github.com/eqrion/cbindgen.git", branch = "master" }
 
 [lib]
 name = "opus"

@@ -1,6 +1,3 @@
 [submodule "modules/rusty-bolt"]
 	path = modules/rusty-bolt
 	url = git@github.com:HarkonenBade/rusty-bolt.git
-[submodule "modules/cbindgen"]
-	path = modules/cbindgen
-	url = git@github.com:HarkonenBade/cbindgen.git
