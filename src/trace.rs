@@ -191,7 +191,7 @@ impl AuditEvent {
         }
     }
 
-    fn posix_exec(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_exec(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let cmdline = ref_field!(self.cmdline);
         let binuuid = field!(self.arg_objuuid1);
         let binname = clone_field!(self.upath1);
@@ -207,14 +207,14 @@ impl AuditEvent {
         let pref = Process::denumerate_mut(&mut pro);
         pref.meta.update("cmdline", cmdline, &self.time, true);
 
-        pvm.prop(&pro);
-        pvm.source(&pro, &bin);
-        pvm.source(&pro, &ld);
+        pvm.prop(pro);
+        pvm.source(pro, &bin);
+        pvm.source(pro, &ld);
 
         Ok(())
     }
 
-    fn posix_fork(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_fork(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let ret_objuuid1 = field!(self.ret_objuuid1);
 
         let mut ch = pvm.declare::<Process>(ret_objuuid1, None);
@@ -225,16 +225,16 @@ impl AuditEvent {
         chref.meta.update("pid", &self.retval, &self.time, false);
 
         pvm.prop(&ch);
-        pvm.source(&ch, &pro);
+        pvm.source(&ch, pro);
         Ok(())
     }
 
-    fn posix_exit(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_exit(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         pvm.release(&self.subjprocuuid);
         Ok(())
     }
 
-    fn posix_open(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_open(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.ret_objuuid1);
         let fname = clone_field!(self.upath1);
 
@@ -243,7 +243,7 @@ impl AuditEvent {
         Ok(())
     }
 
-    fn posix_read(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_read(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
 
         let f = pvm.declare::<File>(fuuid, None);
@@ -252,11 +252,11 @@ impl AuditEvent {
                 pvm.name(&f, Name::Path(pth));
             }
         }
-        pvm.source_nbytes(&pro, &f, self.retval);
+        pvm.source_nbytes(pro, &f, self.retval);
         Ok(())
     }
 
-    fn posix_write(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_write(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
 
         let f = pvm.declare::<File>(fuuid, None);
@@ -265,38 +265,38 @@ impl AuditEvent {
                 pvm.name(&f, Name::Path(pth));
             }
         }
-        pvm.sinkstart_nbytes(&pro, &f, self.retval);
+        pvm.sinkstart_nbytes(pro, &f, self.retval);
         Ok(())
     }
 
-    fn posix_close(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_close(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         if let Some(fuuid) = self.arg_objuuid1 {
             let f = pvm.declare::<File>(fuuid, None);
-            pvm.sinkend(&pro, &f);
+            pvm.sinkend(pro, &f);
         }
         Ok(())
     }
 
-    fn posix_socket(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_socket(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self.ret_objuuid1);
         pvm.declare::<Socket>(suuid, None);
         Ok(())
     }
 
-    fn posix_listen(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_listen(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self.arg_objuuid1);
         pvm.declare::<Socket>(suuid, None);
         Ok(())
     }
 
-    fn posix_bind(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_bind(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         pvm.name(&s, self.sock_name()?);
         Ok(())
     }
 
-    fn posix_accept(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_accept(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let luuid = field!(self.arg_objuuid1);
         let ruuid = field!(self.ret_objuuid1);
         pvm.declare::<Socket>(luuid, None);
@@ -305,14 +305,14 @@ impl AuditEvent {
         Ok(())
     }
 
-    fn posix_connect(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_connect(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         pvm.name(&s, self.sock_name()?);
         Ok(())
     }
 
-    fn posix_mmap(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_mmap(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
         let f = pvm.declare::<File>(fuuid, None);
         if let Some(fdpath) = self.fdpath.clone() {
@@ -322,21 +322,21 @@ impl AuditEvent {
             if flags.contains(&String::from("PROT_WRITE")) {
                 if let Some(share_flags) = self.arg_sharing_flags.clone() {
                     if !share_flags.contains(&String::from("MAP_PRIVATE")) {
-                        pvm.sinkstart(&pro, &f);
+                        pvm.sinkstart(pro, &f);
                     }
                 } else {
-                    pvm.sinkstart(&pro, &f);
+                    pvm.sinkstart(pro, &f);
                 }
             }
 
             if flags.contains(&String::from("PROT_READ")) {
-                pvm.source(&pro, &f);
+                pvm.source(pro, &f);
             }
         }
         Ok(())
     }
 
-    fn posix_socketpair(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_socketpair(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let ruuid1 = field!(self.ret_objuuid1);
         let ruuid2 = field!(self.ret_objuuid2);
         let s1 = pvm.declare::<Socket>(ruuid1, None);
@@ -345,7 +345,7 @@ impl AuditEvent {
         Ok(())
     }
 
-    fn posix_pipe(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_pipe(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let ruuid1 = field!(self.ret_objuuid1);
         let rfd1 = field!(self.ret_fd1);
         let ruuid2 = field!(self.ret_objuuid2);
@@ -356,47 +356,47 @@ impl AuditEvent {
         Ok(())
     }
 
-    fn posix_sendmsg(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_sendmsg(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         if let Some(n) = self.opt_sock_name()? {
             pvm.name(&s, n);
         }
-        pvm.sinkstart_nbytes(&pro, &s, self.retval);
+        pvm.sinkstart_nbytes(pro, &s, self.retval);
         Ok(())
     }
 
-    fn posix_sendto(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_sendto(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         if let Some(n) = self.opt_sock_name()? {
             pvm.name(&s, n);
         }
-        pvm.sinkstart_nbytes(&pro, &s, self.retval);
+        pvm.sinkstart_nbytes(pro, &s, self.retval);
         Ok(())
     }
 
-    fn posix_recvmsg(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_recvmsg(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         if let Some(n) = self.opt_sock_name()? {
             pvm.name(&s, n);
         }
-        pvm.source_nbytes(&pro, &s, self.retval);
+        pvm.source_nbytes(pro, &s, self.retval);
         Ok(())
     }
 
-    fn posix_recvfrom(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_recvfrom(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let suuid = field!(self.arg_objuuid1);
         let s = pvm.declare::<Socket>(suuid, None);
         if let Some(n) = self.opt_sock_name()? {
             pvm.name(&s, n);
         }
-        pvm.source_nbytes(&pro, &s, self.retval);
+        pvm.source_nbytes(pro, &s, self.retval);
         Ok(())
     }
 
-    fn posix_chdir(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_chdir(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let duuid = field!(self.arg_objuuid1);
         let d = pvm.declare::<File>(duuid, None);
         if let Some(dpath) = self.upath1.clone() {
@@ -405,45 +405,45 @@ impl AuditEvent {
         Ok(())
     }
 
-    fn posix_chmod(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_chmod(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
         let fpath = clone_field!(self.upath1);
         let f = pvm.declare::<File>(fuuid, None);
         pvm.name(&f, Name::Path(fpath));
-        pvm.sink(&pro, &f);
+        pvm.sink(pro, &f);
         Ok(())
     }
 
-    fn posix_chown(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_chown(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
         let fpath = clone_field!(self.upath1);
         let f = pvm.declare::<File>(fuuid, None);
         pvm.name(&f, Name::Path(fpath));
-        pvm.sink(&pro, &f);
+        pvm.sink(pro, &f);
         Ok(())
     }
 
-    fn posix_fchmod(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_fchmod(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
         let f = pvm.declare::<File>(fuuid, None);
-        pvm.sinkstart(&pro, &f);
+        pvm.sinkstart(pro, &f);
         Ok(())
     }
 
-    fn posix_fchown(&self, pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_fchown(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
         let f = pvm.declare::<File>(fuuid, None);
-        pvm.sinkstart(&pro, &f);
+        pvm.sinkstart(pro, &f);
         Ok(())
     }
 
-    fn posix_posix_openpt(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_posix_openpt(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let ttyuuid = field!(self.ret_objuuid1);
         pvm.declare::<Ptty>(ttyuuid, None);
         Ok(())
     }
 
-    fn posix_link(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_link(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
         let upath1 = clone_field!(self.upath1);
         let upath2 = clone_field!(self.upath2);
@@ -453,7 +453,7 @@ impl AuditEvent {
         Ok(())
     }
 
-    fn posix_rename(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_rename(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let src_uuid = field!(self.arg_objuuid1);
         let src = clone_field!(self.upath1);
         let dst = clone_field!(self.upath2);
@@ -467,7 +467,7 @@ impl AuditEvent {
         Ok(())
     }
 
-    fn posix_unlink(&self, _pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_unlink(&self, _pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let fuuid = field!(self.arg_objuuid1);
         let upath1 = clone_field!(self.upath1);
         let f = pvm.declare::<File>(fuuid, None);
@@ -475,25 +475,25 @@ impl AuditEvent {
         Ok(())
     }
 
-    fn posix_setuid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_setuid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let uid = ref_field!(self.arg_uid);
         let pref = Process::denumerate_mut(&mut pro);
         pref.meta.update("euid", uid, &self.time, true);
         pref.meta.update("ruid", uid, &self.time, true);
         pref.meta.update("suid", uid, &self.time, true);
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
-    fn posix_seteuid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_seteuid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let euid = ref_field!(self.arg_euid);
         let pref = Process::denumerate_mut(&mut pro);
         pref.meta.update("euid", euid, &self.time, true);
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
-    fn posix_setreuid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_setreuid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let ruid = ref_field!(self.arg_ruid);
         let euid = ref_field!(self.arg_euid);
         let pref = Process::denumerate_mut(&mut pro);
@@ -503,11 +503,11 @@ impl AuditEvent {
         if *euid != -1 {
             pref.meta.update("euid", euid, &self.time, true);
         }
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
-    fn posix_setresuid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_setresuid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let ruid = ref_field!(self.arg_ruid);
         let euid = ref_field!(self.arg_euid);
         let suid = ref_field!(self.arg_suid);
@@ -521,29 +521,29 @@ impl AuditEvent {
         if *suid != -1 {
             pref.meta.update("suid", suid, &self.time, true);
         }
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
-    fn posix_setgid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_setgid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let gid = ref_field!(self.arg_gid);
         let pref = Process::denumerate_mut(&mut pro);
         pref.meta.update("egid", gid, &self.time, true);
         pref.meta.update("rgid", gid, &self.time, true);
         pref.meta.update("sgid", gid, &self.time, true);
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
-    fn posix_setegid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_setegid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let egid = ref_field!(self.arg_egid);
         let pref = Process::denumerate_mut(&mut pro);
         pref.meta.update("egid", egid, &self.time, true);
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
-    fn posix_setregid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_setregid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let rgid = ref_field!(self.arg_rgid);
         let egid = ref_field!(self.arg_egid);
         let pref = Process::denumerate_mut(&mut pro);
@@ -553,11 +553,11 @@ impl AuditEvent {
         if *egid != -1 {
             pref.meta.update("egid", egid, &self.time, true);
         }
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
-    fn posix_setresgid(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_setresgid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let rgid = ref_field!(self.arg_rgid);
         let egid = ref_field!(self.arg_egid);
         let sgid = ref_field!(self.arg_sgid);
@@ -571,15 +571,15 @@ impl AuditEvent {
         if *sgid != -1 {
             pref.meta.update("sgid", sgid, &self.time, true);
         }
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
-    fn posix_setlogin(&self, mut pro: NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
+    fn posix_setlogin(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let login = ref_field!(self.login);
         let pref = Process::denumerate_mut(&mut pro);
         pref.meta.update("login_name", login, &self.time, true);
-        pvm.prop(&pro);
+        pvm.prop(pro);
         Ok(())
     }
 
@@ -591,48 +591,48 @@ impl AuditEvent {
         m.update("pid", &self.pid, &self.time, false);
         let pro = pvm.declare::<Process>(self.subjprocuuid, Some(m));
         match &self.event[..] {
-            "audit:event:aue_accept:" => self.posix_accept(pro, pvm),
-            "audit:event:aue_bind:" => self.posix_bind(pro, pvm),
-            "audit:event:aue_chdir:" | "audit:event:aue_fchdir:" => self.posix_chdir(pro, pvm),
-            "audit:event:aue_chmod:" | "audit:event:aue_fchmodat:" => self.posix_chmod(pro, pvm),
-            "audit:event:aue_chown:" => self.posix_chown(pro, pvm),
-            "audit:event:aue_close:" => self.posix_close(pro, pvm),
-            "audit:event:aue_connect:" => self.posix_connect(pro, pvm),
-            "audit:event:aue_execve:" => self.posix_exec(pro, pvm),
-            "audit:event:aue_exit:" => self.posix_exit(pro, pvm),
+            "audit:event:aue_accept:" => self.posix_accept(&pro, pvm),
+            "audit:event:aue_bind:" => self.posix_bind(&pro, pvm),
+            "audit:event:aue_chdir:" | "audit:event:aue_fchdir:" => self.posix_chdir(&pro, pvm),
+            "audit:event:aue_chmod:" | "audit:event:aue_fchmodat:" => self.posix_chmod(&pro, pvm),
+            "audit:event:aue_chown:" => self.posix_chown(&pro, pvm),
+            "audit:event:aue_close:" => self.posix_close(&pro, pvm),
+            "audit:event:aue_connect:" => self.posix_connect(&pro, pvm),
+            "audit:event:aue_execve:" => self.posix_exec(&mut pro, pvm),
+            "audit:event:aue_exit:" => self.posix_exit(&pro, pvm),
             "audit:event:aue_fork:" | "audit:event:aue_pdfork:" | "audit:event:aue_vfork:" => {
-                self.posix_fork(pro, pvm)
+                self.posix_fork(&pro, pvm)
             }
-            "audit:event:aue_fchmod:" => self.posix_fchmod(pro, pvm),
-            "audit:event:aue_fchown:" => self.posix_fchown(pro, pvm),
-            "audit:event:aue_link:" => self.posix_link(pro, pvm),
-            "audit:event:aue_listen:" => self.posix_listen(pro, pvm),
-            "audit:event:aue_mmap:" => self.posix_mmap(pro, pvm),
+            "audit:event:aue_fchmod:" => self.posix_fchmod(&pro, pvm),
+            "audit:event:aue_fchown:" => self.posix_fchown(&pro, pvm),
+            "audit:event:aue_link:" => self.posix_link(&pro, pvm),
+            "audit:event:aue_listen:" => self.posix_listen(&pro, pvm),
+            "audit:event:aue_mmap:" => self.posix_mmap(&pro, pvm),
             "audit:event:aue_open_rwtc:" | "audit:event:aue_openat_rwtc:" => {
-                self.posix_open(pro, pvm)
+                self.posix_open(&pro, pvm)
             }
-            "audit:event:aue_pipe:" => self.posix_pipe(pro, pvm),
-            "audit:event:aue_posix_openpt:" => self.posix_posix_openpt(pro, pvm),
-            "audit:event:aue_read:" | "audit:event:aue_pread:" => self.posix_read(pro, pvm),
-            "audit:event:aue_recvmsg:" => self.posix_recvmsg(pro, pvm),
-            "audit:event:aue_recvfrom:" => self.posix_recvfrom(pro, pvm),
-            "audit:event:aue_rename:" => self.posix_rename(pro, pvm),
-            "audit:event:aue_sendmsg:" => self.posix_sendmsg(pro, pvm),
-            "audit:event:aue_sendto:" => self.posix_sendto(pro, pvm),
-            "audit:event:aue_setegid:" => self.posix_setegid(pro, pvm),
-            "audit:event:aue_seteuid:" => self.posix_seteuid(pro, pvm),
-            "audit:event:aue_setlogin:" => self.posix_setlogin(pro, pvm),
-            "audit:event:aue_setgid:" => self.posix_setgid(pro, pvm),
-            "audit:event:aue_setregid:" => self.posix_setregid(pro, pvm),
-            "audit:event:aue_setresgid:" => self.posix_setresgid(pro, pvm),
-            "audit:event:aue_setresuid:" => self.posix_setresuid(pro, pvm),
-            "audit:event:aue_setreuid:" => self.posix_setreuid(pro, pvm),
-            "audit:event:aue_setuid:" => self.posix_setuid(pro, pvm),
-            "audit:event:aue_socket:" => self.posix_socket(pro, pvm),
-            "audit:event:aue_socketpair:" => self.posix_socketpair(pro, pvm),
-            "audit:event:aue_unlink:" => self.posix_unlink(pro, pvm),
+            "audit:event:aue_pipe:" => self.posix_pipe(&pro, pvm),
+            "audit:event:aue_posix_openpt:" => self.posix_posix_openpt(&pro, pvm),
+            "audit:event:aue_read:" | "audit:event:aue_pread:" => self.posix_read(&pro, pvm),
+            "audit:event:aue_recvmsg:" => self.posix_recvmsg(&pro, pvm),
+            "audit:event:aue_recvfrom:" => self.posix_recvfrom(&pro, pvm),
+            "audit:event:aue_rename:" => self.posix_rename(&pro, pvm),
+            "audit:event:aue_sendmsg:" => self.posix_sendmsg(&pro, pvm),
+            "audit:event:aue_sendto:" => self.posix_sendto(&pro, pvm),
+            "audit:event:aue_setegid:" => self.posix_setegid(&mut pro, pvm),
+            "audit:event:aue_seteuid:" => self.posix_seteuid(&mut pro, pvm),
+            "audit:event:aue_setlogin:" => self.posix_setlogin(&mut pro, pvm),
+            "audit:event:aue_setgid:" => self.posix_setgid(&mut pro, pvm),
+            "audit:event:aue_setregid:" => self.posix_setregid(&mut pro, pvm),
+            "audit:event:aue_setresgid:" => self.posix_setresgid(&mut pro, pvm),
+            "audit:event:aue_setresuid:" => self.posix_setresuid(&mut pro, pvm),
+            "audit:event:aue_setreuid:" => self.posix_setreuid(&mut pro, pvm),
+            "audit:event:aue_setuid:" => self.posix_setuid(&mut pro, pvm),
+            "audit:event:aue_socket:" => self.posix_socket(&pro, pvm),
+            "audit:event:aue_socketpair:" => self.posix_socketpair(&pro, pvm),
+            "audit:event:aue_unlink:" => self.posix_unlink(&pro, pvm),
             "audit:event:aue_write:" | "audit:event:aue_pwrite:" | "audit:event:aue_writev:" => {
-                self.posix_write(pro, pvm)
+                self.posix_write(&pro, pvm)
             }
             "audit:event:aue_dup2:" => Ok(()), /* IGNORE */
             _ => {
