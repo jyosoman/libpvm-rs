@@ -8,9 +8,9 @@ use std::{
 };
 
 use data::{
-    node_types::{DataNode, EditSession, File, FileContainer, Name, NameNode},
+    node_types::{ConcreteType, DataNode, Name, NameNode, PVMDataType, PVMDataType::*},
     rel_types::{Inf, InfInit, Named, NamedInit, PVMOps, Rel},
-    Denumerate, Enumerable, Generable, HasID, HasUUID, RelGenerable, ID,
+    Denumerate, Enumerable, HasID, MetaStore, RelGenerable, ID,
 };
 use views::DBTr;
 
@@ -39,14 +39,15 @@ pub enum ConnectDir {
     BiDirectional,
 }
 
-pub type NodeGuard = Loan<ID, Box<DataNode>>;
+pub type NodeGuard = Loan<ID, DataNode>;
 pub type RelGuard = Loan<(&'static str, ID, ID), Rel>;
 type NameGuard = Loan<Name, NameNode>;
 
 pub struct PVM {
     db: DB,
+    type_cache: HashSet<&'static ConcreteType>,
     uuid_cache: HashMap<Uuid, ID>,
-    node_cache: LendingLibrary<ID, Box<DataNode>>,
+    node_cache: LendingLibrary<ID, DataNode>,
     rel_cache: LendingLibrary<(&'static str, ID, ID), Rel>,
     id_counter: AtomicUsize,
     open_cache: HashMap<Uuid, HashSet<Uuid>>,
@@ -61,6 +62,7 @@ impl PVM {
     pub fn new(db: SyncSender<DBTr>) -> Self {
         PVM {
             db: DB::create(db),
+            type_cache: HashSet::new(),
             uuid_cache: HashMap::new(),
             node_cache: LendingLibrary::new(),
             rel_cache: LendingLibrary::new(),
@@ -135,27 +137,40 @@ impl PVM {
         )
     }
 
-    pub fn add<T>(&mut self, uuid: Uuid, init: Option<T::Init>) -> NodeGuard
-    where
-        T: Generable + Enumerable<Target = DataNode>,
-    {
+    pub fn new_concrete(&mut self, ty: &'static ConcreteType) {
+        self.type_cache.insert(ty);
+        self.db.new_node_type(ty);
+    }
+
+    pub fn add(
+        &mut self,
+        pvm_ty: PVMDataType,
+        ty: &'static ConcreteType,
+        uuid: Uuid,
+        init: Option<MetaStore>,
+    ) -> NodeGuard {
+        if !self.type_cache.contains(&ty) {
+            panic!("Referenced undeclared concrete type: {:?}", ty);
+        }
         let id = self._nextid();
-        let node = Box::new(T::new(id, uuid, init).enumerate());
+        let node = DataNode::new(pvm_ty, ty, id, uuid, init);
         if let Some(nid) = self.uuid_cache.insert(uuid, id) {
             self.node_cache.remove(&nid);
         }
         self.node_cache.insert(id, node);
         let n = self.node_cache.lend(&id).unwrap();
-        self.db.create_node(&**n);
+        self.db.create_node(&*n);
         n
     }
 
-    pub fn declare<T>(&mut self, uuid: Uuid, init: Option<T::Init>) -> NodeGuard
-    where
-        T: Generable + Enumerable<Target = DataNode>,
-    {
+    pub fn declare(
+        &mut self,
+        ty: &'static ConcreteType,
+        uuid: Uuid,
+        init: Option<MetaStore>,
+    ) -> NodeGuard {
         if !self.uuid_cache.contains_key(&uuid) {
-            self.add::<T>(uuid, init)
+            self.add(ty.pvm_ty, ty, uuid, init)
         } else {
             self.node_cache.lend(&self.uuid_cache[&uuid]).unwrap()
         }
@@ -178,31 +193,40 @@ impl PVM {
     }
 
     pub fn sink(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
-        match ent {
-            DataNode::File(fref) => {
-                let f = self.add::<File>(fref.get_uuid(), None);
-                self._inf(fref, &**f, PVMOps::Version);
-                self._inf(act, &**f, PVMOps::Sink)
+        match ent.pvm_ty() {
+            Store => {
+                let f = self.add(
+                    Store,
+                    ent.ty(),
+                    ent.uuid(),
+                    Some(ent.meta.snapshot(&self.cur_time)),
+                );
+                self._inf(ent, &*f, PVMOps::Version);
+                self._inf(act, &*f, PVMOps::Sink)
             }
             _ => self._inf(act, ent, PVMOps::Sink),
         }
     }
 
     pub fn sinkstart(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
-        match ent {
-            DataNode::File(fref) => {
-                let es = self.add::<EditSession>(fref.get_uuid(), None);
-                self.open_cache
-                    .insert(fref.get_uuid(), hashset!(act.get_uuid()));
-                self._inf(fref, &**es, PVMOps::Version);
-                self._inf(act, &**es, PVMOps::Sink)
+        match ent.pvm_ty() {
+            Store => {
+                let es = self.add(
+                    EditSession,
+                    ent.ty(),
+                    ent.uuid(),
+                    Some(ent.meta.snapshot(&self.cur_time)),
+                );
+                self.open_cache.insert(ent.uuid(), hashset!(act.uuid()));
+                self._inf(ent, &*es, PVMOps::Version);
+                self._inf(act, &*es, PVMOps::Sink)
             }
-            DataNode::EditSession(eref) => {
+            EditSession => {
                 self.open_cache
-                    .get_mut(&eref.get_uuid())
+                    .get_mut(&ent.uuid())
                     .unwrap()
-                    .insert(act.get_uuid());
-                self._inf(act, eref, PVMOps::Sink)
+                    .insert(act.uuid());
+                self._inf(act, ent, PVMOps::Sink)
             }
             _ => self._inf(act, ent, PVMOps::Sink),
         }
@@ -221,14 +245,19 @@ impl PVM {
     }
 
     pub fn sinkend(&mut self, act: &DataNode, ent: &DataNode) {
-        if let DataNode::EditSession(eref) = ent {
+        if let EditSession = ent.pvm_ty() {
             self.open_cache
-                .get_mut(&eref.get_uuid())
+                .get_mut(&ent.uuid())
                 .unwrap()
-                .remove(&act.get_uuid());
-            if self.open_cache[&eref.get_uuid()].is_empty() {
-                let f = self.add::<File>(eref.get_uuid(), None);
-                self._inf(eref, &**f, PVMOps::Version);
+                .remove(&act.uuid());
+            if self.open_cache[&ent.uuid()].is_empty() {
+                let f = self.add(
+                    Store,
+                    ent.ty(),
+                    ent.uuid(),
+                    Some(ent.meta.snapshot(&self.cur_time)),
+                );
+                self._inf(ent, &*f, PVMOps::Version);
             }
         }
     }
@@ -242,17 +271,17 @@ impl PVM {
         self.name_cache.lend(&name).unwrap()
     }
 
-    fn decl_fcont(&mut self, uuid: Uuid) -> NodeGuard {
+    fn decl_fcont(&mut self, ent: &DataNode) -> NodeGuard {
         let id = {
-            if !self.cont_cache.contains_key(&uuid) {
+            if !self.cont_cache.contains_key(&ent.uuid()) {
                 let id = self._nextid();
-                let node = Box::new(FileContainer::new(id, uuid).enumerate());
-                self.cont_cache.insert(uuid, id);
-                self.db.create_node(&*node);
+                let node = DataNode::new(StoreCont, ent.ty(), id, ent.uuid(), None);
+                self.cont_cache.insert(ent.uuid(), id);
+                self.db.create_node(&node);
                 self.node_cache.insert(id, node);
                 id
             } else {
-                self.cont_cache[&uuid]
+                self.cont_cache[&ent.uuid()]
             }
         };
         self.node_cache.lend(&id).unwrap()
@@ -260,14 +289,10 @@ impl PVM {
 
     pub fn name(&mut self, obj: &DataNode, name: Name) -> RelGuard {
         let n_node = self.decl_name(name);
-        match obj {
-            DataNode::File(f) => {
-                let cont = self.decl_fcont(f.get_uuid());
-                self._named(&**cont, &n_node)
-            }
-            DataNode::EditSession(f) => {
-                let cont = self.decl_fcont(f.get_uuid());
-                self._named(&**cont, &n_node)
+        match obj.pvm_ty() {
+            Store | EditSession => {
+                let cont = self.decl_fcont(obj);
+                self._named(&*cont, &n_node)
             }
             _ => self._named(obj, &n_node),
         }
@@ -280,6 +305,15 @@ impl PVM {
             self.db.update_rel(&*rel);
         }
         rel
+    }
+
+    pub fn meta<T: ToString + ?Sized>(&mut self, ent: &mut DataNode, key: &'static str, val: &T) {
+        if !ent.ty().props.contains_key(key) {
+            panic!("Setting unknown property on concrete type: {:?} does not have a property named {}.", ent.ty(), key);
+        }
+        ent.meta
+            .update(key, val, &self.cur_time, ent.ty().props[key]);
+        self.db.update_node(ent);
     }
 
     pub fn prop(&mut self, ent: &DataNode) {

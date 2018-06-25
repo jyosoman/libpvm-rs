@@ -21,21 +21,26 @@ impl MetaStore {
     }
 
     pub fn snapshot(&self, time: &DateTime<Utc>) -> Self {
-        MetaStore {
-            entries: self
-                .entries
-                .iter()
-                .filter_map(|(n, (h, v))| {
-                    if *h {
-                        let (v_last, _) = v.last().unwrap();
-                        Some((n.clone(), (true, vec![(v_last.clone(), 0)])))
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-            time_list: vec![*time],
-        }
+        let entries: HashMap<Cow<'static, str>, MetaType> = self
+            .entries
+            .iter()
+            .filter_map(|(n, (h, v))| {
+                if *h {
+                    let (v_last, _) = v.last().unwrap();
+                    Some((n.clone(), (true, vec![(v_last.clone(), 0)])))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let time_list = {
+            if !entries.is_empty() {
+                vec![*time]
+            } else {
+                vec![]
+            }
+        };
+        MetaStore { entries, time_list }
     }
 
     pub fn merge(&mut self, other: &MetaStore) {
@@ -78,8 +83,7 @@ impl MetaStore {
     pub fn cur(&self, key: &str) -> Option<&str> {
         self.entries
             .get(key)
-            .map(|(_h, v)| v.last())
-            .and_then(|v| v)
+            .map(|(_h, v)| &v[v.len() - 1])
             .map(|(v, _t)| &v[..])
     }
 

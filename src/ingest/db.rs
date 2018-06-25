@@ -1,6 +1,10 @@
 use std::sync::mpsc::SyncSender;
 
-use data::{node_types::Node, rel_types::Rel, Enumerable};
+use data::{
+    node_types::{ConcreteType, Node},
+    rel_types::Rel,
+    Enumerable,
+};
 use views::DBTr;
 
 pub struct DB {
@@ -33,6 +37,12 @@ impl DB {
     pub fn update_rel<R: Enumerable<Target = Rel>>(&mut self, rel: R) {
         self.persist_pipe
             .send(DBTr::UpdateRel(rel.enumerate()))
+            .expect("Database worker closed queue unexpectadly")
+    }
+
+    pub fn new_node_type(&mut self, ty: &'static ConcreteType) {
+        self.persist_pipe
+            .send(DBTr::NewNodeType(ty))
             .expect("Database worker closed queue unexpectadly")
     }
 }

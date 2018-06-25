@@ -15,7 +15,8 @@ use self::pvm::{PVMError, PVM};
 
 const BATCH_SIZE: usize = 0x80_000;
 
-pub trait Parseable: DeserializeOwned + Display + Send {
+pub trait Parseable: DeserializeOwned + Display + Send + Sized {
+    fn init(pvm: &mut PVM);
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError>;
 }
 
@@ -23,6 +24,8 @@ pub fn ingest_stream<R: Read, T: Parseable>(stream: R, pvm: &mut PVM) {
     let mut pre_vec: Vec<(usize, String)> = Vec::with_capacity(BATCH_SIZE);
     let mut post_vec: Vec<(usize, Option<T>)> = Vec::with_capacity(BATCH_SIZE);
     let mut lines = BufReader::new(stream).lines().enumerate();
+
+    T::init(pvm);
 
     loop {
         pre_vec.clear();

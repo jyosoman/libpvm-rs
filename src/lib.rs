@@ -7,6 +7,8 @@ extern crate pvm_data as data;
 extern crate pvm_views as views;
 
 extern crate chrono;
+#[macro_use]
+extern crate lazy_static;
 extern crate lending_library;
 extern crate libc;
 #[macro_use]

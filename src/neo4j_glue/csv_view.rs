@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::HashMap,
     fs::File,
     io::Write,
@@ -11,11 +12,13 @@ use zip::{write::FileOptions, ZipWriter};
 
 use cfg::Config;
 use data::{
-    node_types::{DataNode, NameNode, Node},
+    node_types::{ConcreteType, NameNode, Node, PVMDataType::*},
     rel_types::Rel,
-    HasDst, HasID, HasSrc, HasUUID, ID,
+    HasDst, HasID, HasSrc, ID,
 };
 use views::{DBTr, View, ViewInst};
+
+use serde_json;
 
 const HYDRATE_SH_PRE: &str = r#"#! /bin/bash
 export NEO4J_USER=neo4j
@@ -37,12 +40,10 @@ read -p "Now start neo4j, wait for it to come up, then press enter."
 echo -n "Building indexes..."
 cypher-shell -u$NEO4J_USER -p$NEO4J_PASS >/dev/null <<EOF
 CREATE INDEX ON :Node(db_id);
-CREATE INDEX ON :Process(uuid);
-CREATE INDEX ON :File(uuid);
+CREATE INDEX ON :Actor(uuid);
+CREATE INDEX ON :Store(uuid);
 CREATE INDEX ON :EditSession(uuid);
-CREATE INDEX ON :Pipe(uuid);
-CREATE INDEX ON :Socket(uuid);
-CREATE INDEX ON :Ptty(uuid);
+CREATE INDEX ON :Conduit(uuid);
 CALL db.awaitIndexes();
 EOF
 echo "Done"
@@ -52,6 +53,10 @@ echo "Database hydrated"
 #[derive(Debug)]
 pub struct CSVView {
     id: usize,
+}
+
+fn write_str<W: Write>(f: &mut W, s: &str) {
+    write!(f, ",\"{}\"", s.replace("\"", "\"\"")).unwrap();
 }
 
 impl View for CSVView {
@@ -84,8 +89,9 @@ impl View for CSVView {
             writeln!(out, ":LABEL,pvm_version:int,source").unwrap();
             writeln!(out, "DBInfo,2,libPVM-{}", ::VERSION).unwrap();
 
-            let mut nodes: HashMap<&'static str, HashMap<ID, Node>> = HashMap::new();
-            let mut rels: HashMap<&'static str, HashMap<ID, Rel>> = HashMap::new();
+            let mut nodes: HashMap<Cow<'static, str>, HashMap<ID, Node>> = HashMap::new();
+            let mut rels: HashMap<Cow<'static, str>, HashMap<ID, Rel>> = HashMap::new();
+            let mut node_ty: HashMap<&'static ConcreteType, Vec<&&str>> = HashMap::new();
 
             for evt in stream {
                 match *evt {
@@ -99,6 +105,11 @@ impl View for CSVView {
                         rels.entry(rel.fname())
                             .or_insert_with(HashMap::new)
                             .insert(rel.get_db_id(), rel.clone());
+                    }
+                    DBTr::NewNodeType(ref ty) => {
+                        let mut param_list: Vec<&&str> = ty.props.keys().collect();
+                        param_list.sort();
+                        node_ty.insert(ty, param_list);
                     }
                 }
             }
@@ -121,18 +132,80 @@ impl View for CSVView {
                 out.start_file(fname, FileOptions::default()).unwrap();
                 for (i, r) in rlist.values().enumerate() {
                     if i == 0 {
-                        r.write_header(&mut out);
+                        write!(out, "db_id,:START_ID,:END_ID,:TYPE").unwrap();
+                        match r {
+                            Rel::Inf(_) => {
+                                writeln!(out, ",pvm_op,generating_call,byte_count:long").unwrap()
+                            }
+                            Rel::Named(_) => writeln!(out, ",start:long,generating_call").unwrap(),
+                        }
                     }
-                    r.write_self(&mut out);
+                    write!(
+                        out,
+                        "{},{},{},{}",
+                        format_id(r.get_db_id()),
+                        format_id(r.get_src()),
+                        format_id(r.get_dst()),
+                        r._lab(),
+                    ).unwrap();
+                    match r {
+                        Rel::Inf(i) => writeln!(
+                            out,
+                            ",{:?},\"{}\",{}",
+                            i.pvm_op, i.generating_call, i.byte_count
+                        ).unwrap(),
+                        Rel::Named(n) => writeln!(
+                            out,
+                            ",{},\"{}\"",
+                            n.start.timestamp_nanos(),
+                            n.generating_call
+                        ).unwrap(),
+                    }
                 }
             }
-            for (fname, nlist) in &nodes {
-                out.start_file(*fname, FileOptions::default()).unwrap();
+            for (fname, nlist) in nodes {
+                out.start_file(fname, FileOptions::default()).unwrap();
                 for (i, n) in nlist.values().enumerate() {
                     if i == 0 {
-                        n.write_header(&mut out);
+                        write!(out, "db_id:ID,:LABEL").unwrap();
+                        match n {
+                            Node::Data(d) => {
+                                write!(out, ",uuid,ty,meta_hist").unwrap();
+                                for k in &node_ty[d.ty()] {
+                                    write!(out, ",{}", k).unwrap();
+                                }
+                                writeln!(out).unwrap();
+                            }
+                            Node::Name(n) => match n {
+                                NameNode::Path(..) => writeln!(out, ",path").unwrap(),
+                                NameNode::Net(..) => writeln!(out, ",addr,port:int").unwrap(),
+                            },
+                        }
                     }
-                    n.write_self(&mut out);
+                    write!(out, "{},{}", format_id(n.get_db_id()), n._lab()).unwrap();
+                    match n {
+                        Node::Data(d) => {
+                            write!(out, ",{},{}", d.uuid(), d.ty().name).unwrap();
+                            write_str(&mut out, &serde_json::to_string(&d.meta).unwrap());
+                            for k in &node_ty[d.ty()] {
+                                let val = d.meta.cur(k);
+                                match val {
+                                    Some(v) => write_str(&mut out, v),
+                                    None => write!(out, ",").unwrap(),
+                                }
+                            }
+                        }
+                        Node::Name(n) => match n {
+                            NameNode::Path(_, path) => {
+                                write_str(&mut out, path);
+                            }
+                            NameNode::Net(_, addr, port) => {
+                                write_str(&mut out, addr);
+                                write!(out, ",{}", port).unwrap();
+                            }
+                        },
+                    }
+                    writeln!(out).unwrap();
                 }
             }
             out.finish().unwrap();
@@ -155,41 +228,35 @@ fn format_u64(v: u64) -> i64 {
 }
 
 trait ToCSV {
-    fn fname(&self) -> &'static str;
-    fn _lab(&self) -> &'static str;
-    fn write_header(&self, f: &mut impl Write);
-    fn write_self(&self, f: &mut impl Write);
+    fn fname(&self) -> Cow<'static, str>;
+    fn _lab(&self) -> &str;
 }
 
 impl ToCSV for Node {
-    fn fname(&self) -> &'static str {
+    fn fname(&self) -> Cow<'static, str> {
         match self {
-            Node::Data(d) => match d {
-                DataNode::EditSession(_) => "es.csv",
-                DataNode::File(_) => "file.csv",
-                DataNode::FileCont(_) => "file_c.csv",
-                DataNode::Pipe(_) => "pipe.csv",
-                DataNode::Proc(_) => "proc.csv",
-                DataNode::Ptty(_) => "ptty.csv",
-                DataNode::Socket(_) => "socket.csv",
-            },
+            Node::Data(d) => match d.pvm_ty() {
+                Actor => format!("actor_{}.csv", d.ty().name),
+                Store => format!("store_{}.csv", d.ty().name),
+                Conduit => format!("conduit_{}.csv", d.ty().name),
+                EditSession => format!("es_{}.csv", d.ty().name),
+                StoreCont => format!("cont_{}.csv", d.ty().name),
+            }.into(),
             Node::Name(n) => match n {
                 NameNode::Path(..) => "paths.csv",
                 NameNode::Net(..) => "net.csv",
-            },
+            }.into(),
         }
     }
 
-    fn _lab(&self) -> &'static str {
+    fn _lab(&self) -> &str {
         match self {
-            Node::Data(d) => match d {
-                DataNode::EditSession(_) => "Node;EditSession",
-                DataNode::File(_) => "Node;File",
-                DataNode::FileCont(_) => "Node;FileCont",
-                DataNode::Pipe(_) => "Node;Pipe",
-                DataNode::Proc(_) => "Node;Process",
-                DataNode::Ptty(_) => "Node;Ptty",
-                DataNode::Socket(_) => "Node;Socket",
+            Node::Data(d) => match d.pvm_ty() {
+                Actor => "Node;Actor",
+                Store => "Node;Store",
+                StoreCont => "Node;StoreCont",
+                EditSession => "Node;EditSession",
+                Conduit => "Node;Conduit",
             },
             Node::Name(n) => match n {
                 NameNode::Path(..) => "Node;Name;Path",
@@ -197,88 +264,20 @@ impl ToCSV for Node {
             },
         }
     }
-
-    fn write_header(&self, f: &mut impl Write) {
-        write!(f, "db_id:ID,:LABEL").unwrap();
-        match self {
-            Node::Data(d) => {
-                write!(f, ",uuid").unwrap();
-                match d {
-                    DataNode::Pipe(_) => writeln!(f, ",fd:int").unwrap(),
-                    DataNode::Socket(_) => writeln!(f, ",class:int").unwrap(),
-                    _ => writeln!(f).unwrap(),
-                }
-            }
-            Node::Name(n) => match n {
-                NameNode::Path(..) => writeln!(f, ",path").unwrap(),
-                NameNode::Net(..) => writeln!(f, ",addr,port:integer").unwrap(),
-            },
-        }
-    }
-
-    fn write_self(&self, f: &mut impl Write) {
-        write!(f, "{},{}", format_id(self.get_db_id()), self._lab()).unwrap();
-        match self {
-            Node::Data(d) => {
-                write!(f, ",{}", d.get_uuid()).unwrap();
-                match d {
-                    DataNode::Pipe(v) => writeln!(f, ",{}", v.fd).unwrap(),
-                    DataNode::Socket(v) => writeln!(f, ",{}", v.class as i64,).unwrap(),
-                    _ => writeln!(f).unwrap(),
-                }
-            }
-            Node::Name(n) => match n {
-                NameNode::Path(_, path) => writeln!(f, ",\"{}\"", path).unwrap(),
-                NameNode::Net(_, addr, port) => writeln!(f, ",\"{}\",{}", addr, port).unwrap(),
-            },
-        }
-    }
 }
 
 impl ToCSV for Rel {
-    fn fname(&self) -> &'static str {
+    fn fname(&self) -> Cow<'static, str> {
         match self {
             Rel::Inf(_) => "inf.csv",
             Rel::Named(_) => "named.csv",
-        }
+        }.into()
     }
 
-    fn _lab(&self) -> &'static str {
+    fn _lab(&self) -> &str {
         match self {
             Rel::Inf(_) => "INF",
             Rel::Named(_) => "NAMED",
-        }
-    }
-
-    fn write_header(&self, f: &mut impl Write) {
-        write!(f, "db_id,:START_ID,:END_ID,:TYPE").unwrap();
-        match self {
-            Rel::Inf(_) => writeln!(f, ",pvm_op,generating_call,byte_count:int").unwrap(),
-            Rel::Named(_) => writeln!(f, ",start:int,generating_call").unwrap(),
-        }
-    }
-
-    fn write_self(&self, f: &mut impl Write) {
-        write!(
-            f,
-            "{},{},{},{}",
-            format_id(self.get_db_id()),
-            format_id(self.get_src()),
-            format_id(self.get_dst()),
-            self._lab(),
-        ).unwrap();
-        match self {
-            Rel::Inf(i) => writeln!(
-                f,
-                ",{:?},\"{}\",{}",
-                i.pvm_op, i.generating_call, i.byte_count
-            ).unwrap(),
-            Rel::Named(n) => writeln!(
-                f,
-                ",{},\"{}\"",
-                n.start.timestamp_nanos(),
-                n.generating_call
-            ).unwrap(),
         }
     }
 }

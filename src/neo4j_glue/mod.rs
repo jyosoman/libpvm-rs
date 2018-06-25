@@ -5,17 +5,14 @@ pub use self::{csv_view::CSVView, neo4j_view::Neo4JView};
 
 use std::{borrow::Cow, collections::HashMap, mem};
 
-use neo4j::{Node as NeoNode, Value};
+use neo4j::Value;
 
 use serde_json;
 
 use data::{
-    node_types::{
-        DataNode, EditSession, File, NameNode, Node, Pipe, PipeInit, Process, Ptty, Socket,
-        SocketClass, SocketInit,
-    },
+    node_types::{NameNode, Node, PVMDataType::*},
     rel_types::{PVMOps, Rel},
-    Enumerable, Generable, HasDst, HasID, HasSrc, HasUUID, MetaStore, ID,
+    HasDst, HasID, HasSrc, MetaStore, ID,
 };
 
 use uuid::Uuid;
@@ -107,14 +104,12 @@ pub trait ToDBNode: HasID {
 impl ToDBNode for Node {
     fn get_labels(&self) -> Vec<&'static str> {
         match self {
-            Node::Data(d) => match d {
-                DataNode::EditSession(_) => vec!["Node", "EditSession"],
-                DataNode::File(_) => vec!["Node", "File"],
-                DataNode::FileCont(_) => vec!["Node", "FileCont"],
-                DataNode::Pipe(_) => vec!["Node", "Pipe"],
-                DataNode::Proc(_) => vec!["Node", "Process"],
-                DataNode::Socket(_) => vec!["Node", "Socket"],
-                DataNode::Ptty(_) => vec!["Node", "Ptty"],
+            Node::Data(d) => match d.pvm_ty() {
+                EditSession => vec!["Node", "EditSession"],
+                Store => vec!["Node", "Store"],
+                StoreCont => vec!["Node", "StoreCont"],
+                Actor => vec!["Node", "Actor"],
+                Conduit => vec!["Node", "Conduit"],
             },
             Node::Name(n) => match n {
                 NameNode::Path(..) => vec!["Node", "Name", "Path"],
@@ -126,16 +121,9 @@ impl ToDBNode for Node {
     fn get_props(&self) -> HashMap<Cow<'static, str>, Value> {
         match self {
             Node::Data(d) => {
-                let mut props = match d {
-                    DataNode::EditSession(_) => hashmap!(),
-                    DataNode::File(_) => hashmap!(),
-                    DataNode::FileCont(_) => hashmap!(),
-                    DataNode::Pipe(p) => hashmap!("fd".into()    => Value::from(p.fd)),
-                    DataNode::Proc(p) => into_props(&p.meta),
-                    DataNode::Socket(s) => hashmap!("class".into()  => Value::from(s.class as i64)),
-                    DataNode::Ptty(_) => hashmap!(),
-                };
-                props.insert("uuid".into(), d.get_uuid().into_val());
+                let mut props = into_props(&d.meta);
+                props.insert("uuid".into(), d.uuid().into_val());
+                props.insert("type".into(), d.ty().name.into());
                 props
             }
             Node::Name(n) => match n {
@@ -184,85 +172,5 @@ impl ToDBRel for Rel {
                 )
             }
         }
-    }
-}
-
-pub trait FromDB {
-    fn from_value(val: Value) -> Result<Self, &'static str>
-    where
-        Self: Sized;
-}
-
-impl FromDB for DataNode {
-    fn from_value(val: Value) -> Result<Self, &'static str> {
-        let mut g = NeoNode::from_value(val)?;
-
-        let id = g
-            .props
-            .remove("db_id")
-            .and_then(Value::into_id)
-            .ok_or("db_id property is missing or not an Integer")?;
-        let uuid = g
-            .props
-            .remove("uuid")
-            .and_then(Value::into_uuid)
-            .ok_or("uuid property is missing or not a UUID5")?;
-
-        if g.labs.contains(&String::from("Process")) {
-            Ok(Process::new(id, uuid, Some(g.into_init()?)).enumerate())
-        } else if g.labs.contains(&String::from("File")) {
-            Ok(File::new(id, uuid, None).enumerate())
-        } else if g.labs.contains(&String::from("EditSession")) {
-            Ok(EditSession::new(id, uuid, None).enumerate())
-        } else if g.labs.contains(&String::from("Socket")) {
-            Ok(Socket::new(id, uuid, Some(g.into_init()?)).enumerate())
-        } else if g.labs.contains(&String::from("Pipe")) {
-            Ok(Pipe::new(id, uuid, Some(g.into_init()?)).enumerate())
-        } else if g.labs.contains(&String::from("Ptty")) {
-            Ok(Ptty::new(id, uuid, None).enumerate())
-        } else {
-            Err("Node doesn't match any known type.")
-        }
-    }
-}
-
-trait IntoInit<T> {
-    fn into_init(self) -> Result<T, &'static str>;
-}
-
-impl IntoInit<PipeInit> for NeoNode {
-    fn into_init(mut self) -> Result<PipeInit, &'static str> {
-        Ok(PipeInit {
-            fd: self
-                .props
-                .remove("fd")
-                .and_then(Value::into_int)
-                .ok_or("fd property is missing or not an Integer")?,
-        })
-    }
-}
-
-impl IntoInit<MetaStore> for NeoNode {
-    fn into_init(mut self) -> Result<MetaStore, &'static str> {
-        Ok(serde_json::from_str(
-            &self
-                .props
-                .remove("meta_hist")
-                .and_then(Value::into_string)
-                .ok_or("meta_hist parameter missing")?,
-        ).unwrap())
-    }
-}
-
-impl IntoInit<SocketInit> for NeoNode {
-    fn into_init(mut self) -> Result<SocketInit, &'static str> {
-        Ok(SocketInit {
-            class: self
-                .props
-                .remove("class")
-                .and_then(Value::into_int)
-                .and_then(SocketClass::from_int)
-                .ok_or("class property is missing or not an Integer")?,
-        })
     }
 }

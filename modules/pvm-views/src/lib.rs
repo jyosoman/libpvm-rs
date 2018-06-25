@@ -8,7 +8,10 @@ use std::{
     thread::{spawn, JoinHandle},
 };
 
-use data::{node_types::Node, rel_types::Rel};
+use data::{
+    node_types::{ConcreteType, Node},
+    rel_types::Rel,
+};
 
 use cfg::Config;
 
@@ -18,6 +21,7 @@ pub enum DBTr {
     CreateRel(Rel),
     UpdateNode(Node),
     UpdateRel(Rel),
+    NewNodeType(&'static ConcreteType),
 }
 
 #[derive(Debug)]

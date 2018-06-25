@@ -1,12 +1,12 @@
-use data::node_types::DataNode;
+//use data::node_types::DataNode;
 
 use neo4j::{Neo4jDB, Neo4jOperations};
 
-use neo4j_glue::{FromDB, IntoVal};
+//use neo4j_glue::{FromDB, IntoVal};
 
-use uuid::Uuid;
+//use uuid::Uuid;
 
-pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid) -> Vec<DataNode> {
+/*pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid) -> Vec<DataNode> {
     cypher
         .run(
             "MATCH (n {uuid: {uuid}})
@@ -17,12 +17,12 @@ pub fn nodes_by_uuid(cypher: &mut Neo4jDB, uuid: Uuid) -> Vec<DataNode> {
         .first()
         .map(|data| DataNode::from_value(data).unwrap())
         .collect()
-}
+}*/
 
 pub fn count_processes(cypher: &mut Neo4jDB) -> i64 {
     cypher
         .run(
-            "MATCH (n:Process)
+            "MATCH (n:Actor {type: \"process\"})
               RETURN count(n)",
             hashmap!(),
         )
