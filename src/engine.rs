@@ -9,7 +9,7 @@ use views::{View, ViewCoordinator, ViewInst};
 
 use neo4j::Neo4jDB;
 
-use trace::TraceEvent;
+use trace::cadets::TraceEvent;
 
 type EngineResult<T> = Result<T, &'static str>;
 
