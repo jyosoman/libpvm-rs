@@ -10,7 +10,7 @@ use neo4j::Value;
 use serde_json;
 
 use data::{
-    node_types::{NameNode, Node, PVMDataType::*},
+    node_types::{NameNode, Node, PVMDataType, PVMDataType::*},
     rel_types::{PVMOps, Rel},
     HasDst, HasID, HasSrc, MetaStore, ID,
 };
@@ -63,6 +63,12 @@ impl IntoVal for PVMOps {
             PVMOps::Version => "Version".into(),
             PVMOps::Unknown => "Unknown".into(),
         }
+    }
+}
+
+impl IntoVal for PVMDataType {
+    fn into_val(self) -> Value {
+        self.to_string().into()
     }
 }
 

@@ -91,7 +91,10 @@ impl View for CSVView {
 
             let mut nodes: HashMap<Cow<'static, str>, HashMap<ID, Node>> = HashMap::new();
             let mut rels: HashMap<Cow<'static, str>, HashMap<ID, Rel>> = HashMap::new();
-            let mut node_ty: HashMap<&'static ConcreteType, Vec<&&str>> = HashMap::new();
+            let mut node_ty: HashMap<&'static ConcreteType, Vec<&str>> = HashMap::new();
+
+            out.start_file("types.csv", FileOptions::default()).unwrap();
+            writeln!(out, ":LABEL,name,abstract,props:string[]").unwrap();
 
             for evt in stream {
                 match *evt {
@@ -107,8 +110,15 @@ impl View for CSVView {
                             .insert(rel.get_db_id(), rel.clone());
                     }
                     DBTr::NewNodeType(ref ty) => {
-                        let mut param_list: Vec<&&str> = ty.props.keys().collect();
+                        let mut param_list: Vec<&str> = ty.props.keys().map(|v| *v).collect();
                         param_list.sort();
+                        writeln!(
+                            out,
+                            "Type,{},{},{}",
+                            ty.name,
+                            ty.pvm_ty,
+                            param_list.join(";")
+                        ).unwrap();
                         node_ty.insert(ty, param_list);
                     }
                 }
@@ -121,6 +131,8 @@ impl View for CSVView {
                 let mut options = vec![
                     "--id-type=INTEGER".to_string(),
                     "--multiline-fields=true".to_string(),
+                    "--nodes dbinfo.csv".to_string(),
+                    "--nodes types.csv".to_string(),
                 ];
                 options.extend(nodes.keys().map(|k| format!("--nodes {}", k)));
                 options.extend(rels.keys().map(|k| format!("--relationships {}", k)));

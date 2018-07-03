@@ -1,6 +1,7 @@
 use super::{meta_store::MetaStore, Enumerable, HasID, ID};
 use std::{
     collections::HashMap,
+    fmt,
     hash::{Hash, Hasher},
 };
 use uuid::Uuid;
@@ -67,6 +68,22 @@ pub enum PVMDataType {
     Conduit,
     EditSession,
     StoreCont,
+}
+
+impl fmt::Display for PVMDataType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                PVMDataType::Actor => "Actor",
+                PVMDataType::Conduit => "Conduit",
+                PVMDataType::EditSession => "EditSession",
+                PVMDataType::Store => "Store",
+                PVMDataType::StoreCont => "StoreCont",
+            }
+        )
+    }
 }
 
 #[derive(Clone, Debug)]
