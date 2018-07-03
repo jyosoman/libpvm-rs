@@ -34,6 +34,7 @@ impl Display for PVMError {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum ConnectDir {
     Mono,
     BiDirectional,

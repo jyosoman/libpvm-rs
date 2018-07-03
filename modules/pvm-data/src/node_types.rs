@@ -5,7 +5,7 @@ use std::{
 };
 use uuid::Uuid;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq)]
 pub struct ConcreteType {
     pub pvm_ty: PVMDataType,
     pub name: &'static str,
@@ -15,6 +15,12 @@ pub struct ConcreteType {
 impl Hash for ConcreteType {
     fn hash<H: Hasher>(&self, state: &mut H) {
         <&'static str as Hash>::hash(&self.name, state)
+    }
+}
+
+impl PartialEq for ConcreteType {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
     }
 }
 
