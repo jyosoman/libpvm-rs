@@ -150,9 +150,7 @@ impl PVM {
         uuid: Uuid,
         init: Option<MetaStore>,
     ) -> NodeGuard {
-        if !self.type_cache.contains(&ty) {
-            panic!("Referenced undeclared concrete type: {:?}", ty);
-        }
+        assert!(self.type_cache.contains(&ty));
         let id = self._nextid();
         let node = DataNode::new(pvm_ty, ty, id, uuid, init);
         if let Some(nid) = self.uuid_cache.insert(uuid, id) {
@@ -178,6 +176,7 @@ impl PVM {
     }
 
     pub fn source(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
+        assert_eq!(act.pvm_ty(), &Actor);
         self._inf(ent, act, PVMOps::Source)
     }
 
@@ -187,6 +186,7 @@ impl PVM {
         ent: &DataNode,
         bytes: T,
     ) -> RelGuard {
+        assert_eq!(act.pvm_ty(), &Actor);
         let mut r = self.source(act, ent);
         Inf::denumerate_mut(&mut r).byte_count += bytes.into();
         self.db.update_rel(&*r);
@@ -194,6 +194,7 @@ impl PVM {
     }
 
     pub fn sink(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
+        assert_eq!(act.pvm_ty(), &Actor);
         match ent.pvm_ty() {
             Store => {
                 let f = self.add(
@@ -210,6 +211,7 @@ impl PVM {
     }
 
     pub fn sinkstart(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
+        assert_eq!(act.pvm_ty(), &Actor);
         match ent.pvm_ty() {
             Store => {
                 let es = self.add(
@@ -239,6 +241,7 @@ impl PVM {
         ent: &DataNode,
         bytes: T,
     ) -> RelGuard {
+        assert_eq!(act.pvm_ty(), &Actor);
         let mut r = self.sinkstart(act, ent);
         Inf::denumerate_mut(&mut r).byte_count += bytes.into();
         self.db.update_rel(&*r);
@@ -246,6 +249,7 @@ impl PVM {
     }
 
     pub fn sinkend(&mut self, act: &DataNode, ent: &DataNode) {
+        assert_eq!(act.pvm_ty(), &Actor);
         if let EditSession = ent.pvm_ty() {
             self.open_cache
                 .get_mut(&ent.uuid())
@@ -322,6 +326,8 @@ impl PVM {
     }
 
     pub fn connect(&mut self, first: &DataNode, second: &DataNode, dir: ConnectDir) {
+        assert_eq!(first.pvm_ty(), &Conduit);
+        assert_eq!(second.pvm_ty(), &Conduit);
         self._inf(first, second, PVMOps::Connect);
         if let ConnectDir::BiDirectional = dir {
             self._inf(second, first, PVMOps::Connect);
