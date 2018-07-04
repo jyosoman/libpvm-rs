@@ -1,10 +1,33 @@
 use std::{collections::HashMap, fmt};
 
+use data::{
+    node_types::{ConcreteType, Name, PVMDataType::*},
+    MetaStore,
+};
+
 use ingest::{
     pvm::{PVMError, PVM},
     Parseable,
 };
 
+use uuid::Uuid;
+
+lazy_static! {
+    static ref HOST_NAMESPACE: Uuid = Uuid::new_v5(&Uuid::nil(), "host");
+    static ref PROGRAM_NAMESPACE: Uuid = Uuid::new_v5(&Uuid::nil(), "program");
+
+    static ref PROGRAM: ConcreteType = ConcreteType {
+        pvm_ty: Actor,
+        name: "program",
+        props: hashmap!("host_uuid" => true,
+                        "pname" => true,
+                        "pid" => false,
+                        "ppid" => false,
+                        "uid" => true,
+                        "start_time" => false,
+                        ),
+    };
+}
 
 use super::MapFmt;
 
@@ -191,6 +214,26 @@ pub struct DefineProgram {
     start_time: i64,
 }
 
+impl DefineProgram{
+    fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
+        let mut p = pvm.declare(
+            &PROGRAM,
+            Uuid::new_v5(&PROGRAM_NAMESPACE, &self.id.to_string()),
+            None,
+        );
+        pvm.meta(
+            &mut p,
+            "host_uuid",
+            &Uuid::new_v5(&HOST_NAMESPACE, &self.host_id.to_string()).hyphenated(),
+        );
+        pvm.meta(&mut p, "pname", &self.pname);
+        pvm.meta(&mut p, "pid", &self.pid);
+        pvm.meta(&mut p, "ppid", &self.ppid);
+        pvm.meta(&mut p, "uid", &self.uid);
+        pvm.meta(&mut p, "start_time", &self.start_time);
+        Ok(())
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct DefineProv {
@@ -304,9 +347,21 @@ impl fmt::Display for ProvMessage {
 }
 
 impl Parseable for ProvMessage {
-    fn init(pvm: &mut PVM) {}
+    fn init(pvm: &mut PVM) {
+        pvm.new_concrete(&PROGRAM);
+    }
 
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
-        Ok(())
+        match self {
+            ProvMessage::DefineAppPpt(_) => Ok(()),
+            ProvMessage::DefineProgram(m) => m.parse(pvm),
+            ProvMessage::DefineProv(_) => Ok(()),
+            ProvMessage::DefineProvSet(_) => Ok(()),
+            ProvMessage::DefineProvType(_) => Ok(()),
+            ProvMessage::DefineSysCall(_) => Ok(()),
+            ProvMessage::Event(_) => Ok(()),
+            ProvMessage::HostInfo(_) => Ok(()),
+            ProvMessage::User(_) => Ok(()),
+        }
     }
 }
