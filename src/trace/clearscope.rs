@@ -15,6 +15,7 @@ use uuid::Uuid;
 lazy_static! {
     static ref HOST_NAMESPACE: Uuid = Uuid::new_v5(&Uuid::nil(), "host");
     static ref PROGRAM_NAMESPACE: Uuid = Uuid::new_v5(&Uuid::nil(), "program");
+    static ref PROVTYPE_NAMESPACE: Uuid = Uuid::new_v5(&Uuid::nil(), "provtype");
 
     static ref PROGRAM: ConcreteType = ConcreteType {
         pvm_ty: Actor,
@@ -27,9 +28,16 @@ lazy_static! {
                         "start_time" => false,
                         ),
     };
-}
 
-use super::MapFmt;
+    static ref FILE: ConcreteType = ConcreteType {
+        pvm_ty: Store,
+        name: "file",
+        props: hashmap!("permissions" => true,
+                        "file_type" => true,
+                        "size_in_bytes" => true,
+                        ),
+    };
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -296,6 +304,30 @@ pub struct DefineProvType {
     object: ProvTypeObject,
 }
 
+impl DefineProvType {
+    fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
+        let uuid = Uuid::new_v5(&PROVTYPE_NAMESPACE, &self.id.to_string());
+        match &self.object {
+            ProvTypeObject::File {
+                path,
+                permissions,
+                file_type,
+                size_in_bytes,
+            } => {
+                let mut f = pvm.declare(&FILE, uuid, None);
+                pvm.name(&f, Name::Path(path.clone()));
+                pvm.meta(&mut f, "permissions", permissions)?;
+                pvm.meta(&mut f, "file_type", file_type)?;
+                if let Some(sb) = size_in_bytes {
+                    pvm.meta(&mut f, "size_in_bytes", sb)?;
+                }
+            },
+            _ => {}
+        };
+        Ok(())
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct DefineSysCall {
     id: u32,
@@ -348,6 +380,7 @@ impl fmt::Display for ProvMessage {
 impl Parseable for ProvMessage {
     fn init(pvm: &mut PVM) {
         pvm.new_concrete(&PROGRAM);
+        pvm.new_concrete(&FILE);
     }
 
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
@@ -356,7 +389,7 @@ impl Parseable for ProvMessage {
             ProvMessage::DefineProgram(m) => m.parse(pvm),
             ProvMessage::DefineProv(_) => Ok(()),
             ProvMessage::DefineProvSet(_) => Ok(()),
-            ProvMessage::DefineProvType(_) => Ok(()),
+            ProvMessage::DefineProvType(m) => m.parse(pvm),
             ProvMessage::DefineSysCall(_) => Ok(()),
             ProvMessage::Event(_) => Ok(()),
             ProvMessage::HostInfo(_) => Ok(()),
