@@ -22,6 +22,11 @@ use super::db::DB;
 
 pub enum PVMError {
     MissingField { evt: String, field: &'static str },
+    CannotAssignMeta {
+        ty: &'static ConcreteType,
+        key: &'static str,
+        value: String,
+    }
 }
 
 impl Display for PVMError {
@@ -29,6 +34,9 @@ impl Display for PVMError {
         match self {
             PVMError::MissingField { evt, field } => {
                 write!(f, "Event {} missing needed field {}", evt, field)
+            }
+            PVMError::CannotAssignMeta { ty, key, value } => {
+                write!(f, "Cannot assign {}: {} to an object of type {}", key, value, ty.name)
             }
         }
     }
@@ -312,13 +320,14 @@ impl PVM {
         rel
     }
 
-    pub fn meta<T: ToString + ?Sized>(&mut self, ent: &mut DataNode, key: &'static str, val: &T) {
+    pub fn meta<T: ToString + ?Sized>(&mut self, ent: &mut DataNode, key: &'static str, val: &T) -> Result<(), PVMError> {
         if !ent.ty().props.contains_key(key) {
-            panic!("Setting unknown property on concrete type: {:?} does not have a property named {}.", ent.ty(), key);
+            return Err(PVMError::CannotAssignMeta { ty: ent.ty(), key, value: val.to_string()});
         }
         ent.meta
             .update(key, val, &self.cur_time, ent.ty().props[key]);
         self.db.update_node(ent);
+        Ok(())
     }
 
     pub fn prop(&mut self, ent: &DataNode) {

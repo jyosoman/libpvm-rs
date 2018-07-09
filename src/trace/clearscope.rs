@@ -225,13 +225,12 @@ impl DefineProgram{
             &mut p,
             "host_uuid",
             &Uuid::new_v5(&HOST_NAMESPACE, &self.host_id.to_string()).hyphenated(),
-        );
-        pvm.meta(&mut p, "pname", &self.pname);
-        pvm.meta(&mut p, "pid", &self.pid);
-        pvm.meta(&mut p, "ppid", &self.ppid);
-        pvm.meta(&mut p, "uid", &self.uid);
-        pvm.meta(&mut p, "start_time", &self.start_time);
-        Ok(())
+        )?;
+        pvm.meta(&mut p, "pname", &self.pname)?;
+        pvm.meta(&mut p, "pid", &self.pid)?;
+        pvm.meta(&mut p, "ppid", &self.ppid)?;
+        pvm.meta(&mut p, "uid", &self.uid)?;
+        pvm.meta(&mut p, "start_time", &self.start_time)
     }
 }
 

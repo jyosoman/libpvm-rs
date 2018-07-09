@@ -181,7 +181,7 @@ impl AuditEvent {
         let ld = pvm.declare(&FILE, lduuid, None);
         pvm.name(&ld, Name::Path(ldname));
 
-        pvm.meta(pro, "cmdline", cmdline);
+        pvm.meta(pro, "cmdline", cmdline)?;
         pvm.source(pro, &bin);
         pvm.source(pro, &ld);
 
@@ -194,7 +194,7 @@ impl AuditEvent {
         let mut ch = pvm.declare(&PROCESS, ret_objuuid1, None);
 
         ch.meta.merge(&pro.meta.snapshot(&self.time));
-        pvm.meta(&mut ch, "pid", &self.retval);
+        pvm.meta(&mut ch, "pid", &self.retval)?;
         pvm.source(&ch, pro);
         Ok(())
     }
@@ -379,7 +379,7 @@ impl AuditEvent {
         let fpath = clone_field!(self.upath1);
         let mode = field!(self.mode);
         let mut f = pvm.declare(&FILE, fuuid, None);
-        pvm.meta(&mut f, "mode", &format!("{:o}", mode));
+        pvm.meta(&mut f, "mode", &format!("{:o}", mode))?;
         pvm.name(&f, Name::Path(fpath));
         pvm.sink(pro, &f);
         Ok(())
@@ -391,8 +391,8 @@ impl AuditEvent {
         let arg_uid = field!(self.arg_uid);
         let arg_gid = field!(self.arg_gid);
         let mut f = pvm.declare(&FILE, fuuid, None);
-        pvm.meta(&mut f, "owner_uid", &arg_uid);
-        pvm.meta(&mut f, "owner_gid", &arg_gid);
+        pvm.meta(&mut f, "owner_uid", &arg_uid)?;
+        pvm.meta(&mut f, "owner_gid", &arg_gid)?;
         pvm.name(&f, Name::Path(fpath));
         pvm.sink(pro, &f);
         Ok(())
@@ -402,7 +402,7 @@ impl AuditEvent {
         let fuuid = field!(self.arg_objuuid1);
         let mode = field!(self.mode);
         let mut f = pvm.declare(&FILE, fuuid, None);
-        pvm.meta(&mut f, "mode", &format!("{:o}", mode));
+        pvm.meta(&mut f, "mode", &format!("{:o}", mode))?;
         pvm.sinkstart(pro, &f);
         Ok(())
     }
@@ -412,8 +412,8 @@ impl AuditEvent {
         let arg_uid = field!(self.arg_uid);
         let arg_gid = field!(self.arg_gid);
         let mut f = pvm.declare(&FILE, fuuid, None);
-        pvm.meta(&mut f, "owner_uid", &arg_uid);
-        pvm.meta(&mut f, "owner_gid", &arg_gid);
+        pvm.meta(&mut f, "owner_uid", &arg_uid)?;
+        pvm.meta(&mut f, "owner_gid", &arg_gid)?;
         pvm.sinkstart(pro, &f);
         Ok(())
     }
@@ -458,26 +458,24 @@ impl AuditEvent {
 
     fn posix_setuid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let uid = ref_field!(self.arg_uid);
-        pvm.meta(pro, "euid", uid);
-        pvm.meta(pro, "ruid", uid);
-        pvm.meta(pro, "suid", uid);
-        Ok(())
+        pvm.meta(pro, "euid", uid)?;
+        pvm.meta(pro, "ruid", uid)?;
+        pvm.meta(pro, "suid", uid)
     }
 
     fn posix_seteuid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let euid = ref_field!(self.arg_euid);
-        pvm.meta(pro, "euid", euid);
-        Ok(())
+        pvm.meta(pro, "euid", euid)
     }
 
     fn posix_setreuid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let ruid = ref_field!(self.arg_ruid);
         let euid = ref_field!(self.arg_euid);
         if *ruid != -1 {
-            pvm.meta(pro, "ruid", ruid);
+            pvm.meta(pro, "ruid", ruid)?;
         }
         if *euid != -1 {
-            pvm.meta(pro, "euid", euid);
+            pvm.meta(pro, "euid", euid)?;
         }
         Ok(())
     }
@@ -487,39 +485,37 @@ impl AuditEvent {
         let euid = ref_field!(self.arg_euid);
         let suid = ref_field!(self.arg_suid);
         if *ruid != -1 {
-            pvm.meta(pro, "ruid", ruid);
+            pvm.meta(pro, "ruid", ruid)?;
         }
         if *euid != -1 {
-            pvm.meta(pro, "euid", euid);
+            pvm.meta(pro, "euid", euid)?;
         }
         if *suid != -1 {
-            pvm.meta(pro, "suid", suid);
+            pvm.meta(pro, "suid", suid)?;
         }
         Ok(())
     }
 
     fn posix_setgid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let gid = ref_field!(self.arg_gid);
-        pvm.meta(pro, "egid", gid);
-        pvm.meta(pro, "rgid", gid);
-        pvm.meta(pro, "sgid", gid);
-        Ok(())
+        pvm.meta(pro, "egid", gid)?;
+        pvm.meta(pro, "rgid", gid)?;
+        pvm.meta(pro, "sgid", gid)
     }
 
     fn posix_setegid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let egid = ref_field!(self.arg_egid);
-        pvm.meta(pro, "egid", egid);
-        Ok(())
+        pvm.meta(pro, "egid", egid)
     }
 
     fn posix_setregid(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let rgid = ref_field!(self.arg_rgid);
         let egid = ref_field!(self.arg_egid);
         if *rgid != -1 {
-            pvm.meta(pro, "rgid", rgid);
+            pvm.meta(pro, "rgid", rgid)?;
         }
         if *egid != -1 {
-            pvm.meta(pro, "egid", egid);
+            pvm.meta(pro, "egid", egid)?;
         }
         Ok(())
     }
@@ -529,21 +525,20 @@ impl AuditEvent {
         let egid = ref_field!(self.arg_egid);
         let sgid = ref_field!(self.arg_sgid);
         if *rgid != -1 {
-            pvm.meta(pro, "rgid", rgid);
+            pvm.meta(pro, "rgid", rgid)?;
         }
         if *egid != -1 {
-            pvm.meta(pro, "egid", egid);
+            pvm.meta(pro, "egid", egid)?;
         }
         if *sgid != -1 {
-            pvm.meta(pro, "sgid", sgid);
+            pvm.meta(pro, "sgid", sgid)?;
         }
         Ok(())
     }
 
     fn posix_setlogin(&self, pro: &mut NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let login = ref_field!(self.login);
-        pvm.meta(pro, "login_name", login);
-        Ok(())
+        pvm.meta(pro, "login_name", login)
     }
 
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
