@@ -41,9 +41,7 @@ echo -n "Building indexes..."
 cypher-shell -u$NEO4J_USER -p$NEO4J_PASS >/dev/null <<EOF
 CREATE INDEX ON :Node(db_id);
 CREATE INDEX ON :Actor(uuid);
-CREATE INDEX ON :Store(uuid);
-CREATE INDEX ON :EditSession(uuid);
-CREATE INDEX ON :Conduit(uuid);
+CREATE INDEX ON :Object(uuid);
 CALL db.awaitIndexes();
 EOF
 echo "Done"
@@ -252,6 +250,7 @@ impl ToCSV for Node {
                 Store => format!("store_{}.csv", d.ty().name),
                 Conduit => format!("conduit_{}.csv", d.ty().name),
                 EditSession => format!("es_{}.csv", d.ty().name),
+                Object => format!("obj_{}.csv", d.ty().name),
                 StoreCont => format!("cont_{}.csv", d.ty().name),
             }.into(),
             Node::Name(n) => match n {
@@ -265,10 +264,11 @@ impl ToCSV for Node {
         match self {
             Node::Data(d) => match d.pvm_ty() {
                 Actor => "Node;Actor",
-                Store => "Node;Store",
-                StoreCont => "Node;StoreCont",
-                EditSession => "Node;EditSession",
-                Conduit => "Node;Conduit",
+                Store => "Node;Object;Store",
+                StoreCont => "Node;Object;StoreCont",
+                EditSession => "Node;Object;EditSession",
+                Conduit => "Node;Object;Conduit",
+                Object => "Node;Object",
             },
             Node::Name(n) => match n {
                 NameNode::Path(..) => "Node;Name;Path",

@@ -67,6 +67,7 @@ pub enum PVMDataType {
     Store,
     Conduit,
     EditSession,
+    Object,
     StoreCont,
 }
 
@@ -79,6 +80,7 @@ impl fmt::Display for PVMDataType {
                 PVMDataType::Actor => "Actor",
                 PVMDataType::Conduit => "Conduit",
                 PVMDataType::EditSession => "EditSession",
+                PVMDataType::Object => "Object",
                 PVMDataType::Store => "Store",
                 PVMDataType::StoreCont => "StoreCont",
             }

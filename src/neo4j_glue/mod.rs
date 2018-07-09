@@ -111,11 +111,12 @@ impl ToDBNode for Node {
     fn get_labels(&self) -> Vec<&'static str> {
         match self {
             Node::Data(d) => match d.pvm_ty() {
-                EditSession => vec!["Node", "EditSession"],
-                Store => vec!["Node", "Store"],
-                StoreCont => vec!["Node", "StoreCont"],
+                EditSession => vec!["Node", "Object", "EditSession"],
+                Store => vec!["Node", "Object", "Store"],
+                StoreCont => vec!["Node", "Object", "StoreCont"],
                 Actor => vec!["Node", "Actor"],
-                Conduit => vec!["Node", "Conduit"],
+                Conduit => vec!["Node", "Object", "Conduit"],
+                Object => vec!["Node", "Object"],
             },
             Node::Name(n) => match n {
                 NameNode::Path(..) => vec!["Node", "Name", "Path"],
