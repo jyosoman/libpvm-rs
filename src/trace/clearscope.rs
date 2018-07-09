@@ -37,6 +37,12 @@ lazy_static! {
                         "size_in_bytes" => true,
                         ),
     };
+
+    static ref NETFLOW: ConcreteType = ConcreteType {
+        pvm_ty: Conduit,
+        name: "netflow",
+        props: hashmap!("protocol" => true),
+    };
 }
 
 #[derive(Debug, Deserialize)]
@@ -322,6 +328,16 @@ impl DefineProvType {
                     pvm.meta(&mut f, "size_in_bytes", sb)?;
                 }
             },
+            ProvTypeObject::Network {
+                local_address,
+                local_port,
+                protocol,
+                ..
+            } => {
+                let mut n = pvm.declare(&NETFLOW, uuid, None);
+                pvm.name(&n, Name::Net(local_address.clone(), *local_port as u16));
+                pvm.meta(&mut n, "protocol", protocol)?;
+            },
             _ => {}
         };
         Ok(())
@@ -381,6 +397,7 @@ impl Parseable for ProvMessage {
     fn init(pvm: &mut PVM) {
         pvm.new_concrete(&PROGRAM);
         pvm.new_concrete(&FILE);
+        pvm.new_concrete(&NETFLOW);
     }
 
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
