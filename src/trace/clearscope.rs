@@ -162,8 +162,8 @@ enum EventDataValue {
     Short(Vec<i32>),
     Int(Vec<i32>),
     Long(Vec<i64>),
-    Float(Vec<f32>),
-    Double(Vec<f64>),
+    Float(Vec<Option<f32>>),
+    Double(Vec<Option<f64>>),
     String(Vec<String>),
     Pointer(i32),
     Object {
