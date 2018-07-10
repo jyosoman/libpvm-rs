@@ -43,6 +43,12 @@ lazy_static! {
         name: "netflow",
         props: hashmap!("protocol" => true),
     };
+
+    static ref PIPE: ConcreteType = ConcreteType {
+        pvm_ty: Conduit,
+        name: "pipe",
+        props: hashmap!("unique_id" => true),
+    };
 }
 
 #[derive(Debug, Deserialize)]
@@ -338,6 +344,12 @@ impl DefineProvType {
                 pvm.name(&n, Name::Net(local_address.clone(), *local_port as u16));
                 pvm.meta(&mut n, "protocol", protocol)?;
             },
+            ProvTypeObject::Pipe {
+                unique_id,
+            } => {
+                let mut p = pvm.declare(&PIPE, uuid, None);
+                pvm.meta(&mut p, "unique_id", unique_id)?;
+            },
             _ => {}
         };
         Ok(())
@@ -398,6 +410,7 @@ impl Parseable for ProvMessage {
         pvm.new_concrete(&PROGRAM);
         pvm.new_concrete(&FILE);
         pvm.new_concrete(&NETFLOW);
+        pvm.new_concrete(&PIPE);
     }
 
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
