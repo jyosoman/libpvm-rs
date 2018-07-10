@@ -44,6 +44,12 @@ lazy_static! {
         props: hashmap!("protocol" => true),
     };
 
+    static ref BINDER: ConcreteType = ConcreteType {
+        pvm_ty: Conduit,
+        name: "binder",
+        props: hashmap!("kind" => true),
+    };
+
     static ref PIPE: ConcreteType = ConcreteType {
         pvm_ty: Conduit,
         name: "pipe",
@@ -350,6 +356,13 @@ impl DefineProvType {
                 let mut p = pvm.declare(&PIPE, uuid, None);
                 pvm.meta(&mut p, "unique_id", unique_id)?;
             },
+            ProvTypeObject::Binder {
+                kind,
+                properties: _,
+            } => {
+                let mut b = pvm.declare(&BINDER, uuid, None);
+                pvm.meta(&mut b, "kind", &format!("{:?}", kind))?;
+            },
             _ => {}
         };
         Ok(())
@@ -410,6 +423,7 @@ impl Parseable for ProvMessage {
         pvm.new_concrete(&PROGRAM);
         pvm.new_concrete(&FILE);
         pvm.new_concrete(&NETFLOW);
+        pvm.new_concrete(&BINDER);
         pvm.new_concrete(&PIPE);
     }
 
