@@ -21,7 +21,11 @@ lazy_static! {
                         "start_time" => false,
                         ),
     };
-
+    static ref OBJ: ConcreteType = ConcreteType {
+        pvm_ty: Object,
+        name: "object",
+        props: hashmap!("obj_type" => true),
+    };
     static ref FILE: ConcreteType = ConcreteType {
         pvm_ty: Store,
         name: "file",
@@ -278,6 +282,24 @@ pub struct DefineProv {
     prev_device_id: Option<String>,
 }
 
+impl DefineProv {
+    fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
+        let prog_uuid = program_uuid(&self.prog_id);
+        let prov_uuid = provtype_uuid(&self.prov_type);
+        let prog = pvm.declare(&PROGRAM, prog_uuid, None);
+        let prov = pvm.declare(&FILE, prov_uuid, None);
+        match &self.flow {
+            ProvFlow::Src => {
+                pvm.source(&prog, &prov);
+            }
+            ProvFlow::Sink => {
+                pvm.sink(&prog, &prov);
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct DefineProvSet {
     id: u32,
@@ -424,6 +446,7 @@ impl Parseable for ProvMessage {
         pvm.new_concrete(&PROGRAM);
         pvm.new_concrete(&FILE);
         pvm.new_concrete(&NETFLOW);
+        pvm.new_concrete(&OBJ);
         pvm.new_concrete(&BINDER);
         pvm.new_concrete(&PIPE);
     }
@@ -432,7 +455,7 @@ impl Parseable for ProvMessage {
         match self {
             ProvMessage::DefineAppPpt(_) => Ok(()),
             ProvMessage::DefineProgram(m) => m.parse(pvm),
-            ProvMessage::DefineProv(_) => Ok(()),
+            ProvMessage::DefineProv(m) => m.parse(pvm),
             ProvMessage::DefineProvSet(_) => Ok(()),
             ProvMessage::DefineProvType(m) => m.parse(pvm),
             ProvMessage::DefineSysCall(_) => Ok(()),
