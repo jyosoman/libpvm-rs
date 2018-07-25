@@ -13,10 +13,6 @@ use ingest::{
 use uuid::Uuid;
 
 lazy_static! {
-    static ref HOST_NAMESPACE: Uuid = Uuid::new_v5(&Uuid::nil(), "host");
-    static ref PROGRAM_NAMESPACE: Uuid = Uuid::new_v5(&Uuid::nil(), "program");
-    static ref PROVTYPE_NAMESPACE: Uuid = Uuid::new_v5(&Uuid::nil(), "provtype");
-
     static ref PROGRAM: ConcreteType = ConcreteType {
         pvm_ty: Actor,
         name: "program",
@@ -55,6 +51,30 @@ lazy_static! {
         name: "pipe",
         props: hashmap!("unique_id" => true),
     };
+}
+
+fn host_uuid<T: Sized + ToString>(val: &T) -> Uuid {
+    // uuid5(nil(), "host");
+    const NAMESPACE: Uuid = Uuid::from_uuid_bytes([
+        210, 81, 42, 115, 248, 247, 90, 39, 158, 117, 30, 255, 32, 120, 183, 233,
+    ]);
+    Uuid::new_v5(&NAMESPACE, &val.to_string())
+}
+
+fn program_uuid<T: Sized + ToString>(val: &T) -> Uuid {
+    // uuid5(nil(), "program");
+    const NAMESPACE: Uuid = Uuid::from_uuid_bytes([
+        157, 164, 22, 74, 77, 214, 80, 214, 163, 225, 29, 149, 208, 148, 151, 40,
+    ]);
+    Uuid::new_v5(&NAMESPACE, &val.to_string())
+}
+
+fn provtype_uuid<T: Sized + ToString>(val: &T) -> Uuid {
+    // uuid5(nil(), "provtype");
+    const NAMESPACE: Uuid = Uuid::from_uuid_bytes([
+        102, 216, 237, 29, 32, 151, 91, 120, 182, 206, 122, 131, 250, 252, 206, 240,
+    ]);
+    Uuid::new_v5(&NAMESPACE, &val.to_string())
 }
 
 #[derive(Debug, Deserialize)]
@@ -242,16 +262,8 @@ pub struct DefineProgram {
 
 impl DefineProgram{
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
-        let mut p = pvm.declare(
-            &PROGRAM,
-            Uuid::new_v5(&PROGRAM_NAMESPACE, &self.id.to_string()),
-            None,
-        );
-        pvm.meta(
-            &mut p,
-            "host_uuid",
-            &Uuid::new_v5(&HOST_NAMESPACE, &self.host_id.to_string()).hyphenated(),
-        )?;
+        let mut p = pvm.declare(&PROGRAM, program_uuid(&self.id), None);
+        pvm.meta(&mut p, "host_uuid", &host_uuid(&self.host_id).hyphenated())?;
         pvm.meta(&mut p, "pname", &self.pname)?;
         pvm.meta(&mut p, "pid", &self.pid)?;
         pvm.meta(&mut p, "ppid", &self.ppid)?;
@@ -324,7 +336,7 @@ pub struct DefineProvType {
 
 impl DefineProvType {
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
-        let uuid = Uuid::new_v5(&PROVTYPE_NAMESPACE, &self.id.to_string());
+        let uuid = provtype_uuid(&self.id);
         match &self.object {
             ProvTypeObject::File {
                 path,

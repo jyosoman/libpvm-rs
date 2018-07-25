@@ -1,6 +1,7 @@
 #![feature(box_patterns)]
 #![feature(nll)]
 #![feature(specialization)]
+#![feature(const_fn)]
 
 extern crate pvm_cfg as cfg;
 extern crate pvm_data as data;
