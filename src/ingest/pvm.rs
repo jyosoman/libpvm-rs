@@ -308,10 +308,10 @@ impl PVM {
     pub fn name(&mut self, obj: &DataNode, name: Name) -> RelGuard {
         let n_node = self.decl_name(name);
         match obj.pvm_ty() {
-            Store | EditSession => {
-                let cont = self.decl_fcont(obj);
-                self._named(&*cont, &n_node)
-            }
+            //          Store | EditSession => {
+            //              let cont = self.decl_fcont(obj);
+            //              self._named(&*cont, &n_node)
+            //          }
             _ => self._named(obj, &n_node),
         }
     }

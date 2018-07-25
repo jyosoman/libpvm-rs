@@ -9,7 +9,7 @@ use views::{View, ViewCoordinator, ViewInst};
 
 use neo4j::Neo4jDB;
 
-use trace::cadets::TraceEvent;
+use trace::{cadets::TraceEvent, clearscope::ProvMessage};
 
 type EngineResult<T> = Result<T, &'static str>;
 
@@ -101,7 +101,7 @@ impl Engine {
 
     pub fn ingest_stream(&mut self, stream: IOStream) -> Result<(), &'static str> {
         if let Some(ref mut pipeline) = self.pipeline {
-            ingest_stream::<_, TraceEvent>(stream, &mut pipeline.pvm);
+            ingest_stream::<_, ProvMessage>(stream, &mut pipeline.pvm);
             Ok(())
         } else {
             Err("Pipeline not running")
