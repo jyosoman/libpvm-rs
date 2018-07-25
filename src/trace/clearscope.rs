@@ -1,9 +1,6 @@
 use std::{collections::HashMap, fmt};
 
-use data::{
-    node_types::{ConcreteType, Name, PVMDataType::*},
-    MetaStore,
-};
+use data::node_types::{ConcreteType, Name, PVMDataType::*};
 
 use ingest::{
     pvm::{PVMError, PVM},
@@ -33,19 +30,16 @@ lazy_static! {
                         "size_in_bytes" => true,
                         ),
     };
-
     static ref NETFLOW: ConcreteType = ConcreteType {
         pvm_ty: Conduit,
         name: "netflow",
         props: hashmap!("protocol" => true),
     };
-
     static ref BINDER: ConcreteType = ConcreteType {
         pvm_ty: Conduit,
         name: "binder",
         props: hashmap!("kind" => true),
     };
-
     static ref PIPE: ConcreteType = ConcreteType {
         pvm_ty: Conduit,
         name: "pipe",
@@ -260,7 +254,7 @@ pub struct DefineProgram {
     start_time: i64,
 }
 
-impl DefineProgram{
+impl DefineProgram {
     fn parse(&self, pvm: &mut PVM) -> Result<(), PVMError> {
         let mut p = pvm.declare(&PROGRAM, program_uuid(&self.id), None);
         pvm.meta(&mut p, "host_uuid", &host_uuid(&self.host_id).hyphenated())?;
@@ -351,7 +345,7 @@ impl DefineProvType {
                 if let Some(sb) = size_in_bytes {
                     pvm.meta(&mut f, "size_in_bytes", sb)?;
                 }
-            },
+            }
             ProvTypeObject::Network {
                 local_address,
                 local_port,
@@ -361,20 +355,15 @@ impl DefineProvType {
                 let mut n = pvm.declare(&NETFLOW, uuid, None);
                 pvm.name(&n, Name::Net(local_address.clone(), *local_port as u16));
                 pvm.meta(&mut n, "protocol", protocol)?;
-            },
-            ProvTypeObject::Pipe {
-                unique_id,
-            } => {
+            }
+            ProvTypeObject::Pipe { unique_id } => {
                 let mut p = pvm.declare(&PIPE, uuid, None);
                 pvm.meta(&mut p, "unique_id", unique_id)?;
-            },
-            ProvTypeObject::Binder {
-                kind,
-                properties: _,
-            } => {
+            }
+            ProvTypeObject::Binder { kind, .. } => {
                 let mut b = pvm.declare(&BINDER, uuid, None);
                 pvm.meta(&mut b, "kind", &format!("{:?}", kind))?;
-            },
+            }
             _ => {}
         };
         Ok(())
