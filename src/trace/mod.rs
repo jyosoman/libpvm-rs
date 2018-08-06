@@ -71,4 +71,3 @@ macro_rules! fields_to_map {
 }
 
 pub mod cadets;
-pub mod clearscope;
