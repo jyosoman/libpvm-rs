@@ -84,7 +84,7 @@ impl View for CSVView {
     ) -> ViewInst {
         let mut out = ZipWriter::new(File::create(&params["path"]).unwrap());
         let thr = thread::spawn(move || {
-            out.start_file("dbinfo.csv", FileOptions::default())
+            out.start_file("db/dbinfo.csv", FileOptions::default())
                 .unwrap();
             writeln!(out, ":LABEL,pvm_version:int,source").unwrap();
             writeln!(out, "DBInfo,2,libPVM-{}", ::VERSION).unwrap();
@@ -93,7 +93,7 @@ impl View for CSVView {
             let mut rels: HashMap<Cow<'static, str>, HashMap<ID, Rel>> = HashMap::new();
             let mut node_ty: HashMap<&'static ConcreteType, Vec<&str>> = HashMap::new();
 
-            out.start_file("types.csv", FileOptions::default()).unwrap();
+            out.start_file("db/types.csv", FileOptions::default()).unwrap();
             writeln!(out, ":LABEL,name,abstract,props:string[]").unwrap();
 
             for evt in stream {
@@ -124,7 +124,7 @@ impl View for CSVView {
                 }
             }
 
-            out.start_file("hydrate.sh", FileOptions::default().unix_permissions(0o755))
+            out.start_file("db/hydrate.sh", FileOptions::default().unix_permissions(0o755))
                 .unwrap();
             {
                 write!(out, "{}", HYDRATE_SH_PRE).unwrap();
@@ -141,7 +141,7 @@ impl View for CSVView {
             }
 
             for (fname, rlist) in rels {
-                out.start_file(fname, FileOptions::default()).unwrap();
+                out.start_file(format!("db/{}", fname), FileOptions::default()).unwrap();
                 for (i, r) in rlist.values().enumerate() {
                     if i == 0 {
                         write!(out, "db_id,:START_ID,:END_ID,:TYPE").unwrap();
@@ -176,7 +176,7 @@ impl View for CSVView {
                 }
             }
             for (fname, nlist) in nodes {
-                out.start_file(fname, FileOptions::default()).unwrap();
+                out.start_file(format!("db/{}", fname), FileOptions::default()).unwrap();
                 for (i, n) in nlist.values().enumerate() {
                     if i == 0 {
                         write!(out, "db_id:ID,:LABEL").unwrap();
