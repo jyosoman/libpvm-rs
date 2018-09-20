@@ -2,7 +2,7 @@ use ingest::{ingest_stream, pvm::PVM};
 use iostream::IOStream;
 use neo4j_glue::{CSVView, Neo4JView};
 use query::low::count_processes;
-use std::{collections::HashMap, sync::mpsc};
+use std::{borrow::Cow, collections::HashMap, sync::mpsc};
 
 use cfg::Config;
 use views::{View, ViewCoordinator, ViewInst};
@@ -11,7 +11,7 @@ use neo4j::Neo4jDB;
 
 use trace::cadets::TraceEvent;
 
-type EngineResult<T> = Result<T, &'static str>;
+type EngineResult<T> = Result<T, Cow<'static, str>>;
 
 pub struct Pipeline {
     pvm: PVM,
@@ -39,7 +39,7 @@ impl Engine {
 
     pub fn init_pipeline(&mut self) -> EngineResult<()> {
         if self.pipeline.is_some() {
-            return Err("Pipeline already running");
+            return Err("Pipeline already running".into());
         }
         let (send, recv) = mpsc::sync_channel(100_000);
         let mut view_ctrl = ViewCoordinator::new(recv);
@@ -61,7 +61,7 @@ impl Engine {
             pipeline.view_ctrl.shutdown();
             Ok(())
         } else {
-            Err("Pipeline not running")
+            Err("Pipeline not running".into())
         }
     }
 
@@ -73,7 +73,7 @@ impl Engine {
         if let Some(ref pipeline) = self.pipeline {
             Ok(pipeline.view_ctrl.list_view_types())
         } else {
-            Err("Pipeline not running")
+            Err("Pipeline not running".into())
         }
     }
 
@@ -87,7 +87,7 @@ impl Engine {
                 .view_ctrl
                 .create_view_inst(view_id, params, &self.cfg))
         } else {
-            Err("Pipeline not running")
+            Err("Pipeline not running".into())
         }
     }
 
@@ -95,7 +95,7 @@ impl Engine {
         if let Some(ref pipeline) = self.pipeline {
             Ok(pipeline.view_ctrl.list_view_insts())
         } else {
-            Err("Pipeline not running")
+            Err("Pipeline not running".into())
         }
     }
 
@@ -104,7 +104,7 @@ impl Engine {
             ingest_stream::<_, TraceEvent>(stream, &mut pipeline.pvm);
             Ok(())
         } else {
-            Err("Pipeline not running")
+            Err("Pipeline not running".into())
         }
     }
 
