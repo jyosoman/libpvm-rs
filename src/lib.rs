@@ -2,9 +2,9 @@
 #![feature(nll)]
 #![feature(specialization)]
 
-extern crate pvm_cfg as cfg;
-extern crate pvm_data as data;
-extern crate pvm_views as views;
+pub extern crate pvm_cfg as cfg;
+pub extern crate pvm_data as data;
+pub extern crate pvm_views as views;
 
 extern crate chrono;
 #[macro_use]
