@@ -69,7 +69,7 @@ impl Engine {
         println!("libPVM Config: {:?}", self.cfg);
     }
 
-    pub fn list_view_types(&self) -> Result<Vec<&View>, &'static str> {
+    pub fn list_view_types(&self) -> EngineResult<Vec<&View>> {
         if let Some(ref pipeline) = self.pipeline {
             Ok(pipeline.view_ctrl.list_view_types())
         } else {
@@ -91,7 +91,7 @@ impl Engine {
         &mut self,
         view_id: usize,
         params: HashMap<String, String>,
-    ) -> Result<usize, &'static str> {
+    ) -> EngineResult<usize> {
         if let Some(ref mut pipeline) = self.pipeline {
             Ok(pipeline
                 .view_ctrl
@@ -101,7 +101,7 @@ impl Engine {
         }
     }
 
-    pub fn list_running_views(&self) -> Result<Vec<&ViewInst>, &'static str> {
+    pub fn list_running_views(&self) -> EngineResult<Vec<&ViewInst>> {
         if let Some(ref pipeline) = self.pipeline {
             Ok(pipeline.view_ctrl.list_view_insts())
         } else {
@@ -109,7 +109,7 @@ impl Engine {
         }
     }
 
-    pub fn ingest_stream(&mut self, stream: IOStream) -> Result<(), &'static str> {
+    pub fn ingest_stream(&mut self, stream: IOStream) -> EngineResult<()> {
         if let Some(ref mut pipeline) = self.pipeline {
             ingest_stream::<_, TraceEvent>(stream, &mut pipeline.pvm);
             Ok(())
