@@ -1,3 +1,3 @@
 [submodule "modules/rusty-bolt"]
 	path = modules/rusty-bolt
-	url = git@github.com:HarkonenBade/rusty-bolt.git
+	url = https://github.com/HarkonenBade/rusty-bolt.git
