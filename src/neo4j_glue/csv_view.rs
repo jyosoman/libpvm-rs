@@ -41,9 +41,13 @@ echo -n "Building indexes..."
 cypher-shell -u$NEO4J_USER -p$NEO4J_PASS >/dev/null <<EOF
 CREATE INDEX ON :Node(db_id);
 CREATE INDEX ON :Actor(uuid);
+CREATE INDEX ON :Object(uuid)
 CREATE INDEX ON :Store(uuid);
 CREATE INDEX ON :EditSession(uuid);
 CREATE INDEX ON :Conduit(uuid);
+CREATE INDEX ON :StoreCont(uuid);
+CREATE INDEX ON :Path(path);
+CREATE INDEX ON :Net(addr);
 CALL db.awaitIndexes();
 EOF
 echo "Done"
