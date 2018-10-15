@@ -289,9 +289,9 @@ impl AuditEvent {
         if let Some(fdpath) = self.fdpath.clone() {
             pvm.name(&f, Name::Path(fdpath));
         }
-        if let Some(flags) = self.arg_mem_flags.clone() {
+        if let Some(ref flags) = self.arg_mem_flags {
             if flags.contains(&String::from("PROT_WRITE")) {
-                if let Some(share_flags) = self.arg_sharing_flags.clone() {
+                if let Some(ref share_flags) = self.arg_sharing_flags {
                     if !share_flags.contains(&String::from("MAP_PRIVATE")) {
                         pvm.sinkstart(pro, &f);
                     }
