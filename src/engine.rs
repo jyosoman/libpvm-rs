@@ -118,6 +118,15 @@ impl Engine {
         }
     }
 
+    pub fn init_record<T:Parseable>(&mut self) -> EngineResult<()> {
+        if let Some(ref mut pipeline) = self.pipeline {
+            T::init(&mut pipeline.pvm);
+            Ok(())
+        } else {
+            Err("Pipeline not running".into())
+        }
+    }
+
     pub fn ingest_record<T:Parseable>(&mut self, rec: &T) -> EngineResult<()> {
         if let Some(ref mut pipeline) = self.pipeline {
             rec.parse(&mut pipeline.pvm).map_err(|e| e.to_string().into())
