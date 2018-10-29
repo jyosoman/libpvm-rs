@@ -2,6 +2,7 @@ extern crate pvm_cfg as cfg;
 extern crate pvm_data as data;
 
 use std::{
+    any::Any,
     collections::HashMap,
     fmt::Debug,
     sync::{mpsc, Arc, Mutex},
@@ -20,11 +21,26 @@ pub enum DBTr {
     UpdateRel(Rel),
 }
 
+pub type ViewParams = HashMap<String, Box<Any>>;
+
+pub trait ViewParamsExt {
+    fn get_or_def<'a>(&'a self, key: &str, def: &'a str) -> &'a str;
+}
+
+impl ViewParamsExt for ViewParams {
+    fn get_or_def<'a>(&'a self, key: &str, def: &'a str) -> &'a str {
+        self.get(key)
+            .and_then(|val| val.downcast_ref::<String>())
+            .map(|val| val as &str)
+            .unwrap_or(def)
+    }
+}
+
 #[derive(Debug)]
 pub struct ViewInst {
     pub id: usize,
     pub vtype: usize,
-    pub params: HashMap<String, String>,
+    pub params: ViewParams,
     pub handle: JoinHandle<()>,
 }
 
@@ -35,7 +51,7 @@ impl ViewInst {
     pub fn vtype(&self) -> usize {
         self.vtype
     }
-    pub fn params(&self) -> &HashMap<String, String> {
+    pub fn params(&self) -> &ViewParams {
         &self.params
     }
     fn join(self) {
@@ -54,7 +70,7 @@ pub trait View: Debug {
     fn create(
         &self,
         id: usize,
-        params: HashMap<String, String>,
+        params: ViewParams,
         cfg: &Config,
         stream: mpsc::Receiver<Arc<DBTr>>,
     ) -> ViewInst;
@@ -111,12 +127,7 @@ impl ViewCoordinator {
         self.insts.iter().collect()
     }
 
-    pub fn create_view_inst(
-        &mut self,
-        id: usize,
-        params: HashMap<String, String>,
-        cfg: &Config,
-    ) -> usize {
+    pub fn create_view_inst(&mut self, id: usize, params: ViewParams, cfg: &Config) -> usize {
         let iid = self.viid_gen;
         self.viid_gen += 1;
         let (w, r) = mpsc::sync_channel(1000);

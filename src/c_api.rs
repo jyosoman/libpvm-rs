@@ -2,11 +2,10 @@ use iostream::IOStream;
 use libc::{c_char, malloc};
 
 use std::{
+    any::Any,
     collections::HashMap,
     ffi::CStr,
-    hash::Hash,
     mem::size_of,
-    ops::Deref,
     os::unix::io::{FromRawFd, RawFd},
     ptr, slice,
 };
@@ -65,24 +64,38 @@ pub struct Config {
 
 pub struct OpusHdl(engine::Engine);
 
-fn keyval_arr_to_hashmap(ptr: *const KeyVal, n: usize) -> HashMap<String, String> {
+fn keyval_arr_to_hashmap(ptr: *const KeyVal, n: usize) -> HashMap<String, Box<Any>> {
     let mut ret = HashMap::with_capacity(n);
     if !ptr.is_null() {
         let s = unsafe { slice::from_raw_parts(ptr, n) };
         for kv in s {
             ret.insert(
                 string_from_c_char(kv.key).unwrap(),
-                string_from_c_char(kv.val).unwrap(),
+                Box::new(string_from_c_char(kv.val).unwrap()) as Box<Any>,
             );
         }
     }
     ret
 }
 
-fn hashmap_to_keyval_arr<T: Deref<Target = str> + Eq + Hash>(
-    h: &HashMap<T, T>,
+fn view_params_to_keyval_arr(h: &HashMap<&'static str, &'static str>) -> (*mut KeyVal, usize) {
+    iter_to_keyval_arr(h.iter().map(|(k, v)| (*k, *v)), h.len())
+}
+
+fn view_inst_params_to_keyval_arr(h: &HashMap<String, Box<Any>>) -> (*mut KeyVal, usize) {
+    iter_to_keyval_arr(
+        h.iter().map(|(k, v)| match v.downcast_ref::<String>() {
+            Some(r) => (k as &str, r as &str),
+            None => (k as &str, "<non-string>"),
+        }),
+        h.len(),
+    )
+}
+
+fn iter_to_keyval_arr<'a, 'b, T: IntoIterator<Item = (&'a str, &'b str)>>(
+    h: T,
+    len: usize,
 ) -> (*mut KeyVal, usize) {
-    let len = h.len();
     let data = unsafe { malloc(len * size_of::<KeyVal>()) as *mut KeyVal };
     let s = unsafe { slice::from_raw_parts_mut(data, len) };
     for ((k, v), kv) in h.into_iter().zip(s) {
@@ -178,7 +191,7 @@ pub unsafe extern "C" fn opus_list_view_types(hdl: *const OpusHdl, out: *mut *mu
         c_view.id = view.id();
         c_view.name = string_to_c_char(view.name());
         c_view.desc = string_to_c_char(view.desc());
-        let (params, num) = hashmap_to_keyval_arr(&view.params());
+        let (params, num) = view_params_to_keyval_arr(&view.params());
         c_view.num_parameters = num;
         c_view.parameters = params;
     }
@@ -264,7 +277,7 @@ pub unsafe extern "C" fn opus_list_view_inst(
     for (view, c_view) in views.into_iter().zip(s) {
         c_view.id = view.id();
         c_view.vtype = view.vtype();
-        let (params, num) = hashmap_to_keyval_arr(view.params());
+        let (params, num) = view_inst_params_to_keyval_arr(view.params());
         c_view.num_parameters = num;
         c_view.parameters = params;
     }
