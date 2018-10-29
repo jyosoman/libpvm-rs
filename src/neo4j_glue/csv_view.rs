@@ -16,7 +16,7 @@ use data::{
     rel_types::Rel,
     HasDst, HasID, HasSrc, ID,
 };
-use views::{DBTr, View, ViewInst};
+use views::*;
 
 use serde_json;
 
@@ -82,11 +82,12 @@ impl View for CSVView {
     fn create(
         &self,
         id: usize,
-        params: HashMap<String, String>,
+        params: ViewParams,
         _cfg: &Config,
         stream: Receiver<Arc<DBTr>>,
     ) -> ViewInst {
-        let mut out = ZipWriter::new(File::create(&params["path"]).unwrap());
+        let path = params.get_or_def("path", "./prov_csv.zip");
+        let mut out = ZipWriter::new(File::create(path).unwrap());
         let thr = thread::spawn(move || {
             out.start_file("db/n_dbinfo.csv", FileOptions::default())
                 .unwrap();

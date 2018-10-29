@@ -2,10 +2,10 @@ use ingest::{ingest_stream, pvm::PVM, Parseable};
 use iostream::IOStream;
 use neo4j_glue::{CSVView, Neo4JView};
 use query::low::count_processes;
-use std::{borrow::Cow, collections::HashMap, sync::mpsc};
+use std::{borrow::Cow, sync::mpsc};
 
 use cfg::Config;
-use views::{View, ViewCoordinator, ViewInst};
+use views::{View, ViewCoordinator, ViewInst, ViewParams};
 
 use neo4j::Neo4jDB;
 
@@ -85,11 +85,7 @@ impl Engine {
         }
     }
 
-    pub fn create_view_by_id(
-        &mut self,
-        view_id: usize,
-        params: HashMap<String, String>,
-    ) -> EngineResult<usize> {
+    pub fn create_view_by_id(&mut self, view_id: usize, params: ViewParams) -> EngineResult<usize> {
         if let Some(ref mut pipeline) = self.pipeline {
             Ok(pipeline
                 .view_ctrl

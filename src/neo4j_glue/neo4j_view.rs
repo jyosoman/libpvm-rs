@@ -9,8 +9,8 @@ use std::{
 use data::ID;
 
 use cfg::Config;
-use neo4j_glue::{ToDBNode, ToDBRel};
-use views::{DBTr, View, ViewInst};
+use neo4j_glue::{IntoVal, ToDBNode, ToDBRel};
+use views::*;
 
 const BATCH_SIZE: usize = 1000;
 const TR_SIZE: usize = 100_000;
@@ -41,14 +41,14 @@ impl View for Neo4JView {
     fn create(
         &self,
         id: usize,
-        params: HashMap<String, String>,
+        params: ViewParams,
         cfg: &Config,
         stream: Receiver<Arc<DBTr>>,
     ) -> ViewInst {
         let mut db = {
-            let addr = params.get("addr").unwrap_or(&cfg.db_server);
-            let user = params.get("user").unwrap_or(&cfg.db_user);
-            let pass = params.get("pass").unwrap_or(&cfg.db_password);
+            let addr = params.get_or_def("addr", &cfg.db_server);
+            let user = params.get_or_def("user", &cfg.db_user);
+            let pass = params.get_or_def("pass", &cfg.db_password);
             Neo4jDB::connect(addr, user, pass).unwrap()
         };
         let thr = thread::spawn(move || {
