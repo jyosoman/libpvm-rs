@@ -62,7 +62,7 @@ pub struct PVM {
     id_counter: AtomicUsize,
     open_cache: HashMap<Uuid, HashSet<Uuid>>,
     name_cache: LendingLibrary<Name, NameNode>,
-    cont_cache: HashMap<Uuid, ID>,
+//    cont_cache: HashMap<Uuid, ID>,
     cur_ctx: CtxStore,
     pub unparsed_events: HashSet<String>,
 }
@@ -79,7 +79,7 @@ impl PVM {
             id_counter: AtomicUsize::new(1),
             open_cache: HashMap::new(),
             name_cache: LendingLibrary::new(),
-            cont_cache: HashMap::new(),
+//            cont_cache: HashMap::new(),
             cur_ctx: CtxStore::Node(ID::new(0)),
             unparsed_events: HashSet::new(),
         }
@@ -291,7 +291,7 @@ impl PVM {
         self.name_cache.lend(&name).unwrap()
     }
 
-    fn decl_fcont(&mut self, ent: &DataNode) -> NodeGuard {
+    /*fn decl_fcont(&mut self, ent: &DataNode) -> NodeGuard {
         let id = {
             if !self.cont_cache.contains_key(&ent.uuid()) {
                 let id = self._nextid();
@@ -305,15 +305,15 @@ impl PVM {
             }
         };
         self.node_cache.lend(&id).unwrap()
-    }
+    }*/
 
     pub fn name(&mut self, obj: &DataNode, name: Name) -> RelGuard {
         let n_node = self.decl_name(name);
         match obj.pvm_ty() {
-            Store | EditSession => {
+            /*Store | EditSession => {
                 let cont = self.decl_fcont(obj);
                 self._named(&*cont, &n_node)
-            }
+            }*/
             _ => self._named(obj, &n_node),
         }
     }
