@@ -192,9 +192,8 @@ impl AuditEvent {
     fn posix_fork(&self, pro: &NodeGuard, pvm: &mut PVM) -> Result<(), PVMError> {
         let ret_objuuid1 = field!(self.ret_objuuid1);
 
-        let mut ch = pvm.declare(&PROCESS, ret_objuuid1, None);
+        let mut ch = pvm.derive(pro, ret_objuuid1);
 
-        ch.meta.merge(&pro.meta.snapshot(pvm.ctx()));
         pvm.meta(&mut ch, "pid", &self.retval);
         pvm.source(&ch, pro);
         Ok(())
