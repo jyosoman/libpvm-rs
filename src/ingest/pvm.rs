@@ -18,6 +18,7 @@ use data::{
 };
 use views::DBTr;
 
+use either::Either;
 use lending_library::{LendingLibrary, Loan};
 use uuid::Uuid;
 
@@ -197,6 +198,26 @@ impl PVM {
         }
     }
 
+    fn _version(&mut self, src: &DataNode, choice: Either<Uuid, PVMDataType>) -> NodeGuard {
+        let ctx = self.ctx();
+        let dst = match choice {
+            Either::Left(uuid) => {
+                let mut dst = self.declare(src.ty(), uuid, None);
+                dst.meta.merge(&src.meta.snapshot(ctx));
+                dst
+            }
+            Either::Right(pvm_ty) => {
+                self.add(pvm_ty, src.ty(), src.uuid(), Some(src.meta.snapshot(ctx)))
+            }
+        };
+        self._inf(src, &*dst, PVMOps::Version);
+        dst
+    }
+
+    pub fn derive(&mut self, src: &DataNode, dst: Uuid) -> NodeGuard {
+        self._version(src, Either::Left(dst))
+    }
+
     pub fn source(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
         assert_eq!(act.pvm_ty(), &Actor);
         self._inf(ent, act, PVMOps::Source)
@@ -219,9 +240,7 @@ impl PVM {
         assert_eq!(act.pvm_ty(), &Actor);
         match ent.pvm_ty() {
             Store => {
-                let ctx = self.ctx();
-                let f = self.add(Store, ent.ty(), ent.uuid(), Some(ent.meta.snapshot(ctx)));
-                self._inf(ent, &*f, PVMOps::Version);
+                let f = self._version(ent, Either::Right(Store));
                 self._inf(act, &*f, PVMOps::Sink)
             }
             _ => self._inf(act, ent, PVMOps::Sink),
@@ -232,15 +251,8 @@ impl PVM {
         assert_eq!(act.pvm_ty(), &Actor);
         match ent.pvm_ty() {
             Store => {
-                let ctx = self.ctx();
-                let es = self.add(
-                    EditSession,
-                    ent.ty(),
-                    ent.uuid(),
-                    Some(ent.meta.snapshot(ctx)),
-                );
+                let es = self._version(ent, Either::Right(EditSession));
                 self.open_cache.insert(ent.uuid(), hashset!(act.uuid()));
-                self._inf(ent, &*es, PVMOps::Version);
                 self._inf(act, &*es, PVMOps::Sink)
             }
             EditSession => {
@@ -275,9 +287,7 @@ impl PVM {
                 .unwrap()
                 .remove(&act.uuid());
             if self.open_cache[&ent.uuid()].is_empty() {
-                let ctx = self.ctx();
-                let f = self.add(Store, ent.ty(), ent.uuid(), Some(ent.meta.snapshot(ctx)));
-                self._inf(ent, &*f, PVMOps::Version);
+                self._version(ent, Either::Right(Store));
             }
         }
     }
