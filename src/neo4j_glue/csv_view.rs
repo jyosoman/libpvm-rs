@@ -225,7 +225,7 @@ impl View for CSVView {
                         Node::Schema(s) => match s {
                             SchemaNode::Data(_, ty) => {
                                 write_str(&mut out, ty.name);
-                                let v: Vec<&str> = ty.props.keys().map(|v| *v).collect();
+                                let v: Vec<&str> = ty.props.keys().cloned().collect();
                                 write!(out, ",{},{}", ty.pvm_ty, v.join(";")).unwrap();
                             }
                             SchemaNode::Context(_, ty) => {

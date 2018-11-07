@@ -153,7 +153,7 @@ impl ToDBNode for Node {
             },
             Node::Schema(s) => match s {
                 SchemaNode::Data(_, ty) => {
-                    let props: Vec<&str> = ty.props.keys().map(|v| *v).collect();
+                    let props: Vec<&str> = ty.props.keys().cloned().collect();
                     hashmap!("name".into() => Value::from(ty.name),
                              "base".into() => ty.pvm_ty.into_val(),
                              "props".into() => Value::from(props))
