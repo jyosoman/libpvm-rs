@@ -44,10 +44,6 @@ pub enum ConnectDir {
     BiDirectional,
 }
 
-pub type NodeGuard = Loan<ID, DataNode>;
-pub type RelGuard = Loan<(&'static str, ID, ID), Rel>;
-type NameGuard = Loan<Name, NameNode>;
-
 enum CtxStore {
     Node(ID),
     Lazy(&'static ContextType, HashMap<&'static str, String>),
@@ -59,7 +55,8 @@ pub struct PVM {
     ctx_type_cache: HashSet<&'static ContextType>,
     uuid_cache: HashMap<Uuid, ID>,
     node_cache: LendingLibrary<ID, DataNode>,
-    rel_cache: LendingLibrary<(&'static str, ID, ID), Rel>,
+    rel_src_dst_cache: HashMap<(&'static str, ID, ID), ID>,
+    rel_cache: LendingLibrary<ID, Rel>,
     id_counter: AtomicUsize,
     open_cache: HashMap<Uuid, HashSet<Uuid>>,
     name_cache: LendingLibrary<Name, NameNode>,
@@ -76,6 +73,7 @@ impl PVM {
             ctx_type_cache: HashSet::new(),
             uuid_cache: HashMap::new(),
             node_cache: LendingLibrary::new(),
+            rel_src_dst_cache: HashMap::new(),
             rel_cache: LendingLibrary::new(),
             id_counter: AtomicUsize::new(1),
             open_cache: HashMap::new(),
@@ -116,26 +114,34 @@ impl PVM {
         ID::new(self.id_counter.fetch_add(1, Ordering::Relaxed) as u64)
     }
 
+    fn _node(&mut self, id: ID) -> Loan<ID, DataNode> {
+        self.node_cache.lend(&id).unwrap()
+    }
+
+    fn _rel(&mut self, id: ID) -> Loan<ID, Rel> {
+        self.rel_cache.lend(&id).unwrap()
+    }
+
     fn _decl_rel<T: RelGenerable + Enumerable<Target = Rel>, S: Fn(ID) -> T::Init>(
         &mut self,
         src: ID,
         dst: ID,
         init: S,
-    ) -> RelGuard {
+    ) -> ID {
         let triple = (stringify!(T), src, dst);
-        if self.rel_cache.contains_key(&triple) {
-            self.rel_cache.lend(&triple).unwrap()
+        if self.rel_src_dst_cache.contains_key(&triple) {
+            self.rel_src_dst_cache[&triple]
         } else {
             let id = self._nextid();
             let rel = T::new(id, src, dst, init(self.ctx())).enumerate();
-            self.rel_cache.insert(triple, rel);
-            let r = self.rel_cache.lend(&triple).unwrap();
-            self.db.create_rel(&*r);
-            r
+            self.db.create_rel(&rel);
+            self.rel_src_dst_cache.insert(triple, id);
+            self.rel_cache.insert(id, rel);
+            id
         }
     }
 
-    fn _inf(&mut self, src: &impl HasID, dst: &impl HasID, pvm_op: PVMOps) -> RelGuard {
+    fn _inf(&mut self, src: impl HasID, dst: impl HasID, pvm_op: PVMOps) -> ID {
         self._decl_rel::<Inf, _>(src.get_db_id(), dst.get_db_id(), |ctx| InfInit {
             pvm_op,
             ctx,
@@ -143,7 +149,7 @@ impl PVM {
         })
     }
 
-    fn _named(&mut self, src: &impl HasID, dst: &NameNode) -> RelGuard {
+    fn _named(&mut self, src: impl HasID, dst: &NameNode) -> ID {
         self._decl_rel::<Named, _>(src.get_db_id(), dst.get_db_id(), |ctx| NamedInit {
             start: ctx,
             end: ID::new(0),
@@ -168,17 +174,16 @@ impl PVM {
         ty: &'static ConcreteType,
         uuid: Uuid,
         init: Option<MetaStore>,
-    ) -> NodeGuard {
+    ) -> ID {
         assert!(self.type_cache.contains(&ty));
         let id = self._nextid();
         let node = DataNode::new(pvm_ty, ty, id, uuid, self.ctx(), init);
         if let Some(nid) = self.uuid_cache.insert(uuid, id) {
             self.node_cache.remove(&nid);
         }
+        self.db.create_node(&node);
         self.node_cache.insert(id, node);
-        let n = self.node_cache.lend(&id).unwrap();
-        self.db.create_node(&*n);
-        n
+        id
     }
 
     pub fn declare(
@@ -186,7 +191,7 @@ impl PVM {
         ty: &'static ConcreteType,
         uuid: Uuid,
         init: Option<HashMap<&'static str, String>>,
-    ) -> NodeGuard {
+    ) -> ID {
         if !self.uuid_cache.contains_key(&uuid) {
             let init = match init {
                 Some(v) => Some(MetaStore::from_map(v, self.ctx(), ty)),
@@ -194,92 +199,102 @@ impl PVM {
             };
             self.add(ty.pvm_ty, ty, uuid, init)
         } else {
-            self.node_cache.lend(&self.uuid_cache[&uuid]).unwrap()
+            self.uuid_cache[&uuid]
         }
     }
 
-    fn _version(&mut self, src: &DataNode, choice: Either<Uuid, PVMDataType>) -> NodeGuard {
+    fn _version(&mut self, src: &DataNode, choice: Either<Uuid, PVMDataType>) -> ID {
         let ctx = self.ctx();
         let dst = match choice {
             Either::Left(uuid) => {
-                let mut dst = self.declare(src.ty(), uuid, None);
+                let dst_id = self.declare(src.ty(), uuid, None);
+                let mut dst = self._node(dst_id);
                 dst.meta.merge(&src.meta.snapshot(ctx));
-                dst
+                self.db.update_node(&*dst);
+                dst_id
             }
             Either::Right(pvm_ty) => {
                 self.add(pvm_ty, src.ty(), src.uuid(), Some(src.meta.snapshot(ctx)))
             }
         };
-        self._inf(src, &*dst, PVMOps::Version);
+        self._inf(src, dst, PVMOps::Version);
         dst
     }
 
-    pub fn derive(&mut self, src: &DataNode, dst: Uuid) -> NodeGuard {
-        self._version(src, Either::Left(dst))
+    pub fn derive(&mut self, src: ID, dst: Uuid) -> ID {
+        let src = self._node(src);
+        self._version(&src, Either::Left(dst))
     }
 
-    pub fn source(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
-        assert_eq!(act.pvm_ty(), &Actor);
+    pub fn source(&mut self, act: ID, ent: ID) -> ID {
+        assert_eq!(self._node(act).pvm_ty(), &Actor);
         self._inf(ent, act, PVMOps::Source)
     }
 
     pub fn source_nbytes<T: Into<i64>>(
         &mut self,
-        act: &DataNode,
-        ent: &DataNode,
+        act: ID,
+        ent: ID,
         bytes: T,
-    ) -> RelGuard {
-        assert_eq!(act.pvm_ty(), &Actor);
-        let mut r = self.source(act, ent);
+    ) -> ID {
+        assert_eq!(self._node(act).pvm_ty(), &Actor);
+        let id = self.source(act, ent);
+        let mut r = self._rel(id);
         Inf::denumerate_mut(&mut r).byte_count += bytes.into();
         self.db.update_rel(&*r);
-        r
+        id
     }
 
-    pub fn sink(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
-        assert_eq!(act.pvm_ty(), &Actor);
+    pub fn sink(&mut self, act: ID, ent: ID) -> ID {
+        let ent = self._node(ent);
+        assert_eq!(self._node(act).pvm_ty(), &Actor);
         match ent.pvm_ty() {
             Store => {
-                let f = self._version(ent, Either::Right(Store));
-                self._inf(act, &*f, PVMOps::Sink)
+                let f = self._version(&ent, Either::Right(Store));
+                self._inf(act, f, PVMOps::Sink)
             }
-            _ => self._inf(act, ent, PVMOps::Sink),
+            _ => self._inf(act, &*ent, PVMOps::Sink),
         }
     }
 
-    pub fn sinkstart(&mut self, act: &DataNode, ent: &DataNode) -> RelGuard {
+    pub fn sinkstart(&mut self, act: ID, ent: ID) -> ID {
+        let act = self._node(act);
+        let ent = self._node(ent);
         assert_eq!(act.pvm_ty(), &Actor);
         match ent.pvm_ty() {
             Store => {
-                let es = self._version(ent, Either::Right(EditSession));
+                let es = self._version(&ent, Either::Right(EditSession));
                 self.open_cache.insert(ent.uuid(), hashset!(act.uuid()));
-                self._inf(act, &*es, PVMOps::Sink)
+                self._inf(&*act, es, PVMOps::Sink)
             }
             EditSession => {
                 self.open_cache
                     .get_mut(&ent.uuid())
                     .unwrap()
                     .insert(act.uuid());
-                self._inf(act, ent, PVMOps::Sink)
+                self._inf(&*act, &*ent, PVMOps::Sink)
             }
-            _ => self._inf(act, ent, PVMOps::Sink),
+            _ => self._inf(&*act, &*ent, PVMOps::Sink),
         }
     }
 
     pub fn sinkstart_nbytes<T: Into<i64>>(
         &mut self,
-        act: &DataNode,
-        ent: &DataNode,
+        act: ID,
+        ent: ID,
         bytes: T,
-    ) -> RelGuard {
-        assert_eq!(act.pvm_ty(), &Actor);
-        let mut r = self.sinkstart(act, ent);
+    ) -> ID {
+        assert_eq!(self._node(act).pvm_ty(), &Actor);
+        let id = self.sinkstart(act, ent);
+        let mut r = self._rel(id);
         Inf::denumerate_mut(&mut r).byte_count += bytes.into();
         self.db.update_rel(&*r);
-        r
+        id
     }
 
-    pub fn sinkend(&mut self, act: &DataNode, ent: &DataNode) {
+    pub fn sinkend(&mut self, act: ID, ent: ID) {
+        let ent = self._node(ent);
+        let act = self._node(act);
         assert_eq!(act.pvm_ty(), &Actor);
         if let EditSession = ent.pvm_ty() {
             self.open_cache
@@ -287,12 +302,12 @@ impl PVM {
                 .unwrap()
                 .remove(&act.uuid());
             if self.open_cache[&ent.uuid()].is_empty() {
-                self._version(ent, Either::Right(Store));
+                self._version(&ent, Either::Right(Store));
             }
         }
     }
 
-    fn decl_name(&mut self, name: Name) -> NameGuard {
+    fn decl_name(&mut self, name: Name) -> Loan<Name, NameNode> {
         if !self.name_cache.contains_key(&name) {
             let n = NameNode::generate(self._nextid(), name.clone());
             self.db.create_node(&n);
@@ -301,57 +316,54 @@ impl PVM {
         self.name_cache.lend(&name).unwrap()
     }
 
-    fn decl_fcont(&mut self, ent: &DataNode) -> NodeGuard {
-        let id = {
-            if !self.cont_cache.contains_key(&ent.uuid()) {
-                let id = self._nextid();
-                let node = DataNode::new(StoreCont, ent.ty(), id, ent.uuid(), ID::new(0), None);
-                self.cont_cache.insert(ent.uuid(), id);
-                self.db.create_node(&node);
-                self.node_cache.insert(id, node);
-                id
-            } else {
-                self.cont_cache[&ent.uuid()]
-            }
-        };
-        self.node_cache.lend(&id).unwrap()
-    }
-
-    pub fn name(&mut self, obj: &DataNode, name: Name) -> RelGuard {
-        let n_node = self.decl_name(name);
-        match obj.pvm_ty() {
-            Store | EditSession => {
-                let cont = self.decl_fcont(obj);
-                self._named(&*cont, &n_node)
-            }
-            _ => self._named(obj, &n_node),
+    fn decl_fcont(&mut self, ent: &DataNode) -> ID {
+        if !self.cont_cache.contains_key(&ent.uuid()) {
+            let id = self._nextid();
+            let node = DataNode::new(StoreCont, ent.ty(), id, ent.uuid(), ID::new(0), None);
+            self.cont_cache.insert(ent.uuid(), id);
+            self.db.create_node(&node);
+            self.node_cache.insert(id, node);
+            id
+        } else {
+            self.cont_cache[&ent.uuid()]
         }
     }
 
-    pub fn unname(&mut self, obj: &DataNode, name: Name) -> RelGuard {
-        let mut rel = self.name(obj, name);
+    pub fn name(&mut self, obj: ID, name: Name) -> ID {
+        let obj = self._node(obj);
+        let n_node = self.decl_name(name);
+        match obj.pvm_ty() {
+            Store | EditSession => {
+                let cont = self.decl_fcont(&obj);
+                self._named(cont, &n_node)
+            }
+            _ => self._named(&*obj, &n_node),
+        }
+    }
+
+    pub fn unname(&mut self, obj: ID, name: Name) -> ID {
+        let id = self.name(obj, name);
+        let mut rel = self._rel(id);
         if let Rel::Named(ref mut n_rel) = *rel {
             n_rel.end = self.ctx();
             self.db.update_rel(&*rel);
         }
-        rel
+        id
     }
 
-    pub fn meta<T: ToString + ?Sized>(&mut self, ent: &mut DataNode, key: &'static str, val: &T) {
+    pub fn meta<T: ToString + ?Sized>(&mut self, ent: ID, key: &'static str, val: &T) {
+        let mut ent = self._node(ent);
         if !ent.ty().props.contains_key(key) {
             panic!("Setting unknown property on concrete type: {:?} does not have a property named {}.", ent.ty(), key);
         }
-        ent.meta.update(key, val, self.ctx(), ent.ty().props[key]);
-        self.db.update_node(ent);
+        let heritable = ent.ty().props[key];
+        ent.meta.update(key, val, self.ctx(), heritable);
+        self.db.update_node(&*ent);
     }
 
-    pub fn prop(&mut self, ent: &DataNode) {
-        self.db.update_node(ent)
-    }
-
-    pub fn connect(&mut self, first: &DataNode, second: &DataNode, dir: ConnectDir) {
-        assert_eq!(first.pvm_ty(), &Conduit);
-        assert_eq!(second.pvm_ty(), &Conduit);
+    pub fn connect(&mut self, first: ID, second: ID, dir: ConnectDir) {
+        assert_eq!(self._node(first).pvm_ty(), &Conduit);
+        assert_eq!(self._node(second).pvm_ty(), &Conduit);
         self._inf(first, second, PVMOps::Connect);
         if let ConnectDir::BiDirectional = dir {
             self._inf(second, first, PVMOps::Connect);

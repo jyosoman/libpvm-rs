@@ -41,6 +41,18 @@ pub trait RelGenerable: HasID + HasSrc + HasDst + Sized {
     fn new(id: ID, src: ID, dst: ID, init: Self::Init) -> Self;
 }
 
+impl HasID for ID {
+    fn get_db_id(&self) -> ID {
+        *self
+    }
+}
+
+impl<T:HasID> HasID for &T {
+    fn get_db_id(&self) -> ID {
+        (*self).get_db_id()
+    }
+}
+
 impl<'a, T> Enumerable for &'a T
 where
     T: Enumerable + Clone,
