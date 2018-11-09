@@ -126,7 +126,6 @@ pub enum PVMDataType {
     Store,
     Conduit,
     EditSession,
-    StoreCont,
 }
 
 impl fmt::Display for PVMDataType {
@@ -139,7 +138,6 @@ impl fmt::Display for PVMDataType {
                 PVMDataType::Conduit => "Conduit",
                 PVMDataType::EditSession => "EditSession",
                 PVMDataType::Store => "Store",
-                PVMDataType::StoreCont => "StoreCont",
             }
         )
     }
@@ -149,7 +147,6 @@ impl PVMDataType {
     pub fn compatible_concrete(self, ty: &ConcreteType) -> bool {
         ty.pvm_ty == self
             || (self == PVMDataType::EditSession && ty.pvm_ty == PVMDataType::Store)
-            || (self == PVMDataType::StoreCont && ty.pvm_ty == PVMDataType::Store)
     }
 }
 
