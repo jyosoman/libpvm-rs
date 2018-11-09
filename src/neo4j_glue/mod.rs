@@ -113,7 +113,6 @@ impl ToDBNode for Node {
             Node::Data(d) => match d.pvm_ty() {
                 EditSession => vec!["Node", "EditSession"],
                 Store => vec!["Node", "Store"],
-                StoreCont => vec!["Node", "StoreCont"],
                 Actor => vec!["Node", "Actor"],
                 Conduit => vec!["Node", "Conduit"],
             },

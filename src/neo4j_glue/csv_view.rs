@@ -45,7 +45,6 @@ CREATE INDEX ON :Object(uuid);
 CREATE INDEX ON :Store(uuid);
 CREATE INDEX ON :EditSession(uuid);
 CREATE INDEX ON :Conduit(uuid);
-CREATE INDEX ON :StoreCont(uuid);
 CREATE INDEX ON :Path(path);
 CREATE INDEX ON :Net(addr);
 CALL db.awaitIndexes();
@@ -270,7 +269,6 @@ impl ToCSV for Node {
                 Store => format!("n_store_{}.csv", d.ty().name),
                 Conduit => format!("n_conduit_{}.csv", d.ty().name),
                 EditSession => format!("n_es_{}.csv", d.ty().name),
-                StoreCont => format!("n_cont_{}.csv", d.ty().name),
             }.into(),
             Node::Ctx(n) => format!("n_ctx_{}.csv", n.ty().name).into(),
             Node::Name(n) => match n {
@@ -286,7 +284,6 @@ impl ToCSV for Node {
             Node::Data(d) => match d.pvm_ty() {
                 Actor => "Node;Actor",
                 Store => "Node;Store",
-                StoreCont => "Node;StoreCont",
                 EditSession => "Node;EditSession",
                 Conduit => "Node;Conduit",
             },

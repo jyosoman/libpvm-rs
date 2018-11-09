@@ -71,7 +71,6 @@ impl View for Neo4JView {
             tr.run_unchecked("CREATE INDEX ON :Store(uuid)", HashMap::new());
             tr.run_unchecked("CREATE INDEX ON :EditSession(uuid)", HashMap::new());
             tr.run_unchecked("CREATE INDEX ON :Conduit(uuid)", HashMap::new());
-            tr.run_unchecked("CREATE INDEX ON :StoreCont(uuid)", HashMap::new());
             tr.run_unchecked("CREATE INDEX ON :Path(path)", HashMap::new());
             tr.run_unchecked("CREATE INDEX ON :Net(addr)", HashMap::new());
 
