@@ -82,6 +82,10 @@ pub struct PVM {
     pub unparsed_events: HashSet<String>,
 }
 
+pub struct PVMTransaction<'a> {
+    inner: &'a mut PVM,
+}
+
 impl PVM {
     pub fn new(db: SyncSender<DBTr>) -> Self {
         PVM {
