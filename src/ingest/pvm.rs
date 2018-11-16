@@ -315,7 +315,6 @@ impl PVM {
     }
 
     pub fn name(&mut self, obj: ID, name: Name) -> ID {
-        let obj = self._node(obj);
         let n_node = self.decl_name(name);
         self._named(obj, &n_node)
     }

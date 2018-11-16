@@ -9,7 +9,7 @@ use std::{
 use data::ID;
 
 use cfg::Config;
-use neo4j_glue::{IntoVal, ToDBNode, ToDBRel};
+use neo4j_glue::{ToDBNode, ToDBRel};
 use views::*;
 
 const BATCH_SIZE: usize = 1000;
