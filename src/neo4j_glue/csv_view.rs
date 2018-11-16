@@ -88,7 +88,7 @@ impl View for CSVView {
     ) -> ViewInst {
         let mut out = ZipWriter::new(File::create(&params["path"]).unwrap());
         let thr = thread::spawn(move || {
-            out.start_file("db/dbinfo.csv", FileOptions::default())
+            out.start_file("db/n_dbinfo.csv", FileOptions::default())
                 .unwrap();
             writeln!(out, ":LABEL,pvm_version:int,source").unwrap();
             writeln!(out, "DBInfo,2,libPVM-{}", ::VERSION).unwrap();
@@ -265,18 +265,18 @@ impl ToCSV for Node {
     fn fname(&self) -> Cow<'static, str> {
         match self {
             Node::Data(d) => match d.pvm_ty() {
-                Actor => format!("actor_{}.csv", d.ty().name),
-                Store => format!("store_{}.csv", d.ty().name),
-                Conduit => format!("conduit_{}.csv", d.ty().name),
-                EditSession => format!("es_{}.csv", d.ty().name),
-                StoreCont => format!("cont_{}.csv", d.ty().name),
+                Actor => format!("n_actor_{}.csv", d.ty().name),
+                Store => format!("n_store_{}.csv", d.ty().name),
+                Conduit => format!("n_conduit_{}.csv", d.ty().name),
+                EditSession => format!("n_es_{}.csv", d.ty().name),
+                StoreCont => format!("n_cont_{}.csv", d.ty().name),
             }.into(),
-            Node::Ctx(n) => format!("ctx_{}.csv", n.ty().name).into(),
+            Node::Ctx(n) => format!("n_ctx_{}.csv", n.ty().name).into(),
             Node::Name(n) => match n {
-                NameNode::Path(..) => "paths.csv",
-                NameNode::Net(..) => "net.csv",
+                NameNode::Path(..) => "n_paths.csv",
+                NameNode::Net(..) => "n_net.csv",
             }.into(),
-            Node::Schema(_) => "schema.csv".into(),
+            Node::Schema(_) => "n_schema.csv".into(),
         }
     }
 
@@ -302,8 +302,8 @@ impl ToCSV for Node {
 impl ToCSV for Rel {
     fn fname(&self) -> Cow<'static, str> {
         match self {
-            Rel::Inf(_) => "inf.csv",
-            Rel::Named(_) => "named.csv",
+            Rel::Inf(_) => "r_inf.csv",
+            Rel::Named(_) => "r_named.csv",
         }.into()
     }
 
