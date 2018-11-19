@@ -176,18 +176,21 @@ impl AuditEvent {
         let cmdline = ref_field!(self.cmdline);
         let binuuid = field!(self.arg_objuuid1);
         let binname = clone_field!(self.upath1);
-        let lduuid = field!(self.arg_objuuid2);
-        let ldname = clone_field!(self.upath2);
 
         let bin = pvm.declare(&FILE, binuuid, None);
         pvm.name(bin, Name::Path(binname));
 
-        let ld = pvm.declare(&FILE, lduuid, None);
-        pvm.name(ld, Name::Path(ldname));
-
         pvm.meta(pro, "cmdline", cmdline);
         pvm.source(pro, bin);
-        pvm.source(pro, ld);
+
+        if let Some(lduuid) = self.arg_objuuid2 {
+            let ldname = clone_field!(self.upath2);
+
+            let ld = pvm.declare(&FILE, lduuid, None);
+            pvm.name(ld, Name::Path(ldname));
+
+            pvm.source(pro, ld);
+        }
 
         Ok(())
     }
